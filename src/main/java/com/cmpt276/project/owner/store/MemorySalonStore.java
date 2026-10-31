@@ -8,7 +8,6 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 
 @Repository
-@Profile("demo")
 public class MemorySalonStore implements SalonStore {
     private final Map<String, Salon> salons = new LinkedHashMap<>();
 
@@ -26,7 +25,6 @@ public class MemorySalonStore implements SalonStore {
     }
 
     public synchronized void save(Salon salon) {
-        // 新 ID 会添加条目，已有 ID 会更新条目。此处保存的是对象引用，不是数据库记录或副本。
         salons.put(salon.getId(), salon);
     }
 }

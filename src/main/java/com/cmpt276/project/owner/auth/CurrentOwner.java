@@ -11,7 +11,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
 
-/** 店铺归属只来自已认证账号；不再读取旧 Session 或表单中的 ownerId。 */
 @Component
 public class CurrentOwner {
     private final AccountRepository accounts;
