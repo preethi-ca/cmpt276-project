@@ -38,3 +38,20 @@ BookEasy will be developed using Java, Springboot, HTML, CSS, and JavaScript, wi
 
 ## Group Meetings and Role Assignments
 During our first group meeting on October 5, we introduced ourselves, discussed our individual strengths and weaknesses, and brainstormed potential project ideas. During our second meeting on October 15, we finalized our project idea after receiving feedback from the instructor, divided the project into five epics, and assigned responsibilities to each group member.
+
+
+## Run the integrated owner branch
+
+This branch integrates Edwin's salon management with Preethi's authentication.
+Use Java 17+ and run `./mvnw spring-boot:run` (`.\mvnw.cmd spring-boot:run` on Windows).
+Open http://localhost:8080, register as a Salon Owner, then sign in and create a salon.
+The default demo profile uses H2 accounts and an in-memory salon store; restarting clears data.
+
+Implemented: salon profile create/edit, service add/list with pagination, initial weekly
+hours, owner isolation, guest-readable salon JSON and a demo preview. Appointment booking,
+durable salon storage and analytics remain separate work. Preethi's shared login/register
+pages are retained; the customer-booking branch is not merged here.
+
+Run `./mvnw package` for tests/build. See [INTEGRATION.md](INTEGRATION.md) for endpoints,
+Maria's data handoff, browser-test commands, remaining assumptions and deployment limits.
+Owner UI and behavior contracts are in DESIGN.md, UX-CONTRACT.md and USER-STORIES.md.

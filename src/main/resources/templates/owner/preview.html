@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{owner/fragments :: head(${salon.name})}"></head>
+<body>
+<header th:replace="~{owner/fragments :: header}"></header>
+<div class="demo-banner">Salon data preview · The customer booking page will be provided by Maria's module.</div>
+<main class="preview">
+  <a class="back-link" th:href="@{/owner/dashboard}">Back to workspace</a>
+  <div class="preview-header"><h1 th:text="${salon.name}"></h1><p class="lead" th:text="${salon.description}"></p><p class="muted" th:text="${salon.address}"></p></div>
+  <div class="two-column">
+    <section class="panel"><h2>Our services</h2><p class="muted">One-hour appointments · Prices in CAD</p><p th:if="${salon.services.isEmpty()}">The service menu is being prepared.</p><div class="saved-day" th:each="item : ${salon.services}"><strong th:text="${item.name}"></strong><span th:text="'$' + ${item.price}"></span></div></section>
+    <section class="panel"><h2>Opening hours</h2><p class="muted">Vancouver time · Repeats weekly</p><p th:unless="${salon.hoursConfigured}">Opening hours have not been set yet.</p><div class="saved-day" th:each="day : ${salon.openingHours}"><strong th:text="${days[day.dayOfWeek - 1]}"></strong><span th:text="${day.open ? day.startTime + ' – ' + day.endTime : 'Closed'}"></span></div></section>
+  </div>
+  <p class="notice info">This preview shows your saved salon information. Booking is not connected in this standalone module.</p>
+</main>
+</body>
+</html>

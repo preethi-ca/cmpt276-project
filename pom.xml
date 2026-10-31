@@ -112,6 +112,12 @@
     		<artifactId>postgresql</artifactId>
     		<scope>runtime</scope>
 		</dependency>
+        <!-- Real authentication/CSRF integration tests for the migrated owner module. -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>
 	</dependencies>
 
 	<build>

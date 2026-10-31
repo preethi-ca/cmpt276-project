@@ -3,6 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
+    <link rel="icon" href="data:,">
     <title>Customer Dashboard</title>
 </head>
 
@@ -11,7 +12,7 @@
     <h2>Customer Dashboard</h2>
     <p>You have successfully logged in as a customer.</p>
 
-    <form th:action="@{/logout}" method="post">
+    <form th:action="@{/logout}" method="post" novalidate>
         <button type="submit">Log Out</button>
     </form>
 </body>

@@ -3,9 +3,11 @@
 
 <head>
     <meta charset="UTF-8">
+    <link rel="icon" href="data:,">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register - BookEasy</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
+    <script th:src="@{/owner-assets/forms.js}" defer></script>
 </head>
 
 <body>
@@ -32,14 +34,8 @@
                     Register as a customer or salon owner.
                 </p>
 
-                <!-- Registration Error Message -->
-                <p th:if="${error}"
-                   th:text="${error}"
-                   class="error-message">
-                </p>
-
                 <!-- Registration Form -->
-                <form th:action="@{/register}" method="post">
+                <form th:action="@{/register}" th:object="${registrationForm}" method="post" novalidate data-submit-guard>
 
                     <!-- Full Name -->
                     <div class="form-group">
@@ -47,11 +43,12 @@
                         <input
                             type="text"
                             id="name"
-                            name="name"
+                            name="name" th:attr="aria-invalid=${#fields.hasErrors('name')} ? 'true' : null, aria-describedby=${#fields.hasErrors('name')} ? 'name-error' : null" th:field="*{name}"
                             placeholder="Enter your full name"
                             maxlength="100"
                             autocomplete="name"
                             required>
+                        <p class="field-error" id="name-error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></p>
                     </div>
 
                     <!-- Email -->
@@ -60,10 +57,11 @@
                         <input
                             type="email"
                             id="email"
-                            name="email"
+                            name="email" th:attr="aria-invalid=${#fields.hasErrors('email')} ? 'true' : null, aria-describedby=${#fields.hasErrors('email')} ? 'email-error' : null" th:field="*{email}"
                             placeholder="Enter your email"
                             autocomplete="email"
                             required>
+                        <p class="field-error" id="email-error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></p>
                     </div>
 
                     <!-- Password -->
@@ -72,11 +70,13 @@
                         <input
                             type="password"
                             id="password"
-                            name="password"
+                            name="password" th:attr="aria-invalid=${#fields.hasErrors('password')} ? 'true' : null, aria-describedby=${#fields.hasErrors('password')} ? 'password-error' : null"
                             placeholder="Create a password (min. 8 characters)"
                             minlength="8"
                             autocomplete="new-password"
                             required>
+                        <p class="field-error" id="password-error" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></p>
+                        <button type="button" class="password-toggle" data-password-toggle="password" aria-controls="password" aria-pressed="false">Show password</button>
                     </div>
 
                     <!-- Account Type -->
@@ -84,7 +84,7 @@
                         <label for="roleType">Account Type</label>
                         <select
                             id="roleType"
-                            name="roleType"
+                            name="roleType" th:attr="aria-invalid=${#fields.hasErrors('roleType')} ? 'true' : null, aria-describedby=${#fields.hasErrors('roleType')} ? 'roleType-error' : null" th:field="*{roleType}"
                             required>
 
                             <option value="">Select account type</option>
@@ -92,6 +92,7 @@
                             <option value="SALONOWNER">Salon Owner</option>
 
                         </select>
+                        <p class="field-error" id="roleType-error" th:if="${#fields.hasErrors('roleType')}" th:errors="*{roleType}"></p>
                     </div>
 
                     <!-- Submit Button -->

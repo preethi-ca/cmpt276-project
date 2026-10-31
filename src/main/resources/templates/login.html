@@ -3,9 +3,11 @@
 
 <head>
     <meta charset="UTF-8">
+    <link rel="icon" href="data:,">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - BookEasy</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
+    <script th:src="@{/owner-assets/forms.js}" defer></script>
 </head>
 
 <body>
@@ -31,20 +33,20 @@
                 <p class="subtitle">Sign in to manage your appointments or salon.</p>
 
                 <!-- Success and Error Messages -->
-                <p th:if="${param.registered}" class="success-message">
+                <p th:if="${param.registered}" class="success-message" role="status">
                     Account created successfully! Please log in.
                 </p>
 
-                <p th:if="${param.error}" class="error-message">
+                <p th:if="${param.error}" class="error-message" role="alert">
                     Invalid email or password. Please try again.
                 </p>
 
-                <p th:if="${param.logout}" class="success-message">
+                <p th:if="${param.logout}" class="success-message" role="status">
                     You have successfully logged out.
                 </p>
 
                 <!-- Login Form -->
-                <form th:action="@{/login}" method="post">
+                <form th:action="@{/login}" method="post" novalidate data-submit-guard>
 
                     <div class="form-group">
                         <label for="username">Email</label>
@@ -66,6 +68,7 @@
                             placeholder="Enter your password"
                             autocomplete="current-password"
                             required>
+                        <button type="button" class="password-toggle" data-password-toggle="password" aria-controls="password" aria-pressed="false">Show password</button>
                     </div>
 
                     <button type="submit" class="primary-button">

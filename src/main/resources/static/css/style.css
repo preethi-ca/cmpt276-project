@@ -216,3 +216,12 @@ body {
         font-size: 28px;
     }
 }
+
+/* Shared authentication enhancements; keep the existing layout and palette. */
+.field-error { color: #a12121; font-size: 14px; }
+.form-group [aria-invalid="true"] { border-color: #a12121; }
+.password-toggle { margin-top: 8px; padding: 8px 12px; background: white; color: #594535; border: 1px solid #6f5947; border-radius: 8px; }
+a, button, select { cursor: pointer; }
+button:disabled { cursor: default; opacity: .65; }
+.password-toggle:hover { background: #f5f0eb; }
+:focus-visible { outline: 2px solid #594535; outline-offset: 3px; }
