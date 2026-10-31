@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head(title)">
+  <meta charset="UTF-8">
+    <link rel="icon" href="data:,">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:text="${title} + ' · BookEasy'">BookEasy</title>
+  <link rel="stylesheet" th:href="@{/owner-assets/owner.css}">
+  <script th:src="@{/owner-assets/forms.js}" defer></script>
+</head>
+<body>
+<header class="topbar" th:fragment="header">
+  <a th:href="@{/}">BookEasy</a>
+  <form th:if="${signedIn == true}" th:action="@{/logout}" method="post" novalidate data-submit-guard>
+    <button type="submit">Sign out</button>
+  </form>
+</header>
+<div class="demo-banner" th:fragment="demo">Local demo · Accounts and salon data reset when the app restarts.</div>
+<div th:fragment="field(label, name, type, hint)" class="field">
+  <label th:for="${name}" th:text="${label}"></label>
+  <input th:type="${type}" th:id="${name}" th:field="*{__${name}__}"
+         th:attr="aria-invalid=${#fields.hasErrors(name)},aria-describedby=${name + '-hint ' + name + '-error'}">
+  <small th:id="${name + '-hint'}" th:text="${hint}"></small>
+  <p class="field-error" th:id="${name + '-error'}" th:errors="*{__${name}__}"></p>
+</div>
+<div th:fragment="summary" class="error-summary" role="alert" th:if="${#fields.hasErrors('*')}">
+  <strong>Check the highlighted fields.</strong>
+  <p th:each="error : ${#fields.globalErrors()}" th:text="${error}"></p>
+</div>
+<dialog id="leave-dialog" th:fragment="leaveDialog" aria-labelledby="leave-title">
+  <h2 id="leave-title">Leave without saving?</h2>
+  <p>Your changes on this page will be lost.</p>
+  <form method="dialog" novalidate class="actions"><button type="submit" class="button secondary" value="stay" autofocus>Keep editing</button><button type="submit" class="button" value="leave">Leave page</button></form>
+</dialog>
+</body>
+</html>

@@ -1,0 +1,8 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{owner/fragments :: head('Page unavailable')}"></head>
+<body>
+<header th:replace="~{owner/fragments :: header}"></header>
+<main class="preview"><p class="eyebrow" th:text="${status}"></p><h1 th:text="${status == 404 ? 'Page not found.' : 'This request could not be completed.'}"></h1><p th:text="${status == 403 ? 'Access was denied or your form expired. Sign in with the appropriate account or reopen the form.' : 'Return to BookEasy to continue.'}"></p><a class="button" th:href="@{/}">Return to BookEasy</a></main>
+</body>
+</html>

@@ -1,0 +1,227 @@
+/* General Styling */
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #faf9f6;
+    color: #333;
+}
+
+/* Main Layout */
+
+.auth-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* Left Panel */
+
+.auth-left {
+    width: 45%;
+    background-color: #e8e2d8;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 60px;
+}
+
+.brand {
+    max-width: 350px;
+}
+
+.brand h1 {
+    font-size: 48px;
+    margin-bottom: 20px;
+    color: #3b3028;
+}
+
+.brand p {
+    font-size: 24px;
+    line-height: 1.5;
+    color: #5a4a40;
+}
+
+/* Right Panel */
+
+.auth-right {
+    width: 55%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 60px;
+    background-color: white;
+}
+
+.auth-form {
+    width: 100%;
+    max-width: 400px;
+}
+
+/* Back Link */
+
+.back-link {
+    display: inline-block;
+    margin-bottom: 35px;
+    color: #666;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.back-link:hover {
+    text-decoration: underline;
+}
+
+/* Headings */
+
+.auth-form h2 {
+    font-size: 32px;
+    margin-bottom: 10px;
+    color: #2c2c2c;
+}
+
+.subtitle {
+    color: #777;
+    font-size: 14px;
+    margin-bottom: 30px;
+}
+
+/* Form Fields */
+
+.form-group {
+    margin-bottom: 22px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 13px 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 15px;
+    background-color: white;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: #8b7355;
+    box-shadow: 0 0 0 3px rgba(139, 115, 85, 0.12);
+}
+
+/* Buttons */
+
+.primary-button {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    background-color: #6f5947;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+}
+
+.primary-button:hover {
+    background-color: #594535;
+}
+
+.secondary-button {
+    display: block;
+    width: 100%;
+    padding: 13px;
+    background-color: white;
+    color: #6f5947;
+    border: 1px solid #6f5947;
+    border-radius: 8px;
+    text-decoration: none;
+    text-align: center;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.secondary-button:hover {
+    background-color: #f5f0eb;
+}
+
+/* Divider */
+
+.auth-divider {
+    text-align: center;
+    margin: 25px 0 15px;
+    color: #888;
+    font-size: 13px;
+}
+
+/* Messages */
+
+.success-message {
+    padding: 12px;
+    background-color: #e8f5e9;
+    color: #2e7d32;
+    border-radius: 6px;
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+.error-message {
+    padding: 12px;
+    background-color: #ffebee;
+    color: #c62828;
+    border-radius: 6px;
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+/* Mobile Responsive */
+
+@media (max-width: 768px) {
+
+    .auth-container {
+        flex-direction: column;
+    }
+
+    .auth-left {
+        width: 100%;
+        padding: 35px;
+    }
+
+    .brand h1 {
+        font-size: 32px;
+    }
+
+    .brand p {
+        font-size: 18px;
+    }
+
+    .auth-right {
+        width: 100%;
+        padding: 40px 25px;
+    }
+
+    .auth-form h2 {
+        font-size: 28px;
+    }
+}
+
+/* Shared authentication enhancements; keep the existing layout and palette. */
+.field-error { color: #a12121; font-size: 14px; }
+.form-group [aria-invalid="true"] { border-color: #a12121; }
+.password-toggle { margin-top: 8px; padding: 8px 12px; background: white; color: #594535; border: 1px solid #6f5947; border-radius: 8px; }
+a, button, select { cursor: pointer; }
+button:disabled { cursor: default; opacity: .65; }
+.password-toggle:hover { background: #f5f0eb; }
+:focus-visible { outline: 2px solid #594535; outline-offset: 3px; }
