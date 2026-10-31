@@ -14,47 +14,13 @@
 
     <!-- link to customer's appointments -->
     <p><a th:href="@{/customer/appointments}">View My Appointments</a></p>
-  
-    <h2>Available Salon Services</h2>
 
+    <h4>Please go to: http://localhost:8080/salons/salon-name</h4>
+    <p>Example: Salon name = Sally Salon</p>
+    <p>Go to: http://localhost:8080/salons/sally-salon</p>
 
-<!--note the following are temorarly hard coded because I don't have Edwin's part yet-->
-<!-- ***First sample service -->
-    <div>
-        <h3>Haircut</h3>
-        <p>Price: $35.00</p>
-        <p>Duration: 60 minutes</p>
-
-        <!-- Service selection button-->
-        <a th:href="@{/customer/booking(service='Haircut')}">
-        <button type="button">Select Service</button>
-        </a>
-    </div>
-
-<!-- ***Second sample service -->
-    <div>
-        <h3>Hair Colouring</h3>
-        <p>Price: $80.00</p>
-        <p>Duration: 60 minutes</p>
-
-        <!-- Service selection button-->
-        <a th:href="@{/customer/booking(service='Hair Colouring')}">
-        <button type="button">Select Service</button>
-        </a>
-    </div>
-
-<!-- ***Third sample service -->
-    <div>
-        <h3>Manicure</h3>
-        <p>Price: $30.00</p>
-        <p>Duration: 60 minutes</p>
-
-        <!-- Service selection button-->
-        <a th:href="@{/customer/booking(service='Manicure')}">
-        <button type="button">Select Service</button>
-        </a>
-    </div>
-
+    <p>Example: Salon name = BestNails</p>
+    <p>Go to: http://localhost:8080/salons/bestnails</p>
 
     <form th:action="@{/logout}" method="post" novalidate>
         <button type="submit">Log Out</button>

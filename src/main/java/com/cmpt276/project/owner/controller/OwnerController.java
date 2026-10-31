@@ -49,7 +49,7 @@ public class OwnerController {
         model.addAttribute("demo", demo);
         if (salon != null) {
             String prefix = demo ? "/demo/salons/" : "/salons/";
-            model.addAttribute("salonUrl", prefix + salon.getId());
+            model.addAttribute("salonUrl", prefix + salon.getSlug());
         }
     }
 

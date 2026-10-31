@@ -6,4 +6,5 @@ public interface SalonStore {
     Salon findById(String id);
     Salon findByOwnerId(String ownerId);
     void save(Salon salon);
+    Salon findBySlug(String slug);
 }

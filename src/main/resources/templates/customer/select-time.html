@@ -10,45 +10,41 @@
 
 <body>
     <h1>Choose Your Appointment Time</h1>
-    <h3>Selected Service: <span th:text="${service}"></span></h3>
+    <h3>Selected Service: <span th:text="${serviceName}"></span></h3>
     <h3>Selected Date: <span th:text="${appointmentDate}"></span></h3>
 
-    <!-- Available times will be connected to Edwin's code later -->
     <h2>Available Appointment Times</h2>
+    <p th:if="${error}" th:text="${error}" style="color: red;"></p>
+    <p th:if="${#lists.isEmpty(availableTimes)}">Sorry, there are no available appointment times for this date</p>
+    <form th:unless="${#lists.isEmpty(availableTimes)}"
+          th:action="@{/customer/booking/confirmation}"
+          method="get">
 
-    <form th:action="@{/customer/booking/confirmation}" method="get">
         <input type="hidden" name="service" th:value="${service}">
+        <input type="hidden" name="salon" th:value="${salon}">
         <input type="hidden" name="appointmentDate" th:value="${appointmentDate}">
 
-        <!-- Temporary sample appointment times. until Edwin's part-->
-        <input type="radio" id="time1" name="appointmentTime" value="9:00 AM" required>
-        <label for="time1">9:00 AM</label>
-        <br><br>
+        <!-- CHANGED: Generate radio buttons using the available times from BookingService. -->
+        <div th:each="time, status : ${availableTimes}">
 
-        <input type="radio" id="time2" name="appointmentTime" value="10:00 AM">
-        <label for="time2">10:00 AM</label>
-        <br><br>
+            <!-- CHANGED: Use the generated appointment time as the radio button value. -->
+            <input type="radio"
+                   th:id="'time' + ${status.index}"
+                   name="appointmentTime"
+                   th:value="${time}"
+                   required>
 
-        <input type="radio" id="time3" name="appointmentTime" value="11:00 AM">
-        <label for="time3">11:00 AM</label>
-        <br><br>
+            <!-- CHANGED: Display the generated appointment time. -->
+            <label th:for="'time' + ${status.index}"
+                   th:text="${time}"></label>
 
-        <input type="radio" id="time4" name="appointmentTime" value="1:00 PM">
-        <label for="time4">1:00 PM</label>
-        <br><br>
-
-        <input type="radio" id="time5" name="appointmentTime" value="2:00 PM">
-        <label for="time5">2:00 PM</label>
-        <br><br>
-
-        <input type="radio" id="time6" name="appointmentTime" value="3:00 PM">
-        <label for="time6">3:00 PM</label>
-        <br><br>
+            <br><br>
+        </div>
 
         <button type="submit">Continue</button>
     </form>
 
 
-    <a th:href="@{/customer/booking(service=${service})}">Back to Date Selection</a>
+    <a th:href="@{/customer/booking(service=${service}, salon=${salon})}">Back to Date Selection</a>
 </body>
 </html>

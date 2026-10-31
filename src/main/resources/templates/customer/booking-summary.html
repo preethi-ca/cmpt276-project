@@ -13,13 +13,15 @@
     <p>Please check your appointment details are correct before continuing</p>
 
     <!-- show the booking information summary-->
-    <h3>Service: <span th:text="${service}"></span></h3>
+    <h3>Salon: <span th:text="${salonName}"></span></h3>
+    <h3>Selected Service: <span th:text="${serviceName}"></span></h3>
     <h3>Appointment Date: <span th:text="${appointmentDate}"></span></h3>
     <h3>Appointment Time: <span th:text="${appointmentTime}"></span></h3>
     
     <!-- Form that sends the booking details to the controller -->
     <form th:action="@{/customer/booking/confirm}" method="post">
         <input type="hidden" name="service" th:value="${service}">
+        <input type="hidden" name="salon" th:value="${salon}">
         <input type="hidden" name="appointmentDate" th:value="${appointmentDate}">
         <input type="hidden" name="appointmentTime" th:value="${appointmentTime}">
 

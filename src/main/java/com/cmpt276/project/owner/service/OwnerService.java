@@ -1,22 +1,25 @@
 package com.cmpt276.project.owner.service;
 
-import com.cmpt276.project.owner.model.OpeningDay;
-import com.cmpt276.project.owner.model.Salon;
-import com.cmpt276.project.owner.model.SalonService;
-import com.cmpt276.project.owner.store.SalonStore;
-import com.cmpt276.project.owner.controller.OwnerController.HoursForm;
-import com.cmpt276.project.owner.controller.OwnerController.SalonForm;
-import com.cmpt276.project.owner.controller.OwnerController.ServiceForm;
 import java.math.BigDecimal;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.Errors;
 import org.springframework.web.server.ResponseStatusException;
+
+import com.cmpt276.project.owner.controller.OwnerController.HoursForm;
+import com.cmpt276.project.owner.controller.OwnerController.SalonForm;
+import com.cmpt276.project.owner.controller.OwnerController.ServiceForm;
+import com.cmpt276.project.owner.model.OpeningDay;
+import com.cmpt276.project.owner.model.Salon;
+import com.cmpt276.project.owner.model.SalonService;
+import com.cmpt276.project.owner.store.SalonStore;
 
 @Service
 public class OwnerService {
@@ -32,6 +35,14 @@ public class OwnerService {
 
     public Salon findPublicSalon(String id) {
         Salon salon = store.findById(id);
+        if (salon == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+        return salon;
+    }
+    //find a public salon using its unique URL slug
+    public Salon findPublicSalonBySlug(String slug) {
+        Salon salon = store.findBySlug(slug);
         if (salon == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
@@ -54,6 +65,9 @@ public class OwnerService {
             salon = new Salon();
             salon.setId(UUID.randomUUID().toString());
             salon.setOwnerId(ownerId);
+
+            //create a unique URL slug when the salon is created
+            salon.setSlug(generateUniqueSlug(form.getName()));
         } else if (salon == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
@@ -134,6 +148,20 @@ public class OwnerService {
         salon.setOpeningHours(hours);
         store.save(salon);
         return true;
+    }
+
+    private String generateUniqueSlug(String salonName) {
+        String slug = salonName.trim().toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "-").replaceAll("(^-|-$)", "");
+        if (slug.isEmpty()) {
+            slug = "salon";
+        }
+        String uniqueSlug = slug;
+        int number = 2;
+        while (store.findBySlug(uniqueSlug) != null) {
+            uniqueSlug = slug + "-" + number;
+            number++;
+        }
+        return uniqueSlug;
     }
 
     private Salon requireSalon(String ownerId) {

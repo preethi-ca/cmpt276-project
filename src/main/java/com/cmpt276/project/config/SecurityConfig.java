@@ -18,7 +18,8 @@ public class SecurityConfig {
                 .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                 // public pages
                 .requestMatchers("/", "/register", "/login", "/css/**", "/js/**", "/images/**",
-                        "/error", "/owner-assets/**", "/api/salons/**", "/demo/salons/**").permitAll()
+                    "/error", "/owner-assets/**", "/api/salons/**", "/demo/salons/**",
+                    "/salons/**").permitAll()
 
                 // role-based pages
                 .requestMatchers("/customer", "/customer/**").hasRole("CUSTOMER")

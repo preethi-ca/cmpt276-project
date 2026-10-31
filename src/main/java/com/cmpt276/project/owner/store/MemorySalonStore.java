@@ -24,6 +24,15 @@ public class MemorySalonStore implements SalonStore {
         return null;
     }
 
+    public synchronized Salon findBySlug(String slug) {
+        for (Salon salon : salons.values()) {
+            if (slug.equals(salon.getSlug())) {
+                return salon;
+            }
+        }
+        return null;
+    }
+
     public synchronized void save(Salon salon) {
         salons.put(salon.getId(), salon);
     }

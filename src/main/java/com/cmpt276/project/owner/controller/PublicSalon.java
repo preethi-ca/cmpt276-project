@@ -14,6 +14,7 @@ public class PublicSalon {
 
     public String getId() { return salon.getId(); }
     public String getName() { return salon.getName(); }
+    public String getSlug() {return salon.getSlug();}
     public String getDescription() { return salon.getDescription(); }
     public String getAddress() { return salon.getAddress(); }
     public List<SalonService> getServices() { return salon.getServices(); }

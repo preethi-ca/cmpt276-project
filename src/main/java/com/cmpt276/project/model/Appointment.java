@@ -1,7 +1,13 @@
 package com.cmpt276.project.model;
 
-import jakarta.persistence.*;
 import java.time.LocalDate;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 
 @Entity
 public class Appointment {
@@ -12,6 +18,10 @@ public class Appointment {
     /*Name of the service being booked 
     - This is temporary until we connect Edwin's service data*/
     private String serviceName;
+
+    private String serviceId;
+
+    private String salonId;
 
     private LocalDate appointmentDate;
 
@@ -24,8 +34,10 @@ public class Appointment {
     public Appointment() {
     }
 
-    public Appointment(String serviceName, LocalDate appointmentDate, String appointmentTime, Account customer) {
+    public Appointment(String serviceName,String serviceId, String salonId, LocalDate appointmentDate, String appointmentTime, Account customer) {
         this.serviceName = serviceName;
+        this.serviceId = serviceId;
+        this.salonId = salonId;
         this.appointmentDate = appointmentDate;
         this.appointmentTime = appointmentTime;
         this.customer = customer;
@@ -37,6 +49,14 @@ public class Appointment {
 
     public String getServiceName() {
         return serviceName;
+    }
+
+    public String getServiceId() {
+        return serviceId;
+    }
+
+    public String getSalonId() {
+        return salonId;
     }
 
     public LocalDate getAppointmentDate() {

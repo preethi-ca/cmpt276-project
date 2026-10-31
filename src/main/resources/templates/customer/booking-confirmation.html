@@ -9,10 +9,12 @@
     <p>Your appointment has been successfully booked</p>
 
     <h2>Appointment Details:</h2>
-    <p>Service: <span th:text="${service}"></span></p>
+    <p>Salon: <span th:text="${salonName}"></span></p>
+    <p>Service: <span th:text="${serviceName}"></span></p>
     <p>Date: <span th:text="${appointmentDate}"></span></p>
     <p>Time: <span th:text="${appointmentTime}"></span></p>
 
     <a th:href="@{/customer/dashboard}">Back to Home</a>
 </body>
 </html>
+
