@@ -42,8 +42,6 @@ public class AuthController {
         return "redirect:/login?registered";
     }
 
-    /** 注册字段与 Preethi 的 /register 一致；密码只用于校验和哈希。 */
-    // public static 允许业务层复用，并让 Spring 无需 Controller 实例即可创建表单。
     public static class RegistrationForm {
         private String name = "";
         private String email = "";

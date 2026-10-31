@@ -37,7 +37,7 @@ public class OwnerService {
         }
         return salon;
     }
-
+    //Use synchronized keyword to avoid data errors caused by concurrent modifications
     public synchronized boolean saveProfile(String ownerId, SalonForm form, boolean create, Errors errors) {
         validateText(form.getName(), "name", 80, true, errors);
         validateText(form.getDescription(), "description", 500, false, errors);

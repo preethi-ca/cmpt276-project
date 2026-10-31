@@ -35,7 +35,6 @@
       <div class="page-heading">
         <h1 th:text="${title}"></h1>
         <a th:if="${section == 'services'}" class="button primary" th:href="@{/owner/services(view='add')}"><span aria-hidden="true">＋ </span>Add Service</a>
-        <!--/* 顶部按钮关联下方表单，无 JavaScript 时仍可通过原生 HTML 提交。 */-->
         <button th:if="${section == 'profile'}" type="submit" form="salon-form" class="button primary">Save Changes</button>
         <button th:if="${section == 'hours' and !salon.hoursConfigured}" type="submit" form="hours-form" class="button primary">Save Availability</button>
       </div>

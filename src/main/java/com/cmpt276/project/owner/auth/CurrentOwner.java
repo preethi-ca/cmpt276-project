@@ -33,7 +33,8 @@ public class CurrentOwner {
         if (account.getRoleType() != RoleType.SALONOWNER) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN);
         }
-        // 账号采用整数 ID；转换为字符串仅为兼容现有 SalonStore，店铺和服务 UUID 不变。
+        // The account uses an integer ID. Converting to a string is only compatible with the existing SalonStore,
+        // and the UUids of the store and service remain unchanged.
         return String.valueOf(account.getId());
     }
 }

@@ -11,7 +11,6 @@
 <body>
 <header class="topbar" th:fragment="header">
   <a th:href="@{/}">BookEasy</a>
-  <!--/* 退出使用 POST，CSRF 和 Session 清理由 Spring Security 统一处理。 */-->
   <form th:if="${signedIn == true}" th:action="@{/logout}" method="post" novalidate data-submit-guard>
     <button type="submit">Sign out</button>
   </form>
