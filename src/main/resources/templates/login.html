@@ -5,34 +5,88 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - BookEasy</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 
 <body>
-    <h1>Welcome Back to BookEasy!</h1>
-    <p>Log in to manage your appointments or salon.</p>
 
-    <p th:if="${param.registered}" style="color: green;">Account created successfully! Please log in.</p>
+    <div class="auth-container">
 
-    <p th:if="${param.error}" style="color: red;">Invalid email or password. Please try again.</p>
+        <!-- Left Side -->
+        <div class="auth-left">
+            <div class="brand">
+                <h1>BookEasy</h1>
+                <p>Your next salon visit, simply booked.</p>
+            </div>
+        </div>
 
-    <p th:if="${param.logout}" style="color: green;">You have successfully logged out.</p>
+        <!-- Right Side -->
+        <div class="auth-right">
 
-    <form th:action="@{/login}" method="post">
-        <label for="username">Email:</label>
-        <input type="email" id="username" name="username" required>
-        <br><br>
+            <div class="auth-form">
 
-        <label for="password">Password:</label>
-        <input type="password" id="password" name="password" required>
-        <br><br>
+                <a th:href="@{/}" class="back-link">← Back to Salon</a>
 
-        <button type="submit">Log In</button>
-    </form>
+                <h2>Welcome Back</h2>
+                <p class="subtitle">Sign in to manage your appointments or salon.</p>
 
-    <p>
-        Don't have an account?
-        <a th:href="@{/register}">Sign up</a>
-    </p>
+                <!-- Success and Error Messages -->
+                <p th:if="${param.registered}" class="success-message">
+                    Account created successfully! Please log in.
+                </p>
+
+                <p th:if="${param.error}" class="error-message">
+                    Invalid email or password. Please try again.
+                </p>
+
+                <p th:if="${param.logout}" class="success-message">
+                    You have successfully logged out.
+                </p>
+
+                <!-- Login Form -->
+                <form th:action="@{/login}" method="post">
+
+                    <div class="form-group">
+                        <label for="username">Email</label>
+                        <input
+                            type="email"
+                            id="username"
+                            name="username"
+                            placeholder="Enter your email"
+                            autocomplete="username"
+                            required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            placeholder="Enter your password"
+                            autocomplete="current-password"
+                            required>
+                    </div>
+
+                    <button type="submit" class="primary-button">
+                        Sign In
+                    </button>
+
+                </form>
+
+                <div class="auth-divider">
+                    <span>New to BookEasy?</span>
+                </div>
+
+                <a th:href="@{/register}" class="secondary-button">
+                    Create Account
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
 
 </body>
 </html>

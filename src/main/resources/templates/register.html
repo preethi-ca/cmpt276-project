@@ -1,43 +1,120 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register - BookEasy</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
+
 <body>
-    <h1>Create a BookEasy Account</h1>
-    <p>Register as a customer or salon owner.</p>
-    <p th:if="${error}" th:text="${error}" style="color: red;"></p>
 
-    <form th:action="@{/register}" method="post">
-        <label for="name">Full Name:</label>
-        <input type="text" id="name" name="name" maxlength="100" required>
-        <br><br>
+    <div class="auth-container">
 
-        <label for="email">Email:</label>
-        <input type="email" id="email" name="email" required>
-        <br><br>
+        <!-- Left Side -->
+        <div class="auth-left">
+            <div class="brand">
+                <h1>BookEasy</h1>
+                <p>Your next salon visit, simply booked.</p>
+            </div>
+        </div>
 
-        <label for="password">Password:</label>
-        <input type="password" id="password" name="password" minlength="8" required>
-        <br><br>
+        <!-- Right Side -->
+        <div class="auth-right">
 
-        <label for="roleType">Account Type:</label>
-        <select id="roleType" name="roleType" required>
-            <option value="">Select account type</option>
-            <option value="CUSTOMER">Customer</option>
-            <option value="SALONOWNER">Salon Owner</option>
-        </select>
-        <br><br>
+            <div class="auth-form">
 
-        <button type="submit">Create Account</button>
-    </form>
+                <a th:href="@{/}" class="back-link">← Back to Salon</a>
 
-    <p>
-        Already have an account?
-        <a th:href="@{/login}">Log in</a>
-    </p>
+                <h2>Create Account</h2>
+                <p class="subtitle">
+                    Register as a customer or salon owner.
+                </p>
+
+                <!-- Registration Error Message -->
+                <p th:if="${error}"
+                   th:text="${error}"
+                   class="error-message">
+                </p>
+
+                <!-- Registration Form -->
+                <form th:action="@{/register}" method="post">
+
+                    <!-- Full Name -->
+                    <div class="form-group">
+                        <label for="name">Full Name</label>
+                        <input
+                            type="text"
+                            id="name"
+                            name="name"
+                            placeholder="Enter your full name"
+                            maxlength="100"
+                            autocomplete="name"
+                            required>
+                    </div>
+
+                    <!-- Email -->
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input
+                            type="email"
+                            id="email"
+                            name="email"
+                            placeholder="Enter your email"
+                            autocomplete="email"
+                            required>
+                    </div>
+
+                    <!-- Password -->
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            placeholder="Create a password (min. 8 characters)"
+                            minlength="8"
+                            autocomplete="new-password"
+                            required>
+                    </div>
+
+                    <!-- Account Type -->
+                    <div class="form-group">
+                        <label for="roleType">Account Type</label>
+                        <select
+                            id="roleType"
+                            name="roleType"
+                            required>
+
+                            <option value="">Select account type</option>
+                            <option value="CUSTOMER">Customer</option>
+                            <option value="SALONOWNER">Salon Owner</option>
+
+                        </select>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="primary-button">
+                        Create Account
+                    </button>
+
+                </form>
+
+                <!-- Login Link -->
+                <div class="auth-divider">
+                    <span>Already have an account?</span>
+                </div>
+
+                <a th:href="@{/login}" class="secondary-button">
+                    Sign In
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
 
 </body>
 </html>
