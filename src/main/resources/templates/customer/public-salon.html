@@ -19,7 +19,7 @@
     <div class="two-column">
         <section class="panel">
             <h2>Our services</h2>
-            <p class="muted">One-hour appointments · Prices in CAD</p>
+            <p class="muted">One-hour appointments. Prices in CAD</p>
             <p th:if="${salon.services.isEmpty()}">No services are available yet.</p>
 
             <div class="saved-day" th:each="item : ${salon.services}">
@@ -29,14 +29,13 @@
                 </div>
 
                 <!-- Customer can select a service to book. -->
-                <a th:href="@{/customer/booking(service=${item.id}, salon=${salon.slug})}">Book this service</a>
+                <a th:href="@{/customer/booking(service=${item.id}, salon=${salon.slug})}"><button type="button">Book this service</button></a>
             </div>
         </section>
 
         <section class="panel">
             <h2>Opening hours</h2>
-            <p class="muted">Vancouver time · Repeats weekly</p>
-
+            <p class="muted">Opening hours are in Vancouver time (PDT)</p>
             <p th:unless="${salon.hoursConfigured}">Opening hours have not been set yet</p>
 
             <div class="saved-day" th:each="day : ${salon.openingHours}">

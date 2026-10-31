@@ -8,10 +8,11 @@
     <h1>My Appointments</h1>
 
     <div th:each="appointment : ${appointments}">
+        <p>Salon: <span th:text="${salonNames[appointment.id]}"></span></p>
         <p>Service:<span th:text="${appointment.serviceName}"></span></p>
         <p>Date:<span th:text="${appointment.appointmentDate}"></span></p>
         <p>Time:<span th:text="${appointment.appointmentTime}"></span></p>
-        <a th:href="@{/customer/appointments/details(id=${appointment.id})}">View Details</a>
+        <a th:href="@{/customer/appointments/details(id=${appointment.id})}"><button type="button">View Details</button></a>
     
         <form th:action="@{/customer/appointments/cancel}" method="post" onsubmit="return confirm('Are you sure you want to cancel this appointment?');">
             <input type="hidden" name="id" th:value="${appointment.id}">
@@ -22,6 +23,6 @@
     <!--if no appointments-->
     <p th:if="${#lists.isEmpty(appointments)}"> You currently have no appointments</p>
 
-    <a th:href="@{/customer/dashboard}">Back to Home</a>
+    <a th:href="@{/customer/dashboard}"><button type="button">Back to Home</button></a>
 </body>
 </html>

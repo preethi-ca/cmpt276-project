@@ -15,14 +15,22 @@ import com.cmpt276.project.model.Account;
 import com.cmpt276.project.model.Appointment;
 import com.cmpt276.project.repository.AccountRepository;
 import com.cmpt276.project.repository.AppointmentRepository;
+import com.cmpt276.project.owner.model.Salon;
+import com.cmpt276.project.owner.model.SalonService;
+import com.cmpt276.project.owner.service.OwnerService;
+import java.util.HashMap; 
+import java.util.List;
+import java.util.Map;
 
 @Controller
 public class AppointmentController {
     private final AppointmentRepository appointmentRepository;
     private final AccountRepository accountRepository;
-    public AppointmentController(AppointmentRepository appointmentRepository,AccountRepository accountRepository){
+    private final OwnerService ownerService;
+    public AppointmentController(AppointmentRepository appointmentRepository,AccountRepository accountRepository, OwnerService ownerService){
         this.appointmentRepository = appointmentRepository;
         this.accountRepository = accountRepository;
+        this.ownerService = ownerService;
     }
 
     //show all appointments the customer has
@@ -35,6 +43,13 @@ public class AppointmentController {
             throw new IllegalArgumentException("Customer account not found");
         }
         Account customer = customerOpt.get();
+        List<Appointment> appointments = appointmentRepository.findByCustomer(customer);
+        Map<Integer, String> salonNames = new HashMap<>();
+        for (Appointment appointment : appointments){ 
+            Salon salon = ownerService.findPublicSalon(appointment.getSalonId()); 
+            salonNames.put(appointment.getId(), salon.getName());
+        }
+        model.addAttribute("salonNames", salonNames);
         model.addAttribute("appointments", appointmentRepository.findByCustomer(customer));
         return "customer/my-appointments";
     }
@@ -57,7 +72,17 @@ public class AppointmentController {
         if (appointment.getCustomer().getId() != customer.getId()) {
             throw new IllegalArgumentException("You cannot view this appointment");
         }
+        Salon salon = ownerService.findPublicSalon(appointment.getSalonId());
+        SalonService bookedService = null;
+        for (SalonService service : salon.getServices()) { 
+            if (service.getId().equals(appointment.getServiceId())){ 
+                bookedService = service; 
+                break;
+            } 
+        }
         model.addAttribute("appointment", appointment);
+        model.addAttribute("salon", salon);
+        model.addAttribute("bookedService", bookedService);
         return "customer/appointment-details";
     }
 

@@ -83,6 +83,7 @@ public class BookingController {
         model.addAttribute("serviceName", selectedService.getName());
         model.addAttribute("appointmentDate", appointmentDate);
         model.addAttribute("appointmentTime", appointmentTime);
+        model.addAttribute("bookedService", selectedService);
         return "customer/booking-summary";
     }
 
@@ -103,6 +104,7 @@ public class BookingController {
             model.addAttribute("serviceName", selectedService.getName());
             model.addAttribute("appointmentDate", appointmentDate);
             model.addAttribute("availableTimes", availableTimes);
+            model.addAttribute("bookedService", selectedService);
             return "customer/select-time";
         }
         Salon selectedSalon = ownerService.findPublicSalonBySlug(salon);
@@ -113,6 +115,7 @@ public class BookingController {
         model.addAttribute("serviceName", selectedService.getName());
         model.addAttribute("appointmentDate", appointmentDate);
         model.addAttribute("appointmentTime", appointmentTime);
+        model.addAttribute("bookedService", selectedService);
         return "customer/booking-confirmation";
     }
 

@@ -24,27 +24,15 @@
         <input type="hidden" name="salon" th:value="${salon}">
         <input type="hidden" name="appointmentDate" th:value="${appointmentDate}">
 
-        <!-- CHANGED: Generate radio buttons using the available times from BookingService. -->
         <div th:each="time, status : ${availableTimes}">
-
-            <!-- CHANGED: Use the generated appointment time as the radio button value. -->
-            <input type="radio"
-                   th:id="'time' + ${status.index}"
-                   name="appointmentTime"
-                   th:value="${time}"
-                   required>
-
-            <!-- CHANGED: Display the generated appointment time. -->
-            <label th:for="'time' + ${status.index}"
-                   th:text="${time}"></label>
-
+            <input type="radio" th:id="'time' + ${status.index}" name="appointmentTime" th:value="${time}" required>
+            <label th:for="'time' + ${status.index}" th:text="${time}"></label>
             <br><br>
         </div>
 
         <button type="submit">Continue</button>
     </form>
 
-
-    <a th:href="@{/customer/booking(service=${service}, salon=${salon})}">Back to Date Selection</a>
+    <a th:href="@{/customer/booking(service=${service}, salon=${salon})}"><button type="button">Back to Date Selection</button></a>
 </body>
 </html>

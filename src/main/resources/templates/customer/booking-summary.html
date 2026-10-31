@@ -13,10 +13,12 @@
     <p>Please check your appointment details are correct before continuing</p>
 
     <!-- show the booking information summary-->
-    <h3>Salon: <span th:text="${salonName}"></span></h3>
-    <h3>Selected Service: <span th:text="${serviceName}"></span></h3>
-    <h3>Appointment Date: <span th:text="${appointmentDate}"></span></h3>
-    <h3>Appointment Time: <span th:text="${appointmentTime}"></span></h3>
+    <h3>Appointment Details:</h3>
+    <p>Salon: <span th:text="${salonName}"></span></p>
+    <p>Selected Service: <span th:text="${serviceName}"></span></p>
+    <p>Appointment Date: <span th:text="${appointmentDate}"></span></p>
+    <p>Appointment Time: <span th:text="${appointmentTime}"></span></p>
+    <p>Price: $<span th:text="${bookedService.price}"></span></p>
     
     <!-- Form that sends the booking details to the controller -->
     <form th:action="@{/customer/booking/confirm}" method="post">
@@ -28,6 +30,6 @@
         <button type="submit">Confirm Booking</button>
     </form>
 
-    <a th:href="@{/customer/dashboard}">Back to Home</a>
+    <a th:href="@{/customer/dashboard}"><button type="button">Back to Hom</button></a>
 </body>
 </html>
