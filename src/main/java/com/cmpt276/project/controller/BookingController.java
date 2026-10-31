@@ -19,7 +19,7 @@ public class BookingController {
     // Show the date selection page
     @GetMapping("/customer/booking")
     public String showBookingPage(@RequestParam String service, Model model) {model.addAttribute("service", service);
-        return "select-date";
+        return "customer/select-date";
     }
 
     // Show the time selection page
@@ -27,7 +27,7 @@ public class BookingController {
     public String showTimePage(@RequestParam String service, @RequestParam String appointmentDate, Model model) {
         model.addAttribute("service", service);
         model.addAttribute("appointmentDate", appointmentDate);
-        return "select-time";
+        return "customer/select-time";
     }
 
     // Show the booking summary page
@@ -36,7 +36,7 @@ public class BookingController {
         model.addAttribute("service", service);
         model.addAttribute("appointmentDate", appointmentDate);
         model.addAttribute("appointmentTime", appointmentTime);
-        return "booking-summary";
+        return "customer/booking-summary";
     }
 
      //Save the appointment and links it to the customer after clicking confirm
@@ -47,6 +47,6 @@ public class BookingController {
         model.addAttribute("service", service);
         model.addAttribute("appointmentDate", appointmentDate);
         model.addAttribute("appointmentTime", appointmentTime);
-        return "booking-confirmation";
+        return "customer/booking-confirmation";
     }
 }

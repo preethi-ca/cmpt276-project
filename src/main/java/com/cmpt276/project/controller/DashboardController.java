@@ -29,7 +29,7 @@ public class DashboardController {
 
     @GetMapping("/customer/dashboard")
     public String customerDashboard() {
-        return "customer-dashboard";
+        return "customer/customer-dashboard";
     }
 
     /** Guest-readable salon data for booking integration; excludes the owner's account identity. */

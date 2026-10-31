@@ -36,7 +36,7 @@ public class AppointmentController {
         }
         Account customer = customerOpt.get();
         model.addAttribute("appointments", appointmentRepository.findByCustomer(customer));
-        return "my-appointments";
+        return "customer/my-appointments";
     }
 
     // Show the details of one appointment
@@ -58,7 +58,7 @@ public class AppointmentController {
             throw new IllegalArgumentException("You cannot view this appointment");
         }
         model.addAttribute("appointment", appointment);
-        return "appointment-details";
+        return "customer/appointment-details";
     }
 
 
