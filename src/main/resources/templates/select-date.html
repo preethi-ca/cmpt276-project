@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>BookEasy - Select Date</title>
+</head>
+
+<body>
+    <h1>Book Your Appointment</h1>
+
+    <!-- Display the service selected by the customer -->
+    <h3>Selected Service: <span th:text="${service}"></span></h3>
+
+    <!-- Send the selected service and date to the next page -->
+    <form th:action="@{/customer/booking/time}" method="get">
+        <input type="hidden" name="service" th:value="${service}">
+
+        <label for="appointmentDate">Select a date:</label>
+        <input type="date"
+            id="appointmentDate"
+            name="appointmentDate"
+            required>
+        <br><br>
+
+        <button type="submit">Continue</button>
+    </form>
+
+    <a th:href="@{/customer/dashboard}">Back to Services</a>
+</body>
+</html>

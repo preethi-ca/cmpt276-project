@@ -1,0 +1,24 @@
+
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Appointment Details</title>
+</head>
+<body>
+    <h1>Appointment Details</h1>
+    <h3>Customer Information</h3>
+    <p>Customer Name: <span th:text="${appointment.customer.name}"></span></p>
+    <!-- wait for Preethi's part-->
+    <p>Phone Number: To be connected to customer account</p>
+
+    <h3>Appointment Information</h3>
+    <p>Service: <span th:text="${appointment.serviceName}"></span></p>
+    <p>Date: <span th:text="${appointment.appointmentDate}"></span></p>
+    <p>Time: <span th:text="${appointment.appointmentTime}"></span></p>
+    <!-- wait for Edwin's part-->
+    <p>Price: To be connected to service information</p>
+     
+
+    <a th:href="@{/customer/appointments}">Back to My Appointments</a>
+</body>
+</html>

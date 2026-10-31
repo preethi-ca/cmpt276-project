@@ -11,48 +11,49 @@
 <body>
     <h1>Welcome to BookEasy!</h1>
     <h2>Customer Dashboard</h2>
-    <p>You have successfully logged in as a customer.</p>
-    <p>Find and book your next salon appointment</p>
 
     <!-- link to customer's appointments -->
-    <p>
-        <a th:href="@{/customer/appointments}">My Appointments</a>
-    </p>
-     <!-- Section displaying available salon services -->
+    <p><a th:href="@{/customer/appointments}">View My Appointments</a></p>
+  
     <h2>Available Salon Services</h2>
-    <p>Choose a service to get started.</p>
 
 
 <!--note the following are temorarly hard coded because I don't have Edwin's part yet-->
-    <hr>
 <!-- ***First sample service -->
     <div>
         <h3>Haircut</h3>
         <p>Price: $35.00</p>
         <p>Duration: 60 minutes</p>
-        <!-- Selection will be connected later -->
-        <button type="button" disabled>Select Service</button>
+
+        <!-- Service selection button-->
+        <a th:href="@{/customer/booking(service='Haircut')}">
+        <button type="button">Select Service</button>
+        </a>
     </div>
-    <hr>
 
 <!-- ***Second sample service -->
     <div>
-        <h3>Hair Coloring</h3>
+        <h3>Hair Colouring</h3>
         <p>Price: $80.00</p>
         <p>Duration: 60 minutes</p>
-        <!-- Selection will be connected later -->
-        <button type="button" disabled>Select Service</button>
+
+        <!-- Service selection button-->
+        <a th:href="@{/customer/booking(service='Hair Colouring')}">
+        <button type="button">Select Service</button>
+        </a>
     </div>
-    <hr>
+
 <!-- ***Third sample service -->
     <div>
         <h3>Manicure</h3>
         <p>Price: $30.00</p>
         <p>Duration: 60 minutes</p>
-        <!-- Selection will be connected later -->
-        <button type="button" disabled>Select Service</button>
+
+        <!-- Service selection button-->
+        <a th:href="@{/customer/booking(service='Manicure')}">
+        <button type="button">Select Service</button>
+        </a>
     </div>
-    <hr>
 
 
     <form th:action="@{/logout}" method="post">

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>BookEasy - Select Time</title>
+</head>
+
+<body>
+    <h1>Choose Your Appointment Time</h1>
+    <h3>Selected Service: <span th:text="${service}"></span></h3>
+    <h3>Selected Date: <span th:text="${appointmentDate}"></span></h3>
+
+    <!-- Available times will be connected to Edwin's code later -->
+    <h2>Available Appointment Times</h2>
+
+    <form th:action="@{/customer/booking/confirmation}" method="get">
+        <input type="hidden" name="service" th:value="${service}">
+        <input type="hidden" name="appointmentDate" th:value="${appointmentDate}">
+
+        <!-- Temporary sample appointment times. until Edwin's part-->
+        <input type="radio" id="time1" name="appointmentTime" value="9:00 AM" required>
+        <label for="time1">9:00 AM</label>
+        <br><br>
+
+        <input type="radio" id="time2" name="appointmentTime" value="10:00 AM">
+        <label for="time2">10:00 AM</label>
+        <br><br>
+
+        <input type="radio" id="time3" name="appointmentTime" value="11:00 AM">
+        <label for="time3">11:00 AM</label>
+        <br><br>
+
+        <input type="radio" id="time4" name="appointmentTime" value="1:00 PM">
+        <label for="time4">1:00 PM</label>
+        <br><br>
+
+        <input type="radio" id="time5" name="appointmentTime" value="2:00 PM">
+        <label for="time5">2:00 PM</label>
+        <br><br>
+
+        <input type="radio" id="time6" name="appointmentTime" value="3:00 PM">
+        <label for="time6">3:00 PM</label>
+        <br><br>
+
+        <button type="submit">Continue</button>
+    </form>
+
+
+    <a th:href="@{/customer/booking(service=${service})}">Back to Date Selection</a>
+</body>
+</html>
