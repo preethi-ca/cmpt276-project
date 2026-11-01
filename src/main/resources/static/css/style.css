@@ -217,6 +217,29 @@ body {
     }
 }
 
+/* Customer Salon Booking Page */
+body {
+    background-color: #fafaf5;
+}
+
+.navbar-brand {
+    color: #294b3b;
+}
+
+.card {
+    border-radius: 12px;
+}
+
+.btn-success {
+    background-color: #294b3b;
+    border-color: #294b3b;
+}
+
+.btn-success:hover {
+    background-color: #243c2d;
+    border-color: #243c2d;
+}
+
 /* Shared authentication enhancements; keep the existing layout and palette. */
 .field-error { color: #a12121; font-size: 14px; }
 .form-group [aria-invalid="true"] { border-color: #a12121; }
