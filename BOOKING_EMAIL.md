@@ -61,9 +61,9 @@ Brevo's free plan allows 300 emails a day without a credit card. [Free plan](htt
 
 Mailjet is only a fallback and has not been implemented. It also needs a verified sender and may limit new accounts. [Mailjet API](https://dev.mailjet.com/docs/email-api/send-api-v31/send-basic-email), [account limits](https://documentation.mailjet.com/hc/en-us/articles/360042624754-Blocked-or-Limited-Account-Reasons-and-How-to-Restore-Full-Functionality)
 
-Email is off by default. The four settings are:
+For live email delivery, configure these four settings:
 
-- `BOOKEASY_EMAIL_ENABLED`: defaults to `false`. Set to `true` to enable delivery.
+- `BOOKEASY_EMAIL_ENABLED`: set to `true` to enable delivery.
 - `BOOKEASY_EMAIL_API_KEY`: required private Brevo key.
 - `BOOKEASY_EMAIL_SENDER_EMAIL`: required verified sender mailbox.
 - `BOOKEASY_EMAIL_SENDER_NAME`: defaults to `BookEasy`.
@@ -74,22 +74,52 @@ Sending allows five seconds to connect and ten seconds for the full response, wi
 
 HTTP 201 with a message ID means `ACCEPTED`; a clear refusal means `REJECTED`. Timeouts, connection problems, server errors or unclear responses mean `UNCERTAIN`, since Brevo may have accepted the message. Credentials and internal provider errors are not shown or logged.
 
-For local setup, `env.local` holds these settings in Java properties format, without `export` or shell quotes. Git ignores the file:
+## Local setup
+
+Use JDK 21, which was used for verification. From the repository root, stop the running app and build the branch:
+
+```sh
+git fetch origin
+git switch feature/booking-confirmation-email
+git pull --ff-only
+./mvnw clean package
+```
+
+The build includes the tests. Email tests use fake credentials, so they do not need the Brevo key. Booking and email sending run in the same app.
+
+Create `env.local` beside `pom.xml` in Java properties format:
 
 ```properties
-BOOKEASY_EMAIL_ENABLED=false
+BOOKEASY_EMAIL_ENABLED=true
 BOOKEASY_EMAIL_API_KEY=replace-with-your-private-key
 BOOKEASY_EMAIL_SENDER_EMAIL=replace-with-your-verified-mailbox
 BOOKEASY_EMAIL_SENDER_NAME=BookEasy
 ```
 
-Spring does not load this file automatically. From the repository root, it can be loaded with:
+Ask me privately for the existing restricted Brevo key and verified sender address. Use those values in your local file; no new Brevo account is needed.
+
+Start the built jar with the settings imported explicitly, since Spring does not load `env.local` automatically:
 
 ```sh
-SPRING_CONFIG_IMPORT='optional:file:./env.local[.properties]' ./mvnw spring-boot:run
+SPRING_CONFIG_IMPORT='optional:file:./env.local[.properties]' \
+java -jar target/cmpt276-project-0.0.1-SNAPSHOT.jar
 ```
 
-The key stays private. Render uses environment settings rather than an uploaded `env.local`. [Spring external configuration](https://docs.spring.io/spring-boot/reference/features/external-config.html)
+The app runs at `http://localhost:8080`. Restart after changing the settings. The current demo data resets on restart, so recreate the salon, service, opening hours and test accounts as needed. [Spring external configuration](https://docs.spring.io/spring-boot/reference/features/external-config.html)
+
+## Quick check
+
+1. Book an available slot as a customer whose registered email you can check. Use the salon's public slug, for example `http://localhost:8080/salons/cs-salon`.
+2. Check for **Booking Confirmed!** and **Confirmation email submitted for delivery.** Compare My Appointments and the received email with the booking details.
+3. Viewing the appointment should not resend the email. Booking the same occupied slot again should be rejected without another appointment or email.
+
+Delivery can lag behind acceptance; one local test took about a minute. If email is unavailable, check the imported settings. The booking remains saved if sending fails.
+
+## Render setup
+
+After integration, add the same four settings to the Render service's private environment settings, keeping `BOOKEASY_EMAIL_ENABLED=true`. Use the key and verified sender address there, rather than uploading `env.local`.
+
+Rebuild and redeploy the integrated branch, then verify a booking, My Appointments and inbox delivery on the Render URL. This deployed check is still pending.
 
 ## Tests and walkthrough
 
