@@ -11,6 +11,11 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+
 @SpringBootTest
 @AutoConfigureMockMvc
 class AuthControllerTests {
@@ -34,5 +39,31 @@ class AuthControllerTests {
                 .andExpect(status().isOk())
                 .andExpect(view().name("register"))
                 .andExpect(model().attributeExists("registrationForm"));
+    }
+
+    @Test
+    void shouldRegisterAccountSuccessfully() throws Exception {
+        when(accountService.register(any(), any())).thenReturn(true);
+
+        mockMvc.perform(post("/register").with(csrf())
+                .param("name", "Test User")
+                .param("email", "test@example.com")
+                .param("password", "password123")
+                .param("roleType", "CUSTOMER"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/login?registered"));
+    }
+
+    @Test
+    void shouldReturnToRegisterPageWhenRegistrationFails() throws Exception {
+        when(accountService.register(any(), any())).thenReturn(false);
+
+        mockMvc.perform(post("/register").with(csrf())
+                .param("name", "Test User")
+                .param("email", "test@example.com")
+                .param("password", "password123")
+                .param("roleType", "CUSTOMER"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("register"));
     }
 }
