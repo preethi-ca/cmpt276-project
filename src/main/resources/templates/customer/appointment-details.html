@@ -1,0 +1,25 @@
+
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Appointment Details</title>
+</head>
+<body>
+    <h1>Appointment Details</h1>
+    <h3>Customer Information</h3>
+    <p>Customer Name: <span th:text="${appointment.customer.name}"></span></p>
+    <p>Email: <span th:text="${appointment.customer.email}"></span></p>
+    <!-- wait for Preethi's part-->
+    <p>Phone Number: To be connected to customer account</p>
+
+    <h3>Booking Summary</h3>
+    <p><span th:text="${salon.name}"></span></p>
+    <p>Address: <span th:text="${salon.address}"></span></p>
+    <p>Service: <span th:text="${appointment.serviceName}"></span></p>
+    <p>Date: <span th:text="${appointment.appointmentDate}"></span></p>
+    <p>Time: <span th:text="${appointment.appointmentTime}"></span></p>
+    <p>Price: $<span th:text="${bookedService.price}"></span></p>
+
+    <a th:href="@{/customer/appointments}"><button type="button">Back to My Appointments</button></a>
+</body>
+</html>

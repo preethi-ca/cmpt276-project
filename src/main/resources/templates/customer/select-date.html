@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>BookEasy - Select Date</title>
+</head>
+
+<body>
+    <h1>Book Your Appointment</h1>
+    <p th:if="${error}" th:text="${error}" style="color: red;"></p>
+    <!-- Display the service selected by the customer -->
+    <h3>Selected Service: <span th:text="${serviceName}"></span></h3>
+
+    <!-- Send the selected service and date to the next page -->
+    <form th:action="@{/customer/booking/time}" method="get">
+        <input type="hidden" name="service" th:value="${service}">
+        <input type="hidden" name="salon" th:value="${salon}">
+
+        <label for="appointmentDate">Select a date:</label>
+        <input type="date" id="appointmentDate" name="appointmentDate" required>
+        <br><br>
+
+        <button type="submit">Continue</button>
+    </form>
+
+    <h3>Salon Opening Hours</h3> 
+    <!--Display each day using the salon's saved opening hours -->
+    <div th:each="day : ${openingHours}">
+        <p> 
+            <strong th:text="${days[day.dayOfWeek - 1]}"></strong>: 
+            <span th:if="${day.open}" th:text="${day.startTime + ' - ' + day.endTime}"></span>
+            <span th:unless="${day.open}">Closed</span> 
+        </p> 
+    </div>
+
+    <a th:href="@{/customer/dashboard}"><button type="button">Back to Services</button></a>
+</body>
+</html>

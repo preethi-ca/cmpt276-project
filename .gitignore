@@ -34,3 +34,12 @@ cmpt276-project-backup/
 
 # VS Code local settings
 .vscode/
+
+# Local IDE, caches, browser reports and credentials
+.idea/
+*.iml
+.maven-cache/
+test-output/
+.env
+.env.*
+!.env.example

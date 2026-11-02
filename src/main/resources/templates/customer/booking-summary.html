@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>BookEasy - Booking Summary</title>
+</head>
+
+<body>
+    <h1>Review Your Booking</h1>
+    <p>Please check your appointment details are correct before continuing</p>
+
+    <!-- show the booking information summary-->
+    <h3>Appointment Details:</h3>
+    <p>Salon: <span th:text="${salonName}"></span></p>
+    <p>Selected Service: <span th:text="${serviceName}"></span></p>
+    <p>Appointment Date: <span th:text="${appointmentDate}"></span></p>
+    <p>Appointment Time: <span th:text="${appointmentTime}"></span></p>
+    <p>Price: $<span th:text="${bookedService.price}"></span></p>
+    
+    <!-- Form that sends the booking details to the controller -->
+    <form th:action="@{/customer/booking/confirm}" method="post">
+        <input type="hidden" name="service" th:value="${service}">
+        <input type="hidden" name="salon" th:value="${salon}">
+        <input type="hidden" name="appointmentDate" th:value="${appointmentDate}">
+        <input type="hidden" name="appointmentTime" th:value="${appointmentTime}">
+
+        <button type="submit">Confirm Booking</button>
+    </form>
+
+    <a th:href="@{/customer/dashboard}"><button type="button">Back to Hom</button></a>
+</body>
+</html>

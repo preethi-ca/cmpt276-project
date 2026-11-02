@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{owner/fragments :: head(${customerDashboard == true ? 'Customer dashboard' : 'BookEasy accounts'})}"></head>
+<body>
+<header th:replace="~{owner/fragments :: header}"></header>
+<div th:if="${demo}" th:insert="~{owner/fragments :: demo}"></div>
+<main class="landing">
+  <section th:if="${customerDashboard == true}">
+    <h1>Customer dashboard</h1>
+    <p>You are signed in as a customer.</p>
+    <p>Appointment booking will be available when the booking module is connected.</p>
+  </section>
+  <section th:unless="${customerDashboard == true}">
+    <h1>BookEasy</h1>
+    <p>Create your salon, add services and set weekly opening hours.</p>
+    <p><a th:href="@{/owner}">Open owner workspace</a></p>
+    <p><a th:href="@{/login}">Sign in</a> · <a th:href="@{/register}">Create an account</a></p>
+  </section>
+</main>
+</body>
+</html>

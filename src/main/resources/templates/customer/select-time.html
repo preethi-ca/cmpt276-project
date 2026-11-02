@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>BookEasy - Select Time</title>
+</head>
+
+<body>
+    <h1>Choose Your Appointment Time</h1>
+    <h3>Selected Service: <span th:text="${serviceName}"></span></h3>
+    <h3>Selected Date: <span th:text="${appointmentDate}"></span></h3>
+
+    <h2>Available Appointment Times</h2>
+    <p th:if="${error}" th:text="${error}" style="color: red;"></p>
+    <p th:if="${#lists.isEmpty(availableTimes)}">Sorry, there are no available appointment times for this date</p>
+    <form th:unless="${#lists.isEmpty(availableTimes)}"
+          th:action="@{/customer/booking/confirmation}"
+          method="get">
+
+        <input type="hidden" name="service" th:value="${service}">
+        <input type="hidden" name="salon" th:value="${salon}">
+        <input type="hidden" name="appointmentDate" th:value="${appointmentDate}">
+
+        <div th:each="time, status : ${availableTimes}">
+            <input type="radio" th:id="'time' + ${status.index}" name="appointmentTime" th:value="${time}" required>
+            <label th:for="'time' + ${status.index}" th:text="${time}"></label>
+            <br><br>
+        </div>
+
+        <button type="submit">Continue</button>
+    </form>
+
+    <a th:href="@{/customer/booking(service=${service}, salon=${salon})}"><button type="button">Back to Date Selection</button></a>
+</body>
+</html>

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{owner/fragments :: head(${title})}"></head>
+<body class="owner-app">
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="app-layout">
+  <aside class="sidebar">
+    <a class="brand" th:href="@{/owner}">BookEasy</a>
+    <p class="sidebar-role">Salon Owner</p>
+    <nav aria-label="Owner navigation" th:if="${salon != null}">
+      <a th:href="@{/owner/dashboard}" th:attr="aria-current=${section == 'dashboard' ? 'page' : null}">Dashboard</a>
+      <button type="button" disabled aria-describedby="appointments-help">Appointments <small>Coming later</small></button>
+      <a th:href="@{/owner/services}" th:attr="aria-current=${section == 'services' or section == 'add-service' ? 'page' : null}">Services</a>
+      <a th:href="@{/owner/hours}" th:attr="aria-current=${section == 'hours' ? 'page' : null}">Availability</a>
+      <a th:href="@{/owner/profile}" th:attr="aria-current=${section == 'profile' ? 'page' : null}">Salon Settings</a>
+    </nav>
+    <p id="appointments-help" class="sidebar-note" th:if="${salon != null}">Appointment management is not available yet.</p>
+    <div class="sidebar-salon" th:if="${salon != null}">
+      <span class="eyebrow">Your salon</span>
+      <strong th:text="${salon.name}"></strong>
+      <span class="muted" th:text="${salon.address}"></span>
+      <a th:href="@{${salonUrl}}" th:text="${demo ? 'Preview salon' : 'View salon page'}"></a>
+    </div>
+  </aside>
+  <div class="workspace-shell">
+    <header class="workspace-header">
+      <p class="breadcrumb"><span th:text="${salon != null ? salon.name : 'Your salon'}"></span><span aria-hidden="true"> / </span><span th:text="${title}"></span></p>
+      <div class="owner-account"><span>Salon Owner</span>
+        <!--/* th:action 自动加入 CSRF token；不硬编码原型中的示例账号姓名。 */-->
+        <form th:action="@{/logout}" method="post" novalidate data-submit-guard><button type="submit" class="text-button">Sign out</button></form>
+      </div>
+    </header>
+    <div th:if="${demo}" th:insert="~{owner/fragments :: demo}"></div>
+    <main id="main" class="workspace">
+      <div class="page-heading">
+        <h1 th:text="${title}"></h1>
+        <a th:if="${section == 'services'}" class="button primary" th:href="@{/owner/services(view='add')}"><span aria-hidden="true">＋ </span>Add Service</a>
+        <button th:if="${section == 'profile'}" type="submit" form="salon-form" class="button primary">Save Changes</button>
+        <button th:if="${section == 'hours' and !salon.hoursConfigured}" type="submit" form="hours-form" class="button primary">Save Availability</button>
+      </div>
+      <div th:if="${success}" class="notice success" role="status" th:text="${success}"></div>
+
+      <section th:if="${section == 'dashboard'}" class="panel" aria-label="Salon overview">
+        <h2 th:text="${salon.name}"></h2>
+        <p>Appointment duration: 60 minutes.</p>
+        <ul class="overview-links">
+          <li><a th:href="@{/owner/profile}">Edit salon profile</a></li>
+          <li><a th:href="@{/owner/services}">Manage services</a> — <span th:text="${salon.services.size()} + ' services'"></span></li>
+          <li><a th:href="@{/owner/hours}">Opening hours</a> — <span th:text="${salon.hoursConfigured ? 'Saved' : 'Not set'}"></span></li>
+        </ul>
+        <p class="notice info">Appointment management and booking statistics are not available yet.</p>
+      </section>
+
+      <section th:if="${section == 'setup' or section == 'profile'}" class="profile-layout">
+        <form id="salon-form" class="panel profile-form" method="post" novalidate data-dirty-guard th:action="${section == 'setup'} ? @{/owner/setup} : @{/owner/profile}" th:object="${salonForm}">
+          <h2>Salon Information</h2>
+          <p class="muted">The details customers see on your salon page.</p>
+          <div th:replace="~{owner/fragments :: summary}"></div>
+          <div th:replace="~{owner/fragments :: field('Salon name *', 'name', 'text', 'Required · up to 80 characters')}"></div>
+          <div th:replace="~{owner/fragments :: field(${section == 'setup' ? 'Salon address' : 'Street address'}, 'address', 'text', 'Optional · include your full address, city and province · up to 200 characters')}"></div>
+          <div th:if="${section == 'profile'}" class="unavailable-fields">
+            <p id="unavailable-profile-fields" class="field-help">City, province, phone and email are not available to save yet. Include city and province in Street address for now.</p>
+            <div class="form-grid">
+              <div class="field"><label for="city">City</label><input id="city" type="text" disabled placeholder="Not available yet" aria-describedby="unavailable-profile-fields"></div>
+              <div class="field"><label for="province">Province</label><input id="province" type="text" disabled placeholder="Not available yet" aria-describedby="unavailable-profile-fields"></div>
+              <div class="field"><label for="phone">Phone number</label><input id="phone" type="tel" disabled placeholder="Not available yet" aria-describedby="unavailable-profile-fields"></div>
+              <div class="field"><label for="email">Email</label><input id="email" type="email" disabled placeholder="Not available yet" aria-describedby="unavailable-profile-fields"></div>
+            </div>
+          </div>
+          <div class="field"><label for="description">About your salon</label><textarea id="description" th:field="*{description}" rows="4" maxlength="500" class="resize-none" th:attr="aria-invalid=${#fields.hasErrors('description')}" aria-describedby="description-hint description-error"></textarea><small id="description-hint">Optional · up to 500 characters</small><p id="description-error" class="field-error" th:errors="*{description}"></p></div>
+          <div class="actions"><button th:if="${section == 'setup'}" class="button primary" type="submit">Create salon</button><a th:if="${section == 'profile'}" th:href="@{/owner/dashboard}">Back to dashboard</a></div>
+        </form>
+      </section>
+
+      <section th:if="${section == 'services'}" class="services-layout" aria-label="Service menu">
+        <p class="section-description">Your service menu and prices. Every appointment lasts one hour.</p>
+        <div class="service-list">
+          <div th:if="${salon.services.isEmpty()}" class="empty-state"><h2>No services yet.</h2><p>Choose Add Service to create your first service and price.</p></div>
+          <div th:unless="${salon.services.isEmpty()}" class="table-scroll">
+            <table class="service-table">
+              <caption class="sr-only">Salon services and prices in Canadian dollars</caption>
+              <thead><tr><th scope="col">Service</th><th scope="col">Price (CAD)</th><th scope="col">Actions</th></tr></thead>
+              <tbody><tr th:each="item : ${servicePage}">
+                <td class="service-name" th:text="${item.name}"></td><td class="price" th:text="'$' + ${item.price}"></td>
+                <td class="service-actions"><button type="button" disabled aria-describedby="service-actions-help">Edit</button><button type="button" disabled aria-describedby="service-actions-help">Delete</button></td>
+              </tr></tbody>
+            </table>
+          </div>
+          <p id="service-actions-help" class="field-help">Editing and deleting services are not available yet. You can add a new service.</p>
+          <nav class="pagination" aria-label="Service pages" th:if="${totalPages > 1}"><a th:if="${currentPage > 1}" th:href="@{/owner/services(page=${currentPage - 1})}">Previous</a><span th:text="'Page ' + ${currentPage} + ' of ' + ${totalPages}"></span><a th:if="${currentPage < totalPages}" th:href="@{/owner/services(page=${currentPage + 1})}">Next</a></nav>
+        </div>
+      </section>
+
+      <section th:if="${section == 'add-service'}" class="add-service-layout">
+        <a class="back-link" th:href="@{/owner/services}"><span aria-hidden="true">← </span>Back to Services</a>
+        <form class="panel service-form" th:action="@{/owner/services}" method="post" th:object="${serviceForm}" novalidate data-dirty-guard>
+          <h2>Service Details</h2><p class="muted">Each appointment reserves one hour.</p>
+          <div th:replace="~{owner/fragments :: summary}"></div>
+          <div th:replace="~{owner/fragments :: field('Service name *', 'name', 'text', 'For example, Haircut · up to 80 characters')}"></div>
+          <div class="field"><label for="price">Price (CAD) *</label><input id="price" type="text" inputmode="decimal" th:field="*{price}" th:attr="aria-invalid=${#fields.hasErrors('price')}" aria-describedby="price-hint price-error"><small id="price-hint">For example, 35.00</small><p id="price-error" class="field-error" th:errors="*{price}"></p></div>
+          <div class="field"><label for="service-description">Description</label><textarea id="service-description" rows="4" class="resize-none" disabled placeholder="Not available yet" aria-describedby="service-description-help"></textarea><small id="service-description-help">Service descriptions are not available to save yet.</small></div>
+          <div class="actions"><button class="button primary" type="submit">Add Service</button><a th:href="@{/owner/services}">Cancel</a></div>
+        </form>
+      </section>
+
+      <section th:if="${section == 'hours'}" class="hours-layout">
+        <p class="section-description">Set the weekly opening hours for your salon.</p>
+        <div class="notice info">Vancouver time · One-hour appointments. Review before saving: hours cannot be changed in this version.</div>
+        <div class="panel saved-schedule" th:if="${salon.hoursConfigured}">
+          <div class="section-heading"><h2>Your saved schedule</h2><span class="badge">Repeats every week</span></div>
+          <div th:each="day : ${salon.openingHours}" class="saved-day"><strong th:text="${days[day.dayOfWeek - 1]}"></strong><span class="day-status" th:text="${day.open ? 'Open' : 'Closed'}"></span><span th:if="${day.open}" th:text="${day.startTime} + ' – ' + ${day.endTime}"></span></div>
+        </div>
+        <form id="hours-form" th:unless="${salon.hoursConfigured}" class="hours-form" th:action="@{/owner/hours}" method="post" th:object="${hoursForm}" novalidate data-dirty-guard>
+          <div th:replace="~{owner/fragments :: summary}"></div>
+          <div class="hours-columns" aria-hidden="true"><span>Day</span><span>Open</span><span>Hours</span></div>
+          <fieldset class="day-row" th:each="day, row : *{days}">
+            <legend class="sr-only" th:text="${days[row.index]}"></legend>
+            <span class="day-name" aria-hidden="true" th:text="${days[row.index]}"></span>
+            <label class="day-toggle"><input type="checkbox" th:field="*{days[__${row.index}__].open}"><span class="toggle-track" aria-hidden="true"></span><span class="sr-only" th:text="${days[row.index]} + ' open'"></span></label>
+            <div class="day-times">
+              <div class="field"><label th:for="'start-' + ${row.index}">Opens</label><input type="time" th:id="'start-' + ${row.index}" th:field="*{days[__${row.index}__].startTime}" th:attr="aria-invalid=${#fields.hasErrors('days[' + row.index + '].startTime')},aria-describedby=${'start-error-' + row.index}"><p class="field-error" th:id="'start-error-' + ${row.index}" th:errors="*{days[__${row.index}__].startTime}"></p></div>
+              <span class="time-divider" aria-hidden="true">to</span>
+              <div class="field"><label th:for="'end-' + ${row.index}">Closes</label><input type="time" th:id="'end-' + ${row.index}" th:field="*{days[__${row.index}__].endTime}" th:attr="aria-invalid=${#fields.hasErrors('days[' + row.index + '].endTime')},aria-describedby=${'end-error-' + row.index}"><p class="field-error" th:id="'end-error-' + ${row.index}" th:errors="*{days[__${row.index}__].endTime}"></p></div>
+            </div>
+            <span class="closed-label">Closed</span>
+          </fieldset>
+          <p class="muted">Unselected days stay closed. Overnight hours are not supported.</p>
+        </form>
+      </section>
+    </main>
+  </div>
+</div>
+<dialog th:replace="~{owner/fragments :: leaveDialog}"></dialog>
+</body>
+</html>

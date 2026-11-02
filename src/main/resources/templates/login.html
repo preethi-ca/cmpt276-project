@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" href="data:,">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - BookEasy</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <script th:src="@{/owner-assets/forms.js}" defer></script>
+</head>
+
+<body>
+
+    <div class="auth-container">
+
+        <!-- Left Side -->
+        <div class="auth-left">
+            <div class="brand">
+                <h1>BookEasy</h1>
+                <p>Your next salon visit, simply booked.</p>
+            </div>
+        </div>
+
+        <!-- Right Side -->
+        <div class="auth-right">
+
+            <div class="auth-form">
+
+                <a th:href="@{/}" class="back-link">← Back to Salon</a>
+
+                <h2>Welcome Back</h2>
+                <p class="subtitle">Sign in to manage your appointments or salon.</p>
+
+                <!-- Success and Error Messages -->
+                <p th:if="${param.registered}" class="success-message" role="status">
+                    Account created successfully! Please log in.
+                </p>
+
+                <p th:if="${param.error}" class="error-message" role="alert">
+                    Invalid email or password. Please try again.
+                </p>
+
+                <p th:if="${param.logout}" class="success-message" role="status">
+                    You have successfully logged out.
+                </p>
+
+                <!-- Login Form -->
+                <form th:action="@{/login}" method="post" novalidate data-submit-guard>
+
+                    <div class="form-group">
+                        <label for="username">Email</label>
+                        <input
+                            type="email"
+                            id="username"
+                            name="username"
+                            placeholder="Enter your email"
+                            autocomplete="username"
+                            required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            placeholder="Enter your password"
+                            autocomplete="current-password"
+                            required>
+                        <button type="button" class="password-toggle" data-password-toggle="password" aria-controls="password" aria-pressed="false">Show password</button>
+                    </div>
+
+                    <button type="submit" class="primary-button">
+                        Sign In
+                    </button>
+
+                </form>
+
+                <div class="auth-divider">
+                    <span>New to BookEasy?</span>
+                </div>
+
+                <a th:href="@{/register}" class="secondary-button">
+                    Create Account
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</body>
+</html>
