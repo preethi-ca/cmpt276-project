@@ -2,7 +2,7 @@
 
 Vaibhav Grover - November 1, 2026
 
-This is my plan for Iteration 1. Email sending is not built yet. The tests below are planned.
+The message builder and Brevo delivery service are built. Booking does not call the sender yet. The booking flow, real inbox delivery and Render still need testing.
 
 ## Scope
 
@@ -59,10 +59,46 @@ The confirmation page includes a My Appointments link. It must not show API keys
 
 ## Sending approach
 
-The plan is to use Brevo's transactional email API over HTTPS. It supports plain-text messages and uses an API key. Our Java backend can call this API. We will connect to one provider; Mailjet is only a backup option. [Brevo email API](https://developers.brevo.com/docs/send-a-transactional-email)
+The delivery service sends plain-text messages through Brevo's HTTPS API using an API key. It uses Java's HTTP client and the project's Jackson JSON library. No new dependency was added. [Brevo email API](https://developers.brevo.com/docs/send-a-transactional-email)
 
-Brevo's free plan includes 300 emails per day without a credit card. We can verify an individual sender email address, but the account still needs activation and may need help from support. If the sender's domain is not verified, Brevo may change the sender address customers see. [Free plan](https://help.brevo.com/hc/en-us/articles/208589409-About-Brevo-s-pricing-plans), [sender verification](https://help.brevo.com/hc/en-us/articles/208836149-Create-a-new-sender-From-name-and-From-email), [activation](https://help.brevo.com/hc/en-us/articles/115000188150-Troubleshooting-Issues-with-Brevo-SMTP), [sender changes](https://help.brevo.com/hc/en-us/articles/16045394674066-Troubleshooting-Domain-authentication)
+The Brevo account has a verified Gmail sender named BookEasy and a restricted API key. Transactional sending eligibility is unverified and may need support activation. Brevo may change the visible sender address because Gmail's domain is not authenticated. [Sender verification](https://help.brevo.com/hc/en-us/articles/208836149-Create-a-new-sender-From-name-and-From-email), [activation](https://help.brevo.com/hc/en-us/articles/115000188150-Troubleshooting-Issues-with-Brevo-SMTP), [sender changes](https://help.brevo.com/hc/en-us/articles/16045394674066-Troubleshooting-Domain-authentication)
 
-Mailjet is a backup if we cannot set up Brevo. Its HTTPS API also supports plain text. It needs a verified sender and may limit sending for new accounts. [Mailjet API](https://dev.mailjet.com/docs/email-api/send-api-v31/send-basic-email), [account limits](https://documentation.mailjet.com/hc/en-us/articles/360042624754-Blocked-or-Limited-Account-Reasons-and-How-to-Restore-Full-Functionality)
+Brevo's free plan allows 300 emails a day without a credit card. [Free plan](https://help.brevo.com/hc/en-us/articles/208589409-About-Brevo-s-pricing-plans)
 
-No provider account is set up for this feature yet. Sender approval and delivery to customer inboxes still need checking. API keys will stay in environment settings, outside Git. Sending from Render has not been tested. The official documentation was checked on November 1, 2026.
+Mailjet is only a fallback. It also needs a verified sender and may limit new accounts. [Mailjet API](https://dev.mailjet.com/docs/email-api/send-api-v31/send-basic-email), [account limits](https://documentation.mailjet.com/hc/en-us/articles/360042624754-Blocked-or-Limited-Account-Reasons-and-How-to-Restore-Full-Functionality)
+
+## Delivery settings
+
+The service uses these settings:
+
+- `BOOKEASY_EMAIL_ENABLED`: defaults to `false`. Set to `true` to enable delivery.
+- `BOOKEASY_EMAIL_API_KEY`: required private Brevo key.
+- `BOOKEASY_EMAIL_SENDER_EMAIL`: required verified sender mailbox.
+- `BOOKEASY_EMAIL_SENDER_NAME`: defaults to `BookEasy`.
+
+Disabled or missing settings return `UNAVAILABLE` without a request. The app can still start. The sender allows five seconds to connect and ten seconds for the full response. It makes one request through the HTTP client, with no redirects or automatic retry. This does not guarantee exactly-once delivery.
+
+HTTP 201 with a message ID means `ACCEPTED` for delivery. A clear provider refusal means `REJECTED`. A timeout, connection problem, server error or unclear response means `UNCERTAIN`; the message may still have been accepted. Credentials and internal provider errors are not shown or logged.
+
+For local use, put the settings in `env.local`. Git ignores this file. Use Java properties format, with no `export` or shell quotes:
+
+```properties
+BOOKEASY_EMAIL_ENABLED=false
+BOOKEASY_EMAIL_API_KEY=replace-with-your-private-key
+BOOKEASY_EMAIL_SENDER_EMAIL=replace-with-your-verified-mailbox
+BOOKEASY_EMAIL_SENDER_NAME=BookEasy
+```
+
+The file is not loaded automatically. Run this from the repository root to load it:
+
+```sh
+SPRING_CONFIG_IMPORT='optional:file:./env.local[.properties]' ./mvnw spring-boot:run
+```
+
+Keep the key private. On Render, use environment settings instead of uploading the file. Enabling delivery alone does not send anything yet, because booking is not connected. [Spring external configuration](https://docs.spring.io/spring-boot/reference/features/external-config.html)
+
+## Delivery tests
+
+All seven tests passed: three message-builder tests, three delivery tests and one startup test. They check the saved details and correct customer, optional address, invalid data, outgoing request, provider rejection, timeout and missing settings. Delivery tests use a local fake server and fake credentials. They send no real emails.
+
+Booking save timing, confirmation-page feedback, real inbox delivery and Render sending are still unverified.

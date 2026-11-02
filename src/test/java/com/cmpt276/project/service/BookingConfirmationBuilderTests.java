@@ -27,7 +27,7 @@ class BookingConfirmationBuilderTests {
     private final BookingConfirmationBuilder builder = new BookingConfirmationBuilder();
 
     @Test
-    void includesTheSavedCustomerAndAppointmentDetails() {
+    void includesTheRightDetailsForEachCustomer() {
         Salon salon = newSalon("salon-1", "CS_Salon", "123 Main Street");
         Account customer = saveCustomer("Alex Lee", "alex@example.invalid");
         Appointment appointment = saveAppointment(customer, salon, "Haircut", LocalDate.of(2026, 11, 3), "10:00");
@@ -47,21 +47,12 @@ class BookingConfirmationBuilderTests {
                 + "Duration: one hour\n\n"
                 + "Sign in to BookEasy and check My Appointments to view your booking.\n", message.getBody());
         assertEquals(1, appointmentRepository.findByCustomer(customer).size());
-    }
 
-    @Test
-    void keepsTwoCustomersAndSalonsSeparate() {
-        Salon firstSalon = newSalon("salon-1", "CS_Salon", "123 Main Street");
         Salon secondSalon = newSalon("salon-2", "North Salon", "456 North Street");
-        Account firstCustomer = saveCustomer("Alex Lee", "alex@example.invalid");
         Account secondCustomer = saveCustomer("Sam Chen", "sam@example.invalid");
-        Appointment first = saveAppointment(firstCustomer, firstSalon, "Haircut", LocalDate.of(2026, 11, 3), "10:00");
         Appointment second = saveAppointment(secondCustomer, secondSalon, "Styling", LocalDate.of(2026, 11, 7), "15:00");
-
-        BookingConfirmationMessage firstMessage = builder.build(first, firstSalon);
         BookingConfirmationMessage secondMessage = builder.build(second, secondSalon);
 
-        assertEquals("alex@example.invalid", firstMessage.getRecipient());
         assertEquals("sam@example.invalid", secondMessage.getRecipient());
         assertEquals("Your booking at North Salon is confirmed", secondMessage.getSubject());
         assertTrue(secondMessage.getBody().contains("Hi Sam Chen,"));
@@ -83,7 +74,7 @@ class BookingConfirmationBuilderTests {
     }
 
     @Test
-    void rejectsASalonThatDoesNotMatchTheBooking() {
+    void rejectsInvalidBookingDetails() {
         Salon salon = newSalon("salon-1", "CS_Salon", null);
         Account customer = saveCustomer("Alex Lee", "alex@example.invalid");
         Appointment appointment = saveAppointment(customer, salon, "Haircut", LocalDate.of(2026, 11, 3), "10:00");
@@ -91,31 +82,15 @@ class BookingConfirmationBuilderTests {
 
         assertCannotBuild(appointment, otherSalon);
         assertTrue(appointmentRepository.findById(appointment.getId()).isPresent());
-    }
 
-    @Test
-    void rejectsAnAppointmentThatHasNotBeenSaved() {
-        Salon salon = newSalon("salon-1", "CS_Salon", null);
-        Account customer = saveCustomer("Alex Lee", "alex@example.invalid");
-        Appointment appointment = new Appointment("Haircut", "service-1", salon.getId(), LocalDate.of(2026, 11, 3), "10:00", customer);
+        Appointment unsaved = new Appointment("Haircut", "service-1", salon.getId(), LocalDate.of(2026, 11, 3), "10:00", customer);
+        assertCannotBuild(unsaved, salon);
 
-        assertCannotBuild(appointment, salon);
-    }
+        Account noEmail = saveCustomer("Sam Chen", "   ");
+        Appointment noRecipient = saveAppointment(noEmail, salon, "Haircut", LocalDate.of(2026, 11, 3), "10:00");
+        assertCannotBuild(noRecipient, salon);
+        assertTrue(appointmentRepository.findById(noRecipient.getId()).isPresent());
 
-    @Test
-    void rejectsAMissingCustomerEmail() {
-        Salon salon = newSalon("salon-1", "CS_Salon", null);
-        Account customer = saveCustomer("Alex Lee", "   ");
-        Appointment appointment = saveAppointment(customer, salon, "Haircut", LocalDate.of(2026, 11, 3), "10:00");
-
-        assertCannotBuild(appointment, salon);
-        assertTrue(appointmentRepository.findById(appointment.getId()).isPresent());
-    }
-
-    @Test
-    void rejectsMissingAppointmentDetails() {
-        Salon salon = newSalon("salon-1", "CS_Salon", null);
-        Account customer = saveCustomer("Alex Lee", "alex@example.invalid");
         Appointment noService = saveAppointment(customer, salon, "", LocalDate.of(2026, 11, 3), "10:00");
         Appointment noDate = saveAppointment(customer, salon, "Haircut", null, "10:00");
         Appointment noTime = saveAppointment(customer, salon, "Haircut", LocalDate.of(2026, 11, 3), null);
