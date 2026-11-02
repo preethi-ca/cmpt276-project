@@ -2,30 +2,24 @@
 
 Vaibhav Grover - November 1, 2026
 
-The booking flow now calls the message builder and Brevo delivery service after the appointment commits. The confirmation page shows the email result and links to My Appointments. Real inbox delivery and Render still need testing.
+My Iteration 1 work is the customer booking-confirmation email. Local booking and real inbox delivery worked on November 1. Render sending still needs checking after team integration.
 
-## Scope
+## How it works
 
-Send a plain-text confirmation to the customer's registered email after the database confirms that the appointment was saved.
+After a customer confirms a booking, the app saves the appointment and waits for the database to commit it. It then tries once to send a plain-text email to that customer's registered address.
 
-If booking fails, send nothing. If email sending fails, keep the appointment and tell the customer to check My Appointments. Try sending once. Viewing an appointment should not send another email.
+An unsuccessful booking sends no email. Email problems leave a successful booking saved, with an explanation and a My Appointments link on the confirmation page. Opening an existing appointment does not send another message.
 
-This iteration does not include owner emails, welcome emails, cancellation or rescheduling emails, Google Calendar, SMS, reminders, retries, or a resend button.
+This version covers customer booking confirmation only. Owner emails, welcome emails, cancellation or rescheduling emails, Google Calendar, SMS, reminders, retries and a resend button are outside this iteration.
 
-## Email details
+The subject is **Your booking at [salon name] is confirmed**. The email contains:
 
-Subject: Your booking at [salon name] is confirmed
+- The customer's name and booking reference.
+- The salon name and address, if available.
+- The service, date and start time in Vancouver time.
+- The one-hour duration and a note about signing in to My Appointments.
 
-Include:
-
-- Customer name and booking reference.
-- Salon name and address, if provided.
-- Service name.
-- Appointment date and start time in Vancouver time.
-- Duration: one hour.
-- A note to sign in and check My Appointments.
-
-Use the saved booking and account details, not values changed in the browser. Send only to the customer who made the booking. If required details are missing or do not match, keep the booking but do not send the email. If the salon address is missing, leave that line out.
+The details come from the saved appointment, its customer account and the matching salon. Missing or mismatched required details stop the email without removing the booking. A missing address is left out.
 
 ## User stories and tests
 
@@ -57,30 +51,30 @@ As a customer, I want the confirmation page to show that my appointment is booke
 
 The confirmation page includes a My Appointments link. It must not show API keys or internal errors. Provider acceptance does not guarantee that the email reaches the inbox.
 
-## Sending approach
+## Email setup
 
-The delivery service sends plain-text messages through Brevo's HTTPS API using an API key. It uses Java's HTTP client and the project's Jackson JSON library. No new dependency was added. [Brevo email API](https://developers.brevo.com/docs/send-a-transactional-email)
+The app uses Brevo's HTTPS API with Java's HTTP client and the existing Jackson library. No new dependency was needed. [Brevo email API](https://developers.brevo.com/docs/send-a-transactional-email)
 
-The Brevo account has a verified Gmail sender named BookEasy and a restricted API key. Transactional sending eligibility is unverified and may need support activation. Brevo may change the visible sender address because Gmail's domain is not authenticated. [Sender verification](https://help.brevo.com/hc/en-us/articles/208836149-Create-a-new-sender-From-name-and-From-email), [activation](https://help.brevo.com/hc/en-us/articles/115000188150-Troubleshooting-Issues-with-Brevo-SMTP), [sender changes](https://help.brevo.com/hc/en-us/articles/16045394674066-Troubleshooting-Domain-authentication)
+The account has a verified Gmail sender named BookEasy and a restricted API key. The test email displayed BookEasy. Its full From address was not checked; Brevo may change it because Gmail's domain is not authenticated. [Sender verification](https://help.brevo.com/hc/en-us/articles/208836149-Create-a-new-sender-From-name-and-From-email), [activation help](https://help.brevo.com/hc/en-us/articles/115000188150-Troubleshooting-Issues-with-Brevo-SMTP), [sender changes](https://help.brevo.com/hc/en-us/articles/16045394674066-Troubleshooting-Domain-authentication)
 
 Brevo's free plan allows 300 emails a day without a credit card. [Free plan](https://help.brevo.com/hc/en-us/articles/208589409-About-Brevo-s-pricing-plans)
 
-Mailjet is only a fallback. It also needs a verified sender and may limit new accounts. [Mailjet API](https://dev.mailjet.com/docs/email-api/send-api-v31/send-basic-email), [account limits](https://documentation.mailjet.com/hc/en-us/articles/360042624754-Blocked-or-Limited-Account-Reasons-and-How-to-Restore-Full-Functionality)
+Mailjet is only a fallback and has not been implemented. It also needs a verified sender and may limit new accounts. [Mailjet API](https://dev.mailjet.com/docs/email-api/send-api-v31/send-basic-email), [account limits](https://documentation.mailjet.com/hc/en-us/articles/360042624754-Blocked-or-Limited-Account-Reasons-and-How-to-Restore-Full-Functionality)
 
-## Delivery settings
-
-The service uses these settings:
+Email is off by default. The four settings are:
 
 - `BOOKEASY_EMAIL_ENABLED`: defaults to `false`. Set to `true` to enable delivery.
 - `BOOKEASY_EMAIL_API_KEY`: required private Brevo key.
 - `BOOKEASY_EMAIL_SENDER_EMAIL`: required verified sender mailbox.
 - `BOOKEASY_EMAIL_SENDER_NAME`: defaults to `BookEasy`.
 
-Disabled or missing settings return `UNAVAILABLE` without a request. The app can still start. The sender allows five seconds to connect and ten seconds for the full response. It makes one request through the HTTP client, with no redirects or automatic retry. This does not guarantee exactly-once delivery.
+Disabled or missing settings give `UNAVAILABLE` without a request. The app can still start and accept bookings.
 
-HTTP 201 with a message ID means `ACCEPTED` for delivery. A clear provider refusal means `REJECTED`. A timeout, connection problem, server error or unclear response means `UNCERTAIN`; the message may still have been accepted. Credentials and internal provider errors are not shown or logged.
+Sending allows five seconds to connect and ten seconds for the full response, with no redirects or automatic retry. One attempt does not guarantee exactly-once delivery.
 
-For local use, put the settings in `env.local`. Git ignores this file. Use Java properties format, with no `export` or shell quotes:
+HTTP 201 with a message ID means `ACCEPTED`; a clear refusal means `REJECTED`. Timeouts, connection problems, server errors or unclear responses mean `UNCERTAIN`, since Brevo may have accepted the message. Credentials and internal provider errors are not shown or logged.
+
+For local setup, `env.local` holds these settings in Java properties format, without `export` or shell quotes. Git ignores the file:
 
 ```properties
 BOOKEASY_EMAIL_ENABLED=false
@@ -89,18 +83,33 @@ BOOKEASY_EMAIL_SENDER_EMAIL=replace-with-your-verified-mailbox
 BOOKEASY_EMAIL_SENDER_NAME=BookEasy
 ```
 
-The file is not loaded automatically. Run this from the repository root to load it:
+Spring does not load this file automatically. From the repository root, it can be loaded with:
 
 ```sh
 SPRING_CONFIG_IMPORT='optional:file:./env.local[.properties]' ./mvnw spring-boot:run
 ```
 
-Keep the key private. On Render, use environment settings instead of uploading the file. When delivery is enabled, each newly accepted booking makes one email attempt. [Spring external configuration](https://docs.spring.io/spring-boot/reference/features/external-config.html)
+The key stays private. Render uses environment settings rather than an uploaded `env.local`. [Spring external configuration](https://docs.spring.io/spring-boot/reference/features/external-config.html)
 
-## Delivery tests
+## Tests and walkthrough
 
-All eleven tests passed in an isolated offline package build: three message-builder tests, three delivery tests, four booking integration tests and one startup test. They use fake credentials and local HTTP. They send no real emails.
+All eleven tests passed in a separate offline package build: three builder, three delivery, four booking integration and one startup test. Fake credentials and a local HTTP server keep automated tests from sending real emails.
 
-The builder and delivery tests check saved details, the correct customer, optional address, invalid data, outgoing requests, rejection, timeout and missing settings. The integration tests check that a separate database connection can see the committed appointment before the email request, and that sending runs outside the booking transaction. They also check rejected bookings, save failure, an injected commit-stage failure, preserved bookings and page feedback during email problems, and viewing or a rejected repeat without resending.
+- Story 1: a separate database connection sees the committed booking before sending, with no booking transaction active. Tests also cover rejected slots, save and injected commit-stage failures, and no resend from views or rejected repeats.
+- Story 2: builder tests check saved details, separate customers, optional address and invalid data. The live email also matched the saved test booking.
+- Story 3: delivery and integration tests check acceptance, rejection, timeout, missing settings, preserved appointments and truthful page feedback.
 
-Real inbox delivery and Render sending are still unverified.
+The November 1 local walkthrough covered registration/login, salon/services/hours setup, booking, My Appointments and details. A repeated booking was rejected. Brevo accepted one real email, and the inbox screenshot matched the subject, customer, booking reference, salon/address, service, Vancouver date/time, duration and account note. The packaged app also loaded the external settings successfully.
+
+## Contribution and demo
+
+My contribution covers the three stories, message builder, configurable HTTPS sender, booking integration, confirmation feedback and tests. Keeping message creation separate from delivery made failure cases easier to check. The live test showed why acceptance and inbox receipt are separate results.
+
+After integration, the team demo can follow the customer flow:
+
+1. Open the Render site with its URL visible, sign in as a test customer and book a slot.
+2. Open My Appointments from the confirmation page and check the saved details.
+3. Compare the received email with the booking, with private account information hidden.
+4. Use the fake-test results to explain how a booking stays saved when email has a problem.
+
+Render setup and sending still need checking after team integration. H2 accounts/bookings and in-memory salon data reset on restart, so this local check does not verify persistent deployment or complete the team's submission.
