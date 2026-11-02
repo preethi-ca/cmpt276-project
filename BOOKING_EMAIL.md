@@ -2,7 +2,7 @@
 
 Vaibhav Grover - November 1, 2026
 
-The message builder and Brevo delivery service are built. Booking does not call the sender yet. The booking flow, real inbox delivery and Render still need testing.
+The booking flow now calls the message builder and Brevo delivery service after the appointment commits. The confirmation page shows the email result and links to My Appointments. Real inbox delivery and Render still need testing.
 
 ## Scope
 
@@ -95,10 +95,12 @@ The file is not loaded automatically. Run this from the repository root to load 
 SPRING_CONFIG_IMPORT='optional:file:./env.local[.properties]' ./mvnw spring-boot:run
 ```
 
-Keep the key private. On Render, use environment settings instead of uploading the file. Enabling delivery alone does not send anything yet, because booking is not connected. [Spring external configuration](https://docs.spring.io/spring-boot/reference/features/external-config.html)
+Keep the key private. On Render, use environment settings instead of uploading the file. When delivery is enabled, each newly accepted booking makes one email attempt. [Spring external configuration](https://docs.spring.io/spring-boot/reference/features/external-config.html)
 
 ## Delivery tests
 
-All seven tests passed: three message-builder tests, three delivery tests and one startup test. They check the saved details and correct customer, optional address, invalid data, outgoing request, provider rejection, timeout and missing settings. Delivery tests use a local fake server and fake credentials. They send no real emails.
+All eleven tests passed in an isolated offline package build: three message-builder tests, three delivery tests, four booking integration tests and one startup test. They use fake credentials and local HTTP. They send no real emails.
 
-Booking save timing, confirmation-page feedback, real inbox delivery and Render sending are still unverified.
+The builder and delivery tests check saved details, the correct customer, optional address, invalid data, outgoing requests, rejection, timeout and missing settings. The integration tests check that a separate database connection can see the committed appointment before the email request, and that sending runs outside the booking transaction. They also check rejected bookings, save failure, an injected commit-stage failure, preserved bookings and page feedback during email problems, and viewing or a rejected repeat without resending.
+
+Real inbox delivery and Render sending are still unverified.
