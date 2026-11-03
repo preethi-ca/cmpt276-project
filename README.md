@@ -40,18 +40,27 @@ BookEasy will be developed using Java, Springboot, HTML, CSS, and JavaScript, wi
 During our first group meeting on October 5, we introduced ourselves, discussed our individual strengths and weaknesses, and brainstormed potential project ideas. During our second meeting on October 15, we finalized our project idea after receiving feedback from the instructor, divided the project into five epics, and assigned responsibilities to each group member.
 
 
-## Run the integrated owner branch
+## Iteration 1
 
-This branch integrates Edwin's salon management with Preethi's authentication.
-Use Java 17+ and run `./mvnw spring-boot:run` (`.\mvnw.cmd spring-boot:run` on Windows).
-Open http://localhost:8080, register as a Salon Owner, then sign in and create a salon.
-The default demo profile uses H2 accounts and an in-memory salon store; restarting clears data.
+Live app: https://cmpt276-project-icc0.onrender.com/
+Repository: https://github.com/preethi-ca/cmpt276-project
 
-Implemented: salon profile create/edit, service add/list with pagination, initial weekly
-hours, owner isolation, guest-readable salon JSON and a demo preview. Appointment booking,
-durable salon storage and analytics remain separate work. Preethi's shared login/register
-pages are retained; the customer-booking branch is not merged here.
+In Iteration 1, customers and salon owners can register, sign in and sign out, and each role gets its own page. Owners set up a salon with services, prices and opening hours. Customers open a salon's page, pick a service, date and time, review the details and confirm. They can then view or cancel their appointments.
 
-Run `./mvnw package` for tests/build. See [INTEGRATION.md](INTEGRATION.md) for endpoints,
-Maria's data handoff, browser-test commands, remaining assumptions and deployment limits.
-Owner UI and behavior contracts are in DESIGN.md, UX-CONTRACT.md and USER-STORIES.md.
+To try it, open the Render link above and register a Customer or Salon Owner account. The user stories and their test cases are in [USER_STORIES.md](USER_STORIES.md).
+
+### Deployment
+
+The app runs on Render, which builds it from the `Dockerfile`. On Render it uses the `postgres` profile, so accounts, salons, services, opening hours, appointments and login sessions are saved in a PostgreSQL database and kept between restarts. The database connection comes from Render's environment settings (`DATABASE_URL`, `DB_USERNAME`, `DB_PASSWORD`), so no credentials are stored in the repository.
+
+### For developers
+
+To work on the code locally, use Java 17 or newer and run `./mvnw spring-boot:run`. Without the `postgres` profile, the app uses a temporary in-memory database, which is handy for quick testing but clears on restart. Run `./mvnw test` before pushing, because the Docker build on Render skips the tests.
+
+### Known limits
+
+- Customers reach a salon through its link. There's no salon list yet.
+- Past dates can still be booked.
+- Owners can't change saved hours, edit services or see appointments yet.
+
+These and other planned features are listed under Future work in USER_STORIES.md.
