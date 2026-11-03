@@ -1,41 +1,86 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>BookEasy - Select Date</title>
-</head>
 
-<body>
-    <h1>Book Your Appointment</h1>
-    <p th:if="${error}" th:text="${error}" style="color: red;"></p>
-    <!-- Display the service selected by the customer -->
-    <h3>Selected Service: <span th:text="${serviceName}"></span></h3>
+    <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}" />
+    <link rel="stylesheet" th:href="@{/css/style.css}" />
+  </head>
 
-    <!-- Send the selected service and date to the next page -->
-    <form th:action="@{/customer/booking/time}" method="get">
-        <input type="hidden" name="service" th:value="${service}">
-        <input type="hidden" name="salon" th:value="${salon}">
+  <body>
+    <main class="container py-5">
+      <div class="mb-4">
+        <h1>Book Your Appointment</h1>
+        <p class="text-muted mb-0">
+          Selected Service:
+          <strong th:text="${serviceName}"></strong>
+        </p>
+      </div>
 
-        <label for="appointmentDate">Select a date:</label>
-        <input type="date" id="appointmentDate" name="appointmentDate" required>
-        <br><br>
+      <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
 
-        <button type="submit">Continue</button>
-    </form>
+      <div class="row g-4">
+        <div class="col-md-6">
+          <div class="card shadow-sm h-100">
+            <div class="card-body">
+              <h2 class="h5 mb-3">Select a Date</h2>
 
-    <h3>Salon Opening Hours</h3> 
-    <!--Display each day using the salon's saved opening hours -->
-    <div th:each="day : ${openingHours}">
-        <p> 
-            <strong th:text="${days[day.dayOfWeek - 1]}"></strong>: 
-            <span th:if="${day.open}" th:text="${day.startTime + ' - ' + day.endTime}"></span>
-            <span th:unless="${day.open}">Closed</span> 
-        </p> 
-    </div>
+              <form th:action="@{/customer/booking/time}" method="get">
+                <input type="hidden" name="service" th:value="${service}" />
 
-    <a th:href="@{/customer/dashboard}"><button type="button">Back to Services</button></a>
-</body>
+                <input type="hidden" name="salon" th:value="${salon}" />
+
+                <div class="mb-3">
+                  <label for="appointmentDate" class="form-label">
+                    Appointment Date
+                  </label>
+
+                  <input
+                    type="date"
+                    id="appointmentDate"
+                    name="appointmentDate"
+                    class="form-control"
+                    required
+                  />
+                </div>
+
+                <button type="submit" class="btn btn-success">Continue</button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="card shadow-sm h-100">
+            <div class="card-body">
+              <h2 class="h5 mb-3">Salon Opening Hours</h2>
+
+              <div
+                th:each="day : ${openingHours}"
+                class="d-flex justify-content-between border-bottom py-2"
+              >
+                <strong th:text="${days[day.dayOfWeek - 1]}"></strong>
+
+                <span
+                  th:if="${day.open}"
+                  th:text="${day.startTime + ' - ' + day.endTime}"
+                >
+                </span>
+
+                <span th:unless="${day.open}" class="text-muted"> Closed </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-4">
+        <a th:href="@{/customer/dashboard}" class="btn btn-outline-secondary">
+          Back to Services
+        </a>
+      </div>
+    </main>
+  </body>
 </html>
