@@ -217,6 +217,27 @@ body {
     }
 }
 
+/* Customer Salon Booking Page */
+body {
+    background-color: #fafaf5;
+}
+
+.navbar-brand {
+    color: #294b3b;
+}
+
+.card {
+    border-radius: 12px;
+}
+
+.btn-success {
+    background-color: #294b3b;
+    border-color: #294b3b;
+}
+
+.btn-success:hover {
+    background-color: #243c2d;
+    border-color: #243c2d;
 /* Customer Dashboard */
 
 .customer-dashboard {
