@@ -1,35 +1,85 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <title>BookEasy - Booking Summary</title>
-</head>
 
-<body>
-    <h1>Review Your Booking</h1>
-    <p>Please check your appointment details are correct before continuing</p>
+    <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}" />
+    <link rel="stylesheet" th:href="@{/css/style.css}" />
+  </head>
 
-    <!-- show the booking information summary-->
-    <h3>Appointment Details:</h3>
-    <p>Salon: <span th:text="${salonName}"></span></p>
-    <p>Selected Service: <span th:text="${serviceName}"></span></p>
-    <p>Appointment Date: <span th:text="${appointmentDate}"></span></p>
-    <p>Appointment Time: <span th:text="${appointmentTime}"></span></p>
-    <p>Price: $<span th:text="${bookedService.price}"></span></p>
-    
-    <!-- Form that sends the booking details to the controller -->
-    <form th:action="@{/customer/booking/confirm}" method="post">
-        <input type="hidden" name="service" th:value="${service}">
-        <input type="hidden" name="salon" th:value="${salon}">
-        <input type="hidden" name="appointmentDate" th:value="${appointmentDate}">
-        <input type="hidden" name="appointmentTime" th:value="${appointmentTime}">
+  <body>
+    <main class="container py-5">
+      <div class="mb-4">
+        <h1>Review Your Booking</h1>
+        <p class="text-muted">
+          Please check that your appointment details are correct before
+          continuing.
+        </p>
+      </div>
 
-        <button type="submit">Confirm Booking</button>
-    </form>
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h2 class="h5 mb-4">Appointment Details</h2>
 
-    <a th:href="@{/customer/dashboard}"><button type="button">Back to Hom</button></a>
-</body>
+          <div class="row mb-3">
+            <div class="col-sm-4 fw-bold">Salon</div>
+            <div class="col-sm-8" th:text="${salonName}"></div>
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-sm-4 fw-bold">Service</div>
+            <div class="col-sm-8" th:text="${serviceName}"></div>
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-sm-4 fw-bold">Date</div>
+            <div class="col-sm-8" th:text="${appointmentDate}"></div>
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-sm-4 fw-bold">Time</div>
+            <div class="col-sm-8" th:text="${appointmentTime}"></div>
+          </div>
+
+          <div class="row mb-4">
+            <div class="col-sm-4 fw-bold">Price</div>
+            <div class="col-sm-8">
+              $<span th:text="${bookedService.price}"></span>
+            </div>
+          </div>
+
+          <form th:action="@{/customer/booking/confirm}" method="post">
+            <input type="hidden" name="service" th:value="${service}" />
+            <input type="hidden" name="salon" th:value="${salon}" />
+            <input
+              type="hidden"
+              name="appointmentDate"
+              th:value="${appointmentDate}"
+            />
+            <input
+              type="hidden"
+              name="appointmentTime"
+              th:value="${appointmentTime}"
+            />
+
+            <div class="d-flex gap-2 flex-wrap">
+              <button type="submit" class="btn btn-success">
+                Confirm Booking
+              </button>
+
+              <a
+                th:href="@{/customer/dashboard}"
+                class="btn btn-outline-secondary"
+              >
+                Back to Home
+              </a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </main>
+  </body>
 </html>

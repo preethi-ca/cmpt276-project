@@ -1,24 +1,78 @@
-
-<!DOCTYPE html>
+<!doctype html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Booking Successful</title>
-</head>
-<body>
-    <h1>Booking Confirmed!</h1>
-    <p>Your appointment has been successfully booked</p>
-    <p th:text="${emailMessage}" role="status"></p>
-    <a th:href="@{/customer/appointments}">My Appointments</a>
 
-    <h3>Appointment Details:</h3>
-    <p>Salon: <span th:text="${salonName}"></span></p>
-    <p>Service: <span th:text="${serviceName}"></span></p>
-    <p>Date: <span th:text="${appointmentDate}"></span></p>
-    <p>Time: <span th:text="${appointmentTime}"></span></p>
-    <p th:if="${bookedService != null}">Price: $<span th:text="${bookedService.price}"></span></p>
-    
-    <a th:if="${salon != null}" th:href="@{/salons/{slug}(slug=${salon})}"><button type="button">Book Another Appointment</button></a>
-    <a th:href="@{/customer/dashboard}"><button type="button">Back to Home</button></a>
-</body>
+    <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}" />
+    <link rel="stylesheet" th:href="@{/css/style.css}" />
+  </head>
+
+  <body>
+    <main class="container py-5">
+      <div class="text-center mb-4">
+        <h1>Booking Confirmed!</h1>
+        <p class="text-muted">Your appointment has been successfully booked.</p>
+      </div>
+
+      <div
+        th:if="${emailMessage}"
+        class="alert alert-info"
+        role="status"
+        th:text="${emailMessage}"
+      ></div>
+
+      <div class="card shadow-sm mb-4">
+        <div class="card-body">
+          <h2 class="h5 mb-4">Appointment Details</h2>
+
+          <div class="row mb-3">
+            <div class="col-sm-4 fw-bold">Salon</div>
+            <div class="col-sm-8" th:text="${salonName}"></div>
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-sm-4 fw-bold">Service</div>
+            <div class="col-sm-8" th:text="${serviceName}"></div>
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-sm-4 fw-bold">Date</div>
+            <div class="col-sm-8" th:text="${appointmentDate}"></div>
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-sm-4 fw-bold">Time</div>
+            <div class="col-sm-8" th:text="${appointmentTime}"></div>
+          </div>
+
+          <div class="row mb-0" th:if="${bookedService != null}">
+            <div class="col-sm-4 fw-bold">Price</div>
+            <div class="col-sm-8">
+              $<span th:text="${bookedService.price}"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex gap-2 flex-wrap">
+        <a th:href="@{/customer/appointments}" class="btn btn-success">
+          My Appointments
+        </a>
+
+        <a
+          th:if="${salon != null}"
+          th:href="@{/salons/{slug}(slug=${salon})}"
+          class="btn btn-outline-success"
+        >
+          Book Another Appointment
+        </a>
+
+        <a th:href="@{/customer/dashboard}" class="btn btn-outline-secondary">
+          Back to Home
+        </a>
+      </div>
+    </main>
+  </body>
 </html>
-

@@ -5,39 +5,46 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Customer Dashboard</title>
 
+    <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}" />
     <link rel="stylesheet" th:href="@{/css/style.css}" />
   </head>
 
   <body>
-    <main class="customer-dashboard">
-      <h1>Welcome to BookEasy!</h1>
-      <h2>Customer Dashboard</h2>
+    <main class="container py-5">
+      <div class="text-center mb-4">
+        <h1>Welcome to BookEasy!</h1>
+        <h2 class="h4 text-muted">Customer Dashboard</h2>
+      </div>
 
-      <section class="dashboard-card">
-        <h3>Your Appointments</h3>
+      <section class="card shadow-sm mb-4">
+        <div class="card-body">
+          <h3 class="card-title h5">Your Appointments</h3>
 
-        <a th:href="@{/customer/appointments}" class="dashboard-button">
-          View My Appointments
-        </a>
+          <a th:href="@{/customer/appointments}" class="btn btn-success">
+            View My Appointments
+          </a>
+        </div>
       </section>
 
-      <section class="dashboard-card">
-        <h3>Visit a Salon</h3>
+      <section class="card shadow-sm mb-4">
+        <div class="card-body">
+          <h3 class="card-title h5">Visit a Salon</h3>
 
-        <p>
-          To visit a salon page, use:
-          <strong>/salons/salon-name</strong>
-        </p>
+          <p>
+            To visit a salon page, use:
+            <strong>/salons/salon-name</strong>
+          </p>
 
-        <p>Example: Sally Salon</p>
-        <p>/salons/sally-salon</p>
+          <p class="mb-1">Example: Sally Salon</p>
+          <p class="text-muted">/salons/sally-salon</p>
 
-        <p>Example: BestNails</p>
-        <p>/salons/best-nails</p>
+          <p class="mb-1">Example: BestNails</p>
+          <p class="text-muted">/salons/best-nails</p>
+        </div>
       </section>
 
       <form th:action="@{/logout}" method="post" novalidate>
-        <button type="submit" class="logout-button">Log Out</button>
+        <button type="submit" class="btn btn-outline-danger">Log Out</button>
       </form>
     </main>
   </body>
