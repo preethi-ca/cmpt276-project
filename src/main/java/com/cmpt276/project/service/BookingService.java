@@ -3,6 +3,7 @@ package com.cmpt276.project.service;
 import java.time.LocalDate;
 import java.util.Optional;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import com.cmpt276.project.model.Account;
 import com.cmpt276.project.model.Appointment;
 import com.cmpt276.project.repository.AccountRepository;
@@ -29,7 +30,8 @@ public class BookingService{
         this.ownerService = ownerService;
     }
 
-    public void bookAppointment(String serviceId, String salonSlug, String appointmentDate, String appointmentTime, String customerEmail) {
+    @Transactional
+    public Appointment bookAppointment(String serviceId, String salonSlug, String appointmentDate, String appointmentTime, String customerEmail) {
         Optional<Account> customerOpt = accountRepository.findByEmail(customerEmail);
         if (!customerOpt.isPresent()) {
             throw new IllegalArgumentException("Customer account not found");
@@ -54,7 +56,7 @@ public class BookingService{
         }
         Appointment appointment = new Appointment(selectedService.getName(),selectedService.getId(), salon.getId(), date, appointmentTime, customer);
 
-        appointmentRepository.save(appointment);
+        return appointmentRepository.save(appointment);
     }
 
     //Generate available one-hour appointment times for a salon.

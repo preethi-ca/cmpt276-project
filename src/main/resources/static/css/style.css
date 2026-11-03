@@ -238,6 +238,45 @@ body {
 .btn-success:hover {
     background-color: #243c2d;
     border-color: #243c2d;
+/* Customer Dashboard */
+
+.customer-dashboard {
+    max-width: 700px;
+    margin: 40px auto;
+    padding: 20px;
+}
+
+.customer-dashboard h1,
+.customer-dashboard h2 {
+    text-align: center;
+}
+
+.dashboard-card {
+    background-color: white;
+    padding: 20px;
+    margin-top: 20px;
+    border-radius: 12px;
+}
+
+.dashboard-button,
+.logout-button {
+    display: inline-block;
+    background-color: #294b3b;
+    color: white;
+    padding: 10px 18px;
+    border: none;
+    border-radius: 6px;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.dashboard-button:hover,
+.logout-button:hover {
+    background-color: #243c2d;
+}
+
+.logout-button {
+    margin-top: 20px;
 }
 
 /* Shared authentication enhancements; keep the existing layout and palette. */

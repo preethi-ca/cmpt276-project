@@ -1,30 +1,45 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Customer Dashboard</title>
-</head>
 
+    <link rel="stylesheet" th:href="@{/css/style.css}" />
+  </head>
 
-<body>
-    <h1>Welcome to BookEasy!</h1>
-    <h2>Customer Dashboard</h2>
+  <body>
+    <main class="customer-dashboard">
+      <h1>Welcome to BookEasy!</h1>
+      <h2>Customer Dashboard</h2>
 
-    <!-- link to customer's appointments -->
-    <a th:href="@{/customer/appointments}"><button type="button">View My Appointments</button></a>
+      <section class="dashboard-card">
+        <h3>Your Appointments</h3>
 
-    <h4>Please go to: http://localhost:8080/salons/salon-name</h4>
-    <p>Example: Salon name = Sally Salon</p>
-    <p>Go to: http://localhost:8080/salons/sally-salon</p>
+        <a th:href="@{/customer/appointments}" class="dashboard-button">
+          View My Appointments
+        </a>
+      </section>
 
-    <p>Example: Salon name = BestNails</p>
-    <p>Go to: http://localhost:8080/salons/bestnails</p>
+      <section class="dashboard-card">
+        <h3>Visit a Salon</h3>
 
-    <form th:action="@{/logout}" method="post" novalidate>
-        <button type="submit">Log Out</button>
-    </form>
-</body>
+        <p>
+          To visit a salon page, use:
+          <strong>/salons/salon-name</strong>
+        </p>
 
+        <p>Example: Sally Salon</p>
+        <p>/salons/sally-salon</p>
+
+        <p>Example: BestNails</p>
+        <p>/salons/best-nails</p>
+      </section>
+
+      <form th:action="@{/logout}" method="post" novalidate>
+        <button type="submit" class="logout-button">Log Out</button>
+      </form>
+    </main>
+  </body>
 </html>
+```
