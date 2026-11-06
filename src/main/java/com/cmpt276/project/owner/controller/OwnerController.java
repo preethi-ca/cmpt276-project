@@ -33,6 +33,12 @@ public class OwnerController {
         this.environment = environment;
     }
 
+    @InitBinder("salonForm")
+    public void profileBinding(WebDataBinder binder) {
+        // Identity and ownership always come from the authenticated account.
+        binder.setAllowedFields("name", "description", "address", "city", "province", "phone", "email");
+    }
+
     @InitBinder("hoursForm")
     public void hoursBinding(WebDataBinder binder) {
         binder.setAutoGrowCollectionLimit(7);
@@ -98,6 +104,10 @@ public class OwnerController {
         form.setName(salon.getName());
         form.setDescription(salon.getDescription());
         form.setAddress(salon.getAddress());
+        form.setCity(salon.getCity());
+        form.setProvince(salon.getProvince());
+        form.setPhone(salon.getPhone());
+        form.setEmail(salon.getEmail());
         model.addAttribute("salonForm", form);
         return page(model, "profile", "Salon Settings");
     }
@@ -143,7 +153,18 @@ public class OwnerController {
         if (model.getAttribute("salon") == null) {
             return "redirect:/owner/setup";
         }
-        model.addAttribute("hoursForm", new HoursForm());
+        Salon salon = (Salon) model.getAttribute("salon");
+        HoursForm form = new HoursForm();
+        // Copy saved values so editing or rejecting input cannot mutate the stored schedule.
+        for (OpeningDay saved : salon.getOpeningHours()) {
+            OpeningDay day = form.getDays().get(saved.getDayOfWeek() - 1);
+            day.setOpen(saved.isOpen());
+            if (saved.isOpen()) {
+                day.setStartTime(saved.getStartTime());
+                day.setEndTime(saved.getEndTime());
+            }
+        }
+        model.addAttribute("hoursForm", form);
         return page(model, "hours", "Availability");
     }
 
@@ -178,6 +199,11 @@ public class OwnerController {
         private String name = "";
         private String description = "";
         private String address = "";
+        private String city = "";
+        private String province = "";
+        private String phone = "";
+        private String email = "";
+
 
         public String getName() { return name; }
         public void setName(String name) { this.name = name; }
@@ -185,6 +211,15 @@ public class OwnerController {
         public void setDescription(String description) { this.description = description; }
         public String getAddress() { return address; }
         public void setAddress(String address) { this.address = address; }
+
+        public String getCity() { return city; }
+        public void setCity(String city) { this.city = city; }
+        public String getProvince() { return province; }
+        public void setProvince(String province) { this.province = province; }
+        public String getPhone() { return phone; }
+        public void setPhone(String phone) { this.phone = phone; }
+        public String getEmail() { return email; }
+        public void setEmail(String email) { this.email = email; }
     }
 
     public static class ServiceForm {

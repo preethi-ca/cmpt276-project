@@ -53,6 +53,21 @@ public class OwnerService {
         validateText(form.getName(), "name", 80, true, errors);
         validateText(form.getDescription(), "description", 500, false, errors);
         validateText(form.getAddress(), "address", 200, false, errors);
+        validateText(form.getCity(), "city", 80, false, errors);
+        validateText(form.getProvince(), "province", 80, false, errors);
+        validateText(form.getPhone(), "phone", 32, false, errors);
+        validateText(form.getEmail(), "email", 254, false, errors);
+        // Optional public contacts are checked before any stored data is changed.
+        String phone = clean(form.getPhone());
+        String digits = phone.replaceAll("[^0-9]", "");
+        if (!phone.isEmpty() && (!phone.matches("[+]?[0-9() .-]+")
+                || digits.length() < 7 || digits.length() > 15)) {
+            errors.rejectValue("phone", "phone", "Enter 7 to 15 digits; spaces, +, parentheses, dots and hyphens are allowed.");
+        }
+        String email = clean(form.getEmail());
+        if (!email.isEmpty() && !email.matches("[^\\s@]+@[^\\s@]+\\.[^\\s@]+")) {
+            errors.rejectValue("email", "email", "Enter a valid email address.");
+        }
         Salon salon = store.findByOwnerId(ownerId);
         if (create && salon != null) {
             errors.reject("exists", "You already have a salon. Open your workspace to view it.");
@@ -74,6 +89,10 @@ public class OwnerService {
         salon.setName(form.getName().trim());
         salon.setDescription(clean(form.getDescription()));
         salon.setAddress(clean(form.getAddress()));
+        salon.setCity(clean(form.getCity()));
+        salon.setProvince(clean(form.getProvince()));
+        salon.setPhone(clean(form.getPhone()));
+        salon.setEmail(clean(form.getEmail()));
         store.save(salon);
         return true;
     }
@@ -111,10 +130,6 @@ public class OwnerService {
 
     public synchronized boolean setOpeningHours(String ownerId, HoursForm form, Errors errors) {
         Salon salon = requireSalon(ownerId);
-        if (salon.isHoursConfigured()) {
-            errors.reject("configured", "Opening hours are already saved. Changes are not available in this version.");
-            return false;
-        }
         if (form.getDays() == null || form.getDays().size() != 7) {
             errors.reject("days", "Provide a weekly schedule with seven days.");
             return false;
@@ -122,6 +137,10 @@ public class OwnerService {
         List<OpeningDay> hours = new ArrayList<>();
         for (int i = 0; i < 7; i++) {
             OpeningDay input = form.getDays().get(i);
+            if (input == null) {
+                errors.reject("days", "Provide a weekly schedule with seven days.");
+                return false;
+            }
             OpeningDay day = new OpeningDay();
             day.setDayOfWeek(i + 1); // Monday = 1; the client cannot reorder the week.
             day.setOpen(input.isOpen());
@@ -145,6 +164,7 @@ public class OwnerService {
         if (errors.hasErrors()) {
             return false;
         }
+        // Replace the complete week only after validation; existing appointments are untouched.
         salon.setOpeningHours(hours);
         store.save(salon);
         return true;

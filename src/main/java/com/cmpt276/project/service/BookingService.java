@@ -79,11 +79,17 @@ public class BookingService{
                 appointmentRepository.findBySalonIdAndAppointmentDate(salon.getId(), date);
         List<String> availableTimes = new ArrayList<>();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm");
-        LocalTime currentTime = openingTime;
-        while (!currentTime.plusHours(1).isAfter(closingTime)) {
+        // Minute arithmetic avoids wrapping past midnight for late closing times.
+        int closingMinute = closingTime.getHour() * 60 + closingTime.getMinute();
+        for (int minute = openingTime.getHour() * 60 + openingTime.getMinute();
+                minute + 60 <= closingMinute; minute += 60) {
+            LocalTime currentTime = LocalTime.of(minute / 60, minute % 60);
             boolean alreadyBooked = false;
             for (Appointment appointment: existingAppointments) {
-                if (appointment.getAppointmentTime().equals(currentTime.format(formatter))) {
+                LocalTime bookedStart = LocalTime.parse(appointment.getAppointmentTime());
+                int bookedMinute = bookedStart.getHour() * 60 + bookedStart.getMinute();
+                // Changed opening times can shift the grid; reject every overlapping hour.
+                if (minute < bookedMinute + 60 && bookedMinute < minute + 60) {
                     alreadyBooked = true;
                     break;
                 }
@@ -91,7 +97,6 @@ public class BookingService{
             if (!alreadyBooked) {
                 availableTimes.add(currentTime.format(formatter));
             }
-            currentTime = currentTime.plusHours(1);
         }
         return availableTimes;
     }

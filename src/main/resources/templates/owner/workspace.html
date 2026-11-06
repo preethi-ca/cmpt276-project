@@ -36,7 +36,7 @@
         <h1 th:text="${title}"></h1>
         <a th:if="${section == 'services'}" class="button primary" th:href="@{/owner/services(view='add')}"><span aria-hidden="true">＋ </span>Add Service</a>
         <button th:if="${section == 'profile'}" type="submit" form="salon-form" class="button primary">Save Changes</button>
-        <button th:if="${section == 'hours' and !salon.hoursConfigured}" type="submit" form="hours-form" class="button primary">Save Availability</button>
+        <button th:if="${section == 'hours'}" type="submit" form="hours-form" class="button primary">Save Availability</button>
       </div>
       <div th:if="${success}" class="notice success" role="status" th:text="${success}"></div>
 
@@ -57,15 +57,13 @@
           <p class="muted">The details customers see on your salon page.</p>
           <div th:replace="~{owner/fragments :: summary}"></div>
           <div th:replace="~{owner/fragments :: field('Salon name *', 'name', 'text', 'Required · up to 80 characters')}"></div>
-          <div th:replace="~{owner/fragments :: field(${section == 'setup' ? 'Salon address' : 'Street address'}, 'address', 'text', 'Optional · include your full address, city and province · up to 200 characters')}"></div>
-          <div th:if="${section == 'profile'}" class="unavailable-fields">
-            <p id="unavailable-profile-fields" class="field-help">City, province, phone and email are not available to save yet. Include city and province in Street address for now.</p>
-            <div class="form-grid">
-              <div class="field"><label for="city">City</label><input id="city" type="text" disabled placeholder="Not available yet" aria-describedby="unavailable-profile-fields"></div>
-              <div class="field"><label for="province">Province</label><input id="province" type="text" disabled placeholder="Not available yet" aria-describedby="unavailable-profile-fields"></div>
-              <div class="field"><label for="phone">Phone number</label><input id="phone" type="tel" disabled placeholder="Not available yet" aria-describedby="unavailable-profile-fields"></div>
-              <div class="field"><label for="email">Email</label><input id="email" type="email" disabled placeholder="Not available yet" aria-describedby="unavailable-profile-fields"></div>
-            </div>
+          <div th:replace="~{owner/fragments :: field(${section == 'setup' ? 'Salon address' : 'Street address'}, 'address', 'text', 'Optional · up to 200 characters')}"></div>
+          <!--/* Shared fields preserve entered values and accessible validation errors. */-->
+          <div class="form-grid">
+            <div th:replace="~{owner/fragments :: field('City', 'city', 'text', 'Optional · up to 80 characters')}"></div>
+            <div th:replace="~{owner/fragments :: field('Province', 'province', 'text', 'Optional · up to 80 characters')}"></div>
+            <div th:replace="~{owner/fragments :: field('Phone number', 'phone', 'tel', 'Optional · 7–15 digits · for example, +1 (604) 555-0123')}"></div>
+            <div th:replace="~{owner/fragments :: field('Email', 'email', 'email', 'Optional · public salon contact email; does not change your sign-in email')}"></div>
           </div>
           <div class="field"><label for="description">About your salon</label><textarea id="description" th:field="*{description}" rows="4" maxlength="500" class="resize-none" th:attr="aria-invalid=${#fields.hasErrors('description')}" aria-describedby="description-hint description-error"></textarea><small id="description-hint">Optional · up to 500 characters</small><p id="description-error" class="field-error" th:errors="*{description}"></p></div>
           <div class="actions"><button th:if="${section == 'setup'}" class="button primary" type="submit">Create salon</button><a th:if="${section == 'profile'}" th:href="@{/owner/dashboard}">Back to dashboard</a></div>
@@ -105,12 +103,10 @@
 
       <section th:if="${section == 'hours'}" class="hours-layout">
         <p class="section-description">Set the weekly opening hours for your salon.</p>
-        <div class="notice info">Vancouver time · One-hour appointments. Review before saving: hours cannot be changed in this version.</div>
-        <div class="panel saved-schedule" th:if="${salon.hoursConfigured}">
-          <div class="section-heading"><h2>Your saved schedule</h2><span class="badge">Repeats every week</span></div>
-          <div th:each="day : ${salon.openingHours}" class="saved-day"><strong th:text="${days[day.dayOfWeek - 1]}"></strong><span class="day-status" th:text="${day.open ? 'Open' : 'Closed'}"></span><span th:if="${day.open}" th:text="${day.startTime} + ' – ' + ${day.endTime}"></span></div>
-        </div>
-        <form id="hours-form" th:unless="${salon.hoursConfigured}" class="hours-form" th:action="@{/owner/hours}" method="post" th:object="${hoursForm}" novalidate data-dirty-guard>
+        <div class="notice info">Vancouver time · One-hour appointments. You can update this schedule at any time. Existing appointments keep their booked times.</div>
+        <!--/* Saved and new schedules use the same editable seven-day form. */-->
+        <form id="hours-form" class="hours-form" th:action="@{/owner/hours}" method="post" th:object="${hoursForm}" novalidate data-dirty-guard>
+          <h2 th:text="${salon.hoursConfigured ? 'Edit weekly schedule' : 'Set weekly schedule'}"></h2>
           <div th:replace="~{owner/fragments :: summary}"></div>
           <div class="hours-columns" aria-hidden="true"><span>Day</span><span>Open</span><span>Hours</span></div>
           <fieldset class="day-row" th:each="day, row : *{days}">

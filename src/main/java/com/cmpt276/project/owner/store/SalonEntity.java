@@ -27,6 +27,19 @@ public class SalonEntity {
     @Column(length = 200)
     private String address;
 
+    // Nullable columns preserve existing salons during schema updates.
+    @Column(length = 80)
+    private String city;
+
+    @Column(length = 80)
+    private String province;
+
+    @Column(length = 32)
+    private String phone;
+
+    @Column(length = 254)
+    private String email;
+
     @Column(columnDefinition = "TEXT")
     private String servicesJson;
 
@@ -54,6 +67,15 @@ public class SalonEntity {
     public void setAddress(String address) {
         this.address = address;
     }
+
+    public String getCity() { return city; }
+    public void setCity(String city) { this.city = city; }
+    public String getProvince() { return province; }
+    public void setProvince(String province) { this.province = province; }
+    public String getPhone() { return phone; }
+    public void setPhone(String phone) { this.phone = phone; }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 
     public String getServicesJson() { return servicesJson; }
     public void setServicesJson(String servicesJson) {
