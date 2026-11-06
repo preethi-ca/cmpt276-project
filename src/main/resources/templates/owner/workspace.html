@@ -9,12 +9,11 @@
     <p class="sidebar-role">Salon Owner</p>
     <nav aria-label="Owner navigation" th:if="${salon != null}">
       <a th:href="@{/owner/dashboard}" th:attr="aria-current=${section == 'dashboard' ? 'page' : null}">Dashboard</a>
-      <button type="button" disabled aria-describedby="appointments-help">Appointments <small>Coming later</small></button>
+      <a th:href="@{/owner/appointments}" th:attr="aria-current=${section == 'appointments' ? 'page' : null}">Appointments</a>
       <a th:href="@{/owner/services}" th:attr="aria-current=${section == 'services' or section == 'add-service' ? 'page' : null}">Services</a>
       <a th:href="@{/owner/hours}" th:attr="aria-current=${section == 'hours' ? 'page' : null}">Availability</a>
       <a th:href="@{/owner/profile}" th:attr="aria-current=${section == 'profile' ? 'page' : null}">Salon Settings</a>
     </nav>
-    <p id="appointments-help" class="sidebar-note" th:if="${salon != null}">Appointment management is not available yet.</p>
     <div class="sidebar-salon" th:if="${salon != null}">
       <span class="eyebrow">Your salon</span>
       <strong th:text="${salon.name}"></strong>
@@ -30,7 +29,6 @@
         <form th:action="@{/logout}" method="post" novalidate data-submit-guard><button type="submit" class="text-button">Sign out</button></form>
       </div>
     </header>
-    <div th:if="${demo}" th:insert="~{owner/fragments :: demo}"></div>
     <main id="main" class="workspace">
       <div class="page-heading">
         <h1 th:text="${title}"></h1>
@@ -49,6 +47,40 @@
           <li><a th:href="@{/owner/hours}">Opening hours</a> — <span th:text="${salon.hoursConfigured ? 'Saved' : 'Not set'}"></span></li>
         </ul>
         <p class="notice info">Appointment management and booking statistics are not available yet.</p>
+      </section>
+
+      <section th:if="${section == 'appointments'}" class="appointments-layout" aria-label="Appointment overview">
+        <p class="section-description">Your salon's appointments, at a glance.</p>
+        <!--/* 未接入与零预约是不同状态：破折号配合可读说明，不显示示例记录或虚假统计。 */-->
+        <dl class="appointment-stats" aria-label="Appointment counts">
+          <div class="panel appointment-stat">
+            <dt>Today's appointments</dt>
+            <dd class="appointment-count"><span aria-hidden="true">—</span><span class="sr-only">Not available</span></dd>
+            <dd class="appointment-stat-note">Next appointment: not available</dd>
+          </div>
+          <div class="panel appointment-stat">
+            <dt>Upcoming</dt>
+            <dd class="appointment-count"><span aria-hidden="true">—</span><span class="sr-only">Not available</span></dd>
+            <dd class="appointment-stat-note">Future appointments</dd>
+          </div>
+          <div class="panel appointment-stat">
+            <dt>This week</dt>
+            <dd class="appointment-count"><span aria-hidden="true">—</span><span class="sr-only">Not available</span></dd>
+            <dd class="appointment-stat-note">Weekly overview</dd>
+          </div>
+        </dl>
+        <section class="panel appointment-schedule" aria-labelledby="appointment-schedule-title">
+          <div class="section-heading">
+            <div><h2 id="appointment-schedule-title">Today's appointments</h2><p class="appointment-date"><time th:datetime="${appointmentDate}" th:text="${appointmentDateLabel}"></time></p></div>
+            <span class="badge">Vancouver time · 60-minute appointments</span>
+          </div>
+          <div class="empty-state appointment-empty">
+            <svg class="appointment-calendar" width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" focusable="false"><rect x="7" y="10" width="34" height="32" rx="3"/><path d="M15 6v9M33 6v9M7 21h34M17 29h14M17 35h8"/></svg>
+            <h3>No appointments to display</h3>
+            <p>Today's appointments will appear here once this view is connected to your bookings.</p>
+            <a class="button" th:href="@{/owner/hours}">View availability</a>
+          </div>
+        </section>
       </section>
 
       <section th:if="${section == 'setup' or section == 'profile'}" class="profile-layout">
@@ -103,7 +135,6 @@
 
       <section th:if="${section == 'hours'}" class="hours-layout">
         <p class="section-description">Set the weekly opening hours for your salon.</p>
-        <div class="notice info">Vancouver time · One-hour appointments. You can update this schedule at any time. Existing appointments keep their booked times.</div>
         <!--/* Saved and new schedules use the same editable seven-day form. */-->
         <form id="hours-form" class="hours-form" th:action="@{/owner/hours}" method="post" th:object="${hoursForm}" novalidate data-dirty-guard>
           <h2 th:text="${salon.hoursConfigured ? 'Edit weekly schedule' : 'Set weekly schedule'}"></h2>

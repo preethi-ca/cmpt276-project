@@ -4,8 +4,12 @@ import com.cmpt276.project.owner.auth.CurrentOwner;
 import com.cmpt276.project.owner.model.OpeningDay;
 import com.cmpt276.project.owner.model.Salon;
 import com.cmpt276.project.owner.service.OwnerService;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -92,6 +96,18 @@ public class OwnerController {
             return "redirect:/owner/setup";
         }
         return page(model, "dashboard", "Dashboard");
+    }
+
+    @GetMapping("/appointments")
+    public String appointments(Model model) {
+        if (model.getAttribute("salon") == null) {
+            return "redirect:/owner/setup";
+        }
+        LocalDate today = LocalDate.now(ZoneId.of("America/Vancouver"));
+        model.addAttribute("appointmentDate", today.toString());
+        model.addAttribute("appointmentDateLabel", today.format(
+                DateTimeFormatter.ofPattern("EEEE, MMMM d, uuuu", Locale.CANADA)));
+        return page(model, "appointments", "Appointments");
     }
 
     @GetMapping("/profile")
