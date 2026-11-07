@@ -76,7 +76,7 @@
             <div class="col-md-4" th:each="item : ${salon.services}">
               <div class="card h-100">
                 <div class="card-body">
-                  <h3 class="h5" th:text="${item.name}">Haircut</h3>
+                  <h3 class="h5" th:text="${item.name}">Haircut</h3><p th:if="${!#strings.isEmpty(item.description)}" th:text="${item.description}"></p>
 
                   <p class="fw-bold" th:text="'$' + ${item.price}">$30</p>
 

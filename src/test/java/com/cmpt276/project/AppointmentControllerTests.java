@@ -57,6 +57,7 @@ class AppointmentControllerTests {
         when(ownerService.findForOwner("42")).thenReturn(salon);
         when(salon.getName()).thenReturn("Owner Salon");
         when(salon.getSlug()).thenReturn("owner-salon");
+        when(ownerService.findPublicSalonBySlug("owner-salon")).thenReturn(salon);
 
         LocalDate before = LocalDate.now(ZoneId.of("America/Vancouver"));
         mockMvc.perform(get("/owner/appointments").param("ownerId", "another-owner")
@@ -65,6 +66,9 @@ class AppointmentControllerTests {
                 .andExpect(view().name("owner/workspace"))
                 .andExpect(model().attribute("section", "appointments"))
                 .andExpect(model().attribute("salon", salon))
+                .andExpect(model().attribute("salonUrl", "/salons/owner-salon"))
+                .andExpect(content().string(containsString("href=\"/salons/owner-salon\"")))
+                .andExpect(content().string(not(containsString("/demo/salons/"))))
                 .andExpect(content().string(containsString("href=\"/owner/appointments\" aria-current=\"page\"")))
                 .andExpect(content().string(containsString("No appointments to display")))
                 .andExpect(content().string(not(containsString("Booking data is not connected to this view yet."))))
@@ -79,6 +83,9 @@ class AppointmentControllerTests {
                     assertTrue(date.equals(before.toString()) || date.equals(after.toString()));
                 });
         verifyNoInteractions(appointmentRepository);
+        mockMvc.perform(get("/salons/owner-salon"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("customer/public-salon"));
     }
 
     @Test

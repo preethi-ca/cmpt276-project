@@ -98,7 +98,30 @@ public class OwnerService {
     }
 
     public synchronized boolean addService(String ownerId, ServiceForm form, Errors errors) {
+        return saveService(ownerId, null, form, errors);
+    }
+
+    public synchronized boolean updateService(String ownerId, String id, ServiceForm form, Errors errors) {
+        return saveService(ownerId, id, form, errors);
+    }
+
+    public SalonService findService(String ownerId, String id) {
+        return requireSalon(ownerId).getServices().stream().filter(item -> item.getId().equals(id))
+                .findFirst().orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    }
+
+    public synchronized void deleteService(String ownerId, String id) {
         Salon salon = requireSalon(ownerId);
+        findService(ownerId, id);
+        // Remove only this owner's menu entry; saved appointments remain intact.
+        salon.getServices().removeIf(item -> item.getId().equals(id));
+        store.save(salon);
+    }
+
+    private boolean saveService(String ownerId, String id, ServiceForm form, Errors errors) {
+        Salon salon = requireSalon(ownerId);
+        SalonService target = id == null ? new SalonService() : findService(ownerId, id);
+        validateText(form.getDescription(), "description", 500, false, errors);
         validateText(form.getName(), "name", 80, true, errors);
         BigDecimal price = null;
         String value = clean(form.getPrice());
@@ -111,7 +134,7 @@ public class OwnerService {
             price = new BigDecimal(value).setScale(2);
         }
         for (SalonService service : salon.getServices()) {
-            if (service.getName().equalsIgnoreCase(clean(form.getName()))) {
+            if (!service.getId().equals(id) && service.getName().equalsIgnoreCase(clean(form.getName()))) {
                 errors.rejectValue("name", "duplicate", "A service with this name already exists.");
                 break;
             }
@@ -119,11 +142,16 @@ public class OwnerService {
         if (errors.hasErrors()) {
             return false;
         }
-        SalonService service = new SalonService();
-        service.setId(UUID.randomUUID().toString());
-        service.setName(form.getName().trim());
-        service.setPrice(price);
-        salon.getServices().add(service);
+        // Validate before mutation and preserve identity on edits.
+        target.setName(form.getName().trim());
+        target.setPrice(price);
+        target.setDescription(clean(form.getDescription()));
+        if (id == null) {
+            target.setId(UUID.randomUUID().toString());
+            salon.getServices().add(target);
+        } else {
+            salon.getServices().replaceAll(item -> item.getId().equals(id) ? target : item);
+        }
         store.save(salon);
         return true;
     }

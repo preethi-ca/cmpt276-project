@@ -16,6 +16,7 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.InitBinder;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -58,8 +59,7 @@ public class OwnerController {
         boolean demo = environment.matchesProfiles("demo");
         model.addAttribute("demo", demo);
         if (salon != null) {
-            String prefix = demo ? "/demo/salons/" : "/salons/";
-            model.addAttribute("salonUrl", prefix + salon.getSlug());
+            model.addAttribute("salonUrl", "/salons/" + salon.getSlug());
         }
     }
 
@@ -164,6 +164,37 @@ public class OwnerController {
         return "redirect:/owner/services?page=" + lastPage;
     }
 
+    @GetMapping("/services/{id}/edit")
+    public String editService(@PathVariable String id, Model model) {
+        var item = service.findService(currentOwner.getOwnerId(), id);
+        ServiceForm form = new ServiceForm();
+        form.setName(item.getName());
+        form.setPrice(item.getPrice().toPlainString());
+        form.setDescription(item.getDescription());
+        model.addAttribute("serviceForm", form);
+        model.addAttribute("serviceId", id);
+        return page(model, "edit-service", "Edit Service");
+    }
+
+    @PostMapping("/services/{id}/edit")
+    public String updateService(@PathVariable String id, @ModelAttribute("serviceForm") ServiceForm form,
+            BindingResult errors, Model model, RedirectAttributes redirect) {
+        if (!service.updateService(currentOwner.getOwnerId(), id, form, errors)) {
+            model.addAttribute("serviceId", id);
+            return page(model, "edit-service", "Edit Service");
+        }
+        redirect.addFlashAttribute("success", "Service saved.");
+        return "redirect:/owner/services";
+    }
+
+    @PostMapping("/services/{id}/delete")
+    public String deleteService(@PathVariable String id, RedirectAttributes redirect) {
+        // Resolve the ID only within the authenticated owner's salon.
+        service.deleteService(currentOwner.getOwnerId(), id);
+        redirect.addFlashAttribute("success", "Service deleted.");
+        return "redirect:/owner/services";
+    }
+
     @GetMapping("/hours")
     public String hours(Model model) {
         if (model.getAttribute("salon") == null) {
@@ -241,6 +272,9 @@ public class OwnerController {
     public static class ServiceForm {
         private String name = "";
         private String price = "";
+        private String description = "";
+        public String getDescription() { return description; }
+        public void setDescription(String description) { this.description = description; }
         public String getName() { return name; }
         public void setName(String name) { this.name = name; }
         public String getPrice() { return price; }

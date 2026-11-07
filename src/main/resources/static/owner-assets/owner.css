@@ -231,3 +231,6 @@ dialog::backdrop { background: rgb(25 34 28 / 35%); }
     .toggle-track { display: none; }
     .sidebar nav a[aria-current="page"] { border-color: Highlight; }
 }
+
+.service-actions form { display: inline-block; margin: 0; }
+.service-actions .button { margin: 3px 8px 3px 0; min-height: 38px; padding: 7px 13px; font-size: 13px; }

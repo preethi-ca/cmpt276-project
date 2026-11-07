@@ -10,7 +10,7 @@
     <nav aria-label="Owner navigation" th:if="${salon != null}">
       <a th:href="@{/owner/dashboard}" th:attr="aria-current=${section == 'dashboard' ? 'page' : null}">Dashboard</a>
       <a th:href="@{/owner/appointments}" th:attr="aria-current=${section == 'appointments' ? 'page' : null}">Appointments</a>
-      <a th:href="@{/owner/services}" th:attr="aria-current=${section == 'services' or section == 'add-service' ? 'page' : null}">Services</a>
+      <a th:href="@{/owner/services}" th:attr="aria-current=${section == 'services' or section == 'add-service' or section == 'edit-service' ? 'page' : null}">Services</a>
       <a th:href="@{/owner/hours}" th:attr="aria-current=${section == 'hours' ? 'page' : null}">Availability</a>
       <a th:href="@{/owner/profile}" th:attr="aria-current=${section == 'profile' ? 'page' : null}">Salon Settings</a>
     </nav>
@@ -18,7 +18,6 @@
       <span class="eyebrow">Your salon</span>
       <strong th:text="${salon.name}"></strong>
       <span class="muted" th:text="${salon.address}"></span>
-      <a th:href="@{${salonUrl}}" th:text="${demo ? 'Preview salon' : 'View salon page'}"></a>
     </div>
   </aside>
   <div class="workspace-shell">
@@ -51,7 +50,6 @@
 
       <section th:if="${section == 'appointments'}" class="appointments-layout" aria-label="Appointment overview">
         <p class="section-description">Your salon's appointments, at a glance.</p>
-        <!--/* 未接入与零预约是不同状态：破折号配合可读说明，不显示示例记录或虚假统计。 */-->
         <dl class="appointment-stats" aria-label="Appointment counts">
           <div class="panel appointment-stat">
             <dt>Today's appointments</dt>
@@ -103,7 +101,7 @@
       </section>
 
       <section th:if="${section == 'services'}" class="services-layout" aria-label="Service menu">
-        <p class="section-description">Your service menu and prices. Every appointment lasts one hour.</p>
+
         <div class="service-list">
           <div th:if="${salon.services.isEmpty()}" class="empty-state"><h2>No services yet.</h2><p>Choose Add Service to create your first service and price.</p></div>
           <div th:unless="${salon.services.isEmpty()}" class="table-scroll">
@@ -112,24 +110,24 @@
               <thead><tr><th scope="col">Service</th><th scope="col">Price (CAD)</th><th scope="col">Actions</th></tr></thead>
               <tbody><tr th:each="item : ${servicePage}">
                 <td class="service-name" th:text="${item.name}"></td><td class="price" th:text="'$' + ${item.price}"></td>
-                <td class="service-actions"><button type="button" disabled aria-describedby="service-actions-help">Edit</button><button type="button" disabled aria-describedby="service-actions-help">Delete</button></td>
+                <td class="service-actions"><a class="button" th:href="@{/owner/services/{id}/edit(id=${item.id})}">Edit</a><form th:action="@{/owner/services/{id}/delete(id=${item.id})}" method="post" data-delete-service th:attr="data-service-name=${item.name}"><button type="submit">Delete</button></form></td>
               </tr></tbody>
             </table>
           </div>
-          <p id="service-actions-help" class="field-help">Editing and deleting services are not available yet. You can add a new service.</p>
+
           <nav class="pagination" aria-label="Service pages" th:if="${totalPages > 1}"><a th:if="${currentPage > 1}" th:href="@{/owner/services(page=${currentPage - 1})}">Previous</a><span th:text="'Page ' + ${currentPage} + ' of ' + ${totalPages}"></span><a th:if="${currentPage < totalPages}" th:href="@{/owner/services(page=${currentPage + 1})}">Next</a></nav>
         </div>
       </section>
 
-      <section th:if="${section == 'add-service'}" class="add-service-layout">
+      <section th:if="${section == 'add-service' or section == 'edit-service'}" class="add-service-layout">
         <a class="back-link" th:href="@{/owner/services}"><span aria-hidden="true">← </span>Back to Services</a>
-        <form class="panel service-form" th:action="@{/owner/services}" method="post" th:object="${serviceForm}" novalidate data-dirty-guard>
-          <h2>Service Details</h2><p class="muted">Each appointment reserves one hour.</p>
+        <form class="panel service-form" th:action="${section == 'edit-service'} ? @{/owner/services/{id}/edit(id=${serviceId})} : @{/owner/services}" method="post" th:object="${serviceForm}" novalidate data-dirty-guard>
+          <h2>Service Details</h2>
           <div th:replace="~{owner/fragments :: summary}"></div>
-          <div th:replace="~{owner/fragments :: field('Service name *', 'name', 'text', 'For example, Haircut · up to 80 characters')}"></div>
-          <div class="field"><label for="price">Price (CAD) *</label><input id="price" type="text" inputmode="decimal" th:field="*{price}" th:attr="aria-invalid=${#fields.hasErrors('price')}" aria-describedby="price-hint price-error"><small id="price-hint">For example, 35.00</small><p id="price-error" class="field-error" th:errors="*{price}"></p></div>
-          <div class="field"><label for="service-description">Description</label><textarea id="service-description" rows="4" class="resize-none" disabled placeholder="Not available yet" aria-describedby="service-description-help"></textarea><small id="service-description-help">Service descriptions are not available to save yet.</small></div>
-          <div class="actions"><button class="button primary" type="submit">Add Service</button><a th:href="@{/owner/services}">Cancel</a></div>
+          <div class="field"><label for="name">Service name *</label><input id="name" th:field="*{name}" maxlength="80" th:attr="aria-invalid=${#fields.hasErrors('name')}" aria-describedby="name-error"><p id="name-error" class="field-error" th:errors="*{name}"></p></div>
+          <div class="field"><label for="price">Price (CAD) *</label><input id="price" type="text" inputmode="decimal" th:field="*{price}" th:attr="aria-invalid=${#fields.hasErrors('price')}" aria-describedby="price-error"><p id="price-error" class="field-error" th:errors="*{price}"></p></div>
+          <div class="field"><label for="description">Description</label><textarea id="description" th:field="*{description}" rows="4" maxlength="500" class="resize-none" th:attr="aria-invalid=${#fields.hasErrors('description')}" aria-describedby="description-error"></textarea><p id="description-error" class="field-error" th:errors="*{description}"></p></div>
+          <div class="actions"><button class="button primary" type="submit" th:text="${section == 'edit-service' ? 'Save Changes' : 'Add Service'}">Add Service</button><a th:href="@{/owner/services}">Cancel</a></div>
         </form>
       </section>
 
@@ -158,5 +156,6 @@
   </div>
 </div>
 <dialog th:replace="~{owner/fragments :: leaveDialog}"></dialog>
+<dialog id="delete-service-dialog" aria-labelledby="delete-service-title"><h2 id="delete-service-title">Delete service?</h2><p id="delete-service-name"></p><form method="dialog"><div class="actions"><button value="cancel" autofocus>Cancel</button><button value="delete">Delete</button></div></form></dialog>
 </body>
 </html>
