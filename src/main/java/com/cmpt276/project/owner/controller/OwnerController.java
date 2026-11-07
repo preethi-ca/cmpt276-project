@@ -35,7 +35,7 @@ public class OwnerController {
         this.service = service;
         this.currentOwner = currentOwner;
         this.environment = environment;
-        this.analyticsService = analyticsService;
+        this.analyticsService = salonAnalyticsService;
     }
 
     @InitBinder("hoursForm")
