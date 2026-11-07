@@ -39,6 +39,9 @@
               <h1 th:text="${salon.name}">Magiccuts Salon</h1>
 
               <p th:text="${salon.address}">123 Main Street</p>
+              <p th:if="${!#strings.isEmpty(salon.city) or !#strings.isEmpty(salon.province)}"><span th:text="${salon.city}"></span><span th:if="${!#strings.isEmpty(salon.city) and !#strings.isEmpty(salon.province)}">, </span><span th:text="${salon.province}"></span></p>
+              <p th:if="${!#strings.isEmpty(salon.phone)}">Phone: <span th:text="${salon.phone}"></span></p>
+              <p th:if="${!#strings.isEmpty(salon.email)}">Email: <span th:text="${salon.email}"></span></p>
             </div>
 
             <div class="col-md-4">
@@ -73,7 +76,7 @@
             <div class="col-md-4" th:each="item : ${salon.services}">
               <div class="card h-100">
                 <div class="card-body">
-                  <h3 class="h5" th:text="${item.name}">Haircut</h3>
+                  <h3 class="h5" th:text="${item.name}">Haircut</h3><p th:if="${!#strings.isEmpty(item.description)}" th:text="${item.description}"></p>
 
                   <p class="fw-bold" th:text="'$' + ${item.price}">$30</p>
 

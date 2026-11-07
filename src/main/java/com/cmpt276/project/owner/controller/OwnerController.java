@@ -4,14 +4,19 @@ import com.cmpt276.project.owner.auth.CurrentOwner;
 import com.cmpt276.project.owner.model.OpeningDay;
 import com.cmpt276.project.owner.model.Salon;
 import com.cmpt276.project.owner.service.OwnerService;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.InitBinder;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -33,6 +38,12 @@ public class OwnerController {
         this.environment = environment;
     }
 
+    @InitBinder("salonForm")
+    public void profileBinding(WebDataBinder binder) {
+        // Identity and ownership always come from the authenticated account.
+        binder.setAllowedFields("name", "description", "address", "city", "province", "phone", "email");
+    }
+
     @InitBinder("hoursForm")
     public void hoursBinding(WebDataBinder binder) {
         binder.setAutoGrowCollectionLimit(7);
@@ -48,8 +59,7 @@ public class OwnerController {
         boolean demo = environment.matchesProfiles("demo");
         model.addAttribute("demo", demo);
         if (salon != null) {
-            String prefix = demo ? "/demo/salons/" : "/salons/";
-            model.addAttribute("salonUrl", prefix + salon.getSlug());
+            model.addAttribute("salonUrl", "/salons/" + salon.getSlug());
         }
     }
 
@@ -88,6 +98,18 @@ public class OwnerController {
         return page(model, "dashboard", "Dashboard");
     }
 
+    @GetMapping("/appointments")
+    public String appointments(Model model) {
+        if (model.getAttribute("salon") == null) {
+            return "redirect:/owner/setup";
+        }
+        LocalDate today = LocalDate.now(ZoneId.of("America/Vancouver"));
+        model.addAttribute("appointmentDate", today.toString());
+        model.addAttribute("appointmentDateLabel", today.format(
+                DateTimeFormatter.ofPattern("EEEE, MMMM d, uuuu", Locale.CANADA)));
+        return page(model, "appointments", "Appointments");
+    }
+
     @GetMapping("/profile")
     public String profile(Model model) {
         Salon salon = (Salon) model.getAttribute("salon");
@@ -98,6 +120,10 @@ public class OwnerController {
         form.setName(salon.getName());
         form.setDescription(salon.getDescription());
         form.setAddress(salon.getAddress());
+        form.setCity(salon.getCity());
+        form.setProvince(salon.getProvince());
+        form.setPhone(salon.getPhone());
+        form.setEmail(salon.getEmail());
         model.addAttribute("salonForm", form);
         return page(model, "profile", "Salon Settings");
     }
@@ -138,12 +164,54 @@ public class OwnerController {
         return "redirect:/owner/services?page=" + lastPage;
     }
 
+    @GetMapping("/services/{id}/edit")
+    public String editService(@PathVariable String id, Model model) {
+        var item = service.findService(currentOwner.getOwnerId(), id);
+        ServiceForm form = new ServiceForm();
+        form.setName(item.getName());
+        form.setPrice(item.getPrice().toPlainString());
+        form.setDescription(item.getDescription());
+        model.addAttribute("serviceForm", form);
+        model.addAttribute("serviceId", id);
+        return page(model, "edit-service", "Edit Service");
+    }
+
+    @PostMapping("/services/{id}/edit")
+    public String updateService(@PathVariable String id, @ModelAttribute("serviceForm") ServiceForm form,
+            BindingResult errors, Model model, RedirectAttributes redirect) {
+        if (!service.updateService(currentOwner.getOwnerId(), id, form, errors)) {
+            model.addAttribute("serviceId", id);
+            return page(model, "edit-service", "Edit Service");
+        }
+        redirect.addFlashAttribute("success", "Service saved.");
+        return "redirect:/owner/services";
+    }
+
+    @PostMapping("/services/{id}/delete")
+    public String deleteService(@PathVariable String id, RedirectAttributes redirect) {
+        // Resolve the ID only within the authenticated owner's salon.
+        service.deleteService(currentOwner.getOwnerId(), id);
+        redirect.addFlashAttribute("success", "Service deleted.");
+        return "redirect:/owner/services";
+    }
+
     @GetMapping("/hours")
     public String hours(Model model) {
         if (model.getAttribute("salon") == null) {
             return "redirect:/owner/setup";
         }
-        model.addAttribute("hoursForm", new HoursForm());
+        Salon salon = (Salon) model.getAttribute("salon");
+        HoursForm form = new HoursForm();
+        // Copy saved values so editing or rejecting input cannot mutate the stored schedule.
+        for (OpeningDay saved : salon.getOpeningHours()) {
+            OpeningDay day = form.getDays().get(saved.getDayOfWeek() - 1);
+            day.setOpen(saved.isOpen());
+            if (saved.isOpen()) {
+                day.setStartTime(saved.getStartTime());
+                day.setEndTime(saved.getEndTime());
+            }
+        }
+        model.addAttribute("hoursForm", form);
         return page(model, "hours", "Availability");
     }
 
@@ -178,6 +246,11 @@ public class OwnerController {
         private String name = "";
         private String description = "";
         private String address = "";
+        private String city = "";
+        private String province = "";
+        private String phone = "";
+        private String email = "";
+
 
         public String getName() { return name; }
         public void setName(String name) { this.name = name; }
@@ -185,11 +258,23 @@ public class OwnerController {
         public void setDescription(String description) { this.description = description; }
         public String getAddress() { return address; }
         public void setAddress(String address) { this.address = address; }
+
+        public String getCity() { return city; }
+        public void setCity(String city) { this.city = city; }
+        public String getProvince() { return province; }
+        public void setProvince(String province) { this.province = province; }
+        public String getPhone() { return phone; }
+        public void setPhone(String phone) { this.phone = phone; }
+        public String getEmail() { return email; }
+        public void setEmail(String email) { this.email = email; }
     }
 
     public static class ServiceForm {
         private String name = "";
         private String price = "";
+        private String description = "";
+        public String getDescription() { return description; }
+        public void setDescription(String description) { this.description = description; }
         public String getName() { return name; }
         public void setName(String name) { this.name = name; }
         public String getPrice() { return price; }

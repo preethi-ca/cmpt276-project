@@ -1,5 +1,6 @@
 package com.cmpt276.project;
 
+import com.cmpt276.project.model.Appointment;
 import com.cmpt276.project.owner.model.OpeningDay;
 import com.cmpt276.project.owner.model.Salon;
 import com.cmpt276.project.owner.model.SalonService;
@@ -219,6 +220,14 @@ class BookingControllerTests {
         when(service.getName())
                 .thenReturn("Haircut");
 
+        // Confirmation now reads the returned appointment and resolves its salon by ID.
+        Appointment appointment = new Appointment("Haircut", "service1", "salon1",
+                LocalDate.parse("2026-11-02"), "10:00", null);
+        when(bookingService.bookAppointment("service1", "magiccuts-salon",
+                "2026-11-02", "10:00", "customer@test.com")).thenReturn(appointment);
+        when(ownerService.findPublicSalon("salon1")).thenReturn(salon);
+        when(salon.getSlug()).thenReturn("magiccuts-salon");
+
         mockMvc.perform(post("/customer/booking/confirm")
                 .with(user("customer@test.com").roles("CUSTOMER"))
                 .with(csrf())
@@ -230,7 +239,7 @@ class BookingControllerTests {
                 .andExpect(view().name("customer/booking-confirmation"))
                 .andExpect(model().attribute("salonName", "Magic Cuts"))
                 .andExpect(model().attribute("serviceName", "Haircut"))
-                .andExpect(model().attribute("appointmentDate", "2026-11-02"))
+                .andExpect(model().attribute("appointmentDate", LocalDate.parse("2026-11-02")))
                 .andExpect(model().attribute("appointmentTime", "10:00"))
                 .andExpect(model().attribute("bookedService", service));
     }
