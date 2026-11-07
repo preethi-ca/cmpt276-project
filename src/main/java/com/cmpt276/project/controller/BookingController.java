@@ -41,6 +41,7 @@ public class BookingController {
         model.addAttribute("service", service);
         model.addAttribute("serviceName", selectedService.getName());
         model.addAttribute("salon", salon);
+        model.addAttribute("minDate", LocalDate.now().toString());
         model.addAttribute("openingHours", selectedSalon.getOpeningHours());
         String[] days = {"Monday", "Tuesday", "Wednesday", "Thursday","Friday", "Saturday", "Sunday"};
         model.addAttribute("days", days);
@@ -53,9 +54,21 @@ public class BookingController {
         Salon selectedSalon = ownerService.findPublicSalonBySlug(salon);
         SalonService selectedService = findService(selectedSalon, service);
         LocalDate date = LocalDate.parse(appointmentDate);
+        //prevents customers from selecting an appointment date that has already passed
+        if (date.isBefore(LocalDate.now())){
+            model.addAttribute("error", "Sorry, this date has already passed");
+            model.addAttribute("service", service);
+            model.addAttribute("salon", salon);
+            model.addAttribute("serviceName", selectedService.getName());
+            model.addAttribute("openingHours", selectedSalon.getOpeningHours());
+            model.addAttribute("minDate", LocalDate.now().toString());
+            String[] days = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
+            model.addAttribute("days", days);
+            return "customer/select-date";
+        }
         int selectedDay = date.getDayOfWeek().getValue();
         boolean salonIsOpen = false;
-        for (OpeningDay day : selectedSalon.getOpeningHours()) {
+        for (OpeningDay day: selectedSalon.getOpeningHours()) {
             if (day.getDayOfWeek() == selectedDay && day.isOpen()) {
                 salonIsOpen = true;
                 break;
@@ -67,6 +80,7 @@ public class BookingController {
             model.addAttribute("salon", salon);
             model.addAttribute("serviceName", selectedService.getName());
             model.addAttribute("openingHours", selectedSalon.getOpeningHours());
+            model.addAttribute("minDate", LocalDate.now().toString());
             String[] days = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
             model.addAttribute("days", days);
             return "customer/select-date";
@@ -107,6 +121,18 @@ public class BookingController {
             Salon selectedSalon = ownerService.findPublicSalonBySlug(salon);
             SalonService selectedService = findService(selectedSalon, service);
             LocalDate date = LocalDate.parse(appointmentDate);
+            //return customers back to the select date page if they try to book a date that has already passed
+            if (date.isBefore(LocalDate.now())) { 
+                model.addAttribute("error", error.getMessage());
+                model.addAttribute("service", service);
+                model.addAttribute("salon", salon);
+                model.addAttribute("serviceName", selectedService.getName());
+                model.addAttribute("openingHours", selectedSalon.getOpeningHours());
+                model.addAttribute("minDate", LocalDate.now().toString());
+                String[] days = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
+                model.addAttribute("days", days);
+                return "customer/select-date"; // CHANGED
+            }
             List<String> availableTimes = bookingService.getAvailableTimes(salon, date);
             model.addAttribute("error", error.getMessage());
             model.addAttribute("service", service);
@@ -117,13 +143,14 @@ public class BookingController {
             model.addAttribute("bookedService", selectedService);
             return "customer/select-time";
         }
-        // Spring commits the service transaction before returning the appointment.
         model.addAttribute("service", appointment.getServiceId());
         model.addAttribute("serviceName", appointment.getServiceName());
         model.addAttribute("appointmentDate", appointment.getAppointmentDate());
         model.addAttribute("appointmentTime", appointment.getAppointmentTime());
         model.addAttribute("salonName", "Salon details are unavailable");
 
+
+        //Confirmation email
         BookingEmailResult emailResult = BookingEmailResult.UNAVAILABLE;
         BookingConfirmationMessage message = null;
         try {
@@ -156,13 +183,13 @@ public class BookingController {
 
     private String emailFeedback(BookingEmailResult result) {
         if (result == BookingEmailResult.ACCEPTED) {
-            return "Confirmation email submitted for delivery.";
+            return "Confirmation email submitted.";
         }
         if (result == BookingEmailResult.REJECTED) {
             return "The email provider rejected the confirmation email. Your appointment is still booked.";
         }
         if (result == BookingEmailResult.UNCERTAIN) {
-            return "Email sending could not be confirmed; the email may still arrive. Your appointment is still booked.";
+            return "Email sending could not be confirmed, the email may still arrive. Your appointment is still booked.";
         }
         return "Confirmation email is unavailable. Your appointment is still booked.";
     }
