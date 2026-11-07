@@ -64,6 +64,21 @@
                         <p class="field-error" id="email-error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></p>
                     </div>
 
+                    <!-- Phone Number -->
+                    <div class="form-group">
+                        <label for="phoneNumber">Phone Number (Optional)</label>
+                        <input
+                            type="tel"
+                            id="phoneNumber"
+                            th:field="*{phoneNumber}"
+                            placeholder="(604) 555-0123"
+                            autocomplete="tel">
+                        <p class="field-error"
+                           id="phoneNumber-error"
+                           th:if="${#fields.hasErrors('phoneNumber')}"
+                           th:errors="*{phoneNumber}"></p>
+                    </div>
+
                     <!-- Password -->
                     <div class="form-group">
                         <label for="password">Password</label>
@@ -93,6 +108,23 @@
 
                         </select>
                         <p class="field-error" id="roleType-error" th:if="${#fields.hasErrors('roleType')}" th:errors="*{roleType}"></p>
+                    </div>
+
+                    <!-- Notification Preference -->
+                    <div class="form-group">
+                        <label for="notificationPreference">Booking Confirmation Preference</label>
+                        <select
+                            id="notificationPreference"
+                            th:field="*{notificationPreference}"
+                            required>
+                            <option value="EMAIL">Email</option>
+                            <option value="SMS">SMS (Text Message)</option>
+                            <option value="BOTH">Both Email and SMS</option>
+                        </select>
+                        <p class="field-error"
+                           id="notificationPreference-error"
+                           th:if="${#fields.hasErrors('notificationPreference')}"
+                           th:errors="*{notificationPreference}"></p>
                     </div>
 
                     <!-- Submit Button -->

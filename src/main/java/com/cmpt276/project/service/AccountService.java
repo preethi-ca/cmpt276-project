@@ -10,8 +10,12 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.Errors;
+import com.cmpt276.project.model.NotificationPreference;
 
-/** One shared account store for customers and owners, with server-side registration validation. */
+/**
+ * One shared account store for customers and owners, with server-side
+ * registration validation.
+ */
 @Service
 public class AccountService {
     private final AccountRepository accountRepository;
@@ -39,18 +43,57 @@ public class AccountService {
                 || password.getBytes(StandardCharsets.UTF_8).length > 72) {
             errors.rejectValue("password", "invalid", "Use 8 to 64 characters, at most 72 UTF-8 bytes.");
         }
+
         if (!"CUSTOMER".equals(form.getRoleType()) && !"SALONOWNER".equals(form.getRoleType())) {
             errors.rejectValue("roleType", "invalid", "Choose Customer or Salon owner.");
         }
+
+        // validate phone number and notification preference
+        String phoneNumber = form.getPhoneNumber().trim();
+        String preference = form.getNotificationPreference();
+
+        form.setPhoneNumber(phoneNumber);
+
+        // accept optional north american phone numbers with common formatting
+        String digits = phoneNumber.replaceAll("[^0-9]", "");
+
+        if (!phoneNumber.isBlank() &&
+                (!phoneNumber.matches("[+0-9() .-]+")
+                        || !(digits.length() == 10 ||
+                                (digits.length() == 11 && digits.startsWith("1"))))) {
+            errors.rejectValue("phoneNumber", "invalid",
+                    "Enter a valid 10-digit phone number.");
+        }
+
+        if (!"EMAIL".equals(preference)
+                && !"SMS".equals(preference)
+                && !"BOTH".equals(preference)) {
+            errors.rejectValue("notificationPreference", "invalid",
+                    "Choose Email, SMS, or Both.");
+        }
+
+        if (("SMS".equals(preference) || "BOTH".equals(preference))
+                && phoneNumber.isBlank()) {
+            errors.rejectValue("phoneNumber", "required",
+                    "A phone number is required for SMS confirmations.");
+        }
+
         if (errors.hasErrors()) {
             return false;
         }
+
         if (accountRepository.findByEmail(email).isPresent()) {
             errors.rejectValue("email", "duplicate", "This email is already registered. Please sign in.");
             return false;
         }
         Account account = new Account(name, email, passwordEncoder.encode(password),
                 RoleType.valueOf(form.getRoleType()));
+
+        account.setPhoneNumber(
+                phoneNumber.isBlank() ? null : phoneNumber);
+
+        account.setNotificationPreference(
+                NotificationPreference.valueOf(preference));
         try {
             // 数据库唯一约束兜底并发注册；在此刷新，才能将重复邮箱回显为表单错误。
             accountRepository.saveAndFlush(account);
