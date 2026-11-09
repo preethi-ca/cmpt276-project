@@ -47,4 +47,29 @@ public class SalonAnalyticsService {
 
     }
 
+    public String getBusiestTime(String salonId) {
+        List<Appointment> appointments = appointmentRepository.findBySalonId(salonId);
+        Map<String, Integer> timeCounts = new HashMap<>();
+
+        for (Appointment appointment : appointments) {
+            String appointmentTime = appointment.getAppointmentTime();
+
+            timeCounts.put(
+                    appointmentTime,
+                    timeCounts.getOrDefault(appointmentTime, 0) + 1);
+        }
+
+        String busiestTime = "No appointments";
+        int highestCount = 0;
+
+        for (Map.Entry<String, Integer> entry : timeCounts.entrySet()) {
+            if (entry.getValue() > highestCount) {
+                highestCount = entry.getValue();
+                busiestTime = entry.getKey();
+            }
+        }
+        return busiestTime;
+
+    }
+
 }
