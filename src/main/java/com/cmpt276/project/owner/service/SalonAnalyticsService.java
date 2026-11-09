@@ -5,7 +5,9 @@ import com.cmpt276.project.repository.AppointmentRepository;
 import org.springframework.stereotype.Service;
 import java.util.HashMap;
 import java.util.Map;
-
+import java.math.BigDecimal;
+import com.cmpt276.project.owner.model.Salon;
+import com.cmpt276.project.owner.model.SalonService;
 import java.util.List;
 
 @Service
@@ -69,6 +71,23 @@ public class SalonAnalyticsService {
             }
         }
         return busiestTime;
+
+    }
+
+    public BigDecimal getEstimatedRevenue(Salon salon) {
+        List<Appointment> appointments = appointmentRepository.findBySalonId(salon.getId());
+
+        BigDecimal totalRevenue = BigDecimal.ZERO;
+
+        for (Appointment appointment : appointments) {
+            for (SalonService service : salon.getServices()) {
+                if (service.getId().equals(appointment.getServiceId())) {
+                    totalRevenue = totalRevenue.add(service.getPrice());
+                    break;
+                }
+            }
+        }
+        return totalRevenue;
 
     }
 
