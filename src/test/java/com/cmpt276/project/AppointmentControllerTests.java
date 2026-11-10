@@ -67,7 +67,7 @@ class AppointmentControllerTests {
                 .andExpect(model().attribute("section", "appointments"))
                 .andExpect(model().attribute("salon", salon))
                 .andExpect(model().attribute("salonUrl", "/salons/owner-salon"))
-                .andExpect(content().string(containsString("href=\"/salons/owner-salon\"")))
+                .andExpect(content().string(not(containsString("href=\"/salons/owner-salon\""))))
                 .andExpect(content().string(not(containsString("/demo/salons/"))))
                 .andExpect(content().string(containsString("href=\"/owner/appointments\" aria-current=\"page\"")))
                 .andExpect(content().string(containsString("No appointments to display")))

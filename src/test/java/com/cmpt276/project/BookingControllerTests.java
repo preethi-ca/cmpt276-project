@@ -248,15 +248,7 @@ class BookingControllerTests {
                 appointmentDate,
                 "10:00",
                 "customer@test.com"))
-                .thenReturn(appointment); 
-
-        // Confirmation now reads the returned appointment and resolves its salon by ID.
-        Appointment appointment = new Appointment("Haircut", "service1", "salon1",
-                LocalDate.parse("2026-11-02"), "10:00", null);
-        when(bookingService.bookAppointment("service1", "magiccuts-salon",
-                "2026-11-02", "10:00", "customer@test.com")).thenReturn(appointment);
-        when(ownerService.findPublicSalon("salon1")).thenReturn(salon);
-        when(salon.getSlug()).thenReturn("magiccuts-salon");
+                .thenReturn(appointment);
 
         mockMvc.perform(post("/customer/booking/confirm")
                 .with(user("customer@test.com").roles("CUSTOMER"))
