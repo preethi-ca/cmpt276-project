@@ -1,11 +1,20 @@
 package com.cmpt276.project;
 
-import com.cmpt276.project.model.Appointment;
-import com.cmpt276.project.owner.model.OpeningDay;
-import com.cmpt276.project.owner.model.Salon;
-import com.cmpt276.project.owner.model.SalonService;
-import com.cmpt276.project.owner.service.OwnerService;
-import com.cmpt276.project.service.BookingService;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
+
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.temporal.TemporalAdjusters;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,17 +23,13 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.time.LocalDate;
-import java.util.List;
+import com.cmpt276.project.model.Appointment;
+import com.cmpt276.project.owner.model.OpeningDay;
+import com.cmpt276.project.owner.model.Salon;
+import com.cmpt276.project.owner.model.SalonService;
+import com.cmpt276.project.owner.service.OwnerService;
+import com.cmpt276.project.service.BookingService;
 
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -70,7 +75,8 @@ class BookingControllerTests {
                 .andExpect(model().attribute("serviceName", "Haircut"))
                 .andExpect(model().attribute("salon", "magiccuts-salon"))
                 .andExpect(model().attributeExists("openingHours"))
-                .andExpect(model().attributeExists("days"));
+                .andExpect(model().attributeExists("days"))
+                .andExpect(model().attributeExists("minDate"));
     }
 
     @Test
@@ -79,6 +85,7 @@ class BookingControllerTests {
         Salon salon = mock(Salon.class);
         SalonService service = mock(SalonService.class);
         OpeningDay monday = mock(OpeningDay.class);
+        String appointmentDate = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.MONDAY)).toString();
 
         when(ownerService.findPublicSalonBySlug("magiccuts-salon"))
                 .thenReturn(salon);
@@ -105,7 +112,7 @@ class BookingControllerTests {
                 .with(user("customer@test.com").roles("CUSTOMER"))
                 .param("service", "service1")
                 .param("salon", "magiccuts-salon")
-                .param("appointmentDate", "2026-11-02"))
+                .param("appointmentDate", appointmentDate))
                 .andExpect(status().isOk())
                 .andExpect(view().name("customer/select-date"))
                 .andExpect(model().attribute(
@@ -122,6 +129,7 @@ class BookingControllerTests {
         Salon salon = mock(Salon.class);
         SalonService service = mock(SalonService.class);
         OpeningDay monday = mock(OpeningDay.class);
+        String appointmentDate = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.MONDAY)).toString();
 
         when(ownerService.findPublicSalonBySlug("magiccuts-salon"))
                 .thenReturn(salon);
@@ -146,18 +154,18 @@ class BookingControllerTests {
 
         when(bookingService.getAvailableTimes(
                 "magiccuts-salon",
-                LocalDate.parse("2026-11-02")))
+                LocalDate.parse(appointmentDate)))
                 .thenReturn(List.of("09:00", "10:00"));
 
         mockMvc.perform(get("/customer/booking/time")
                 .with(user("customer@test.com").roles("CUSTOMER"))
                 .param("service", "service1")
                 .param("salon", "magiccuts-salon")
-                .param("appointmentDate", "2026-11-02"))
+                .param("appointmentDate", appointmentDate))
                 .andExpect(status().isOk())
                 .andExpect(view().name("customer/select-time"))
                 .andExpect(model().attribute("serviceName", "Haircut"))
-                .andExpect(model().attribute("appointmentDate", "2026-11-02"))
+                .andExpect(model().attribute("appointmentDate", appointmentDate))
                 .andExpect(model().attribute(
                         "availableTimes",
                         List.of("09:00", "10:00")));
@@ -168,6 +176,7 @@ class BookingControllerTests {
 
         Salon salon = mock(Salon.class);
         SalonService service = mock(SalonService.class);
+        String appointmentDate = LocalDate.now().plusDays(2).toString();
 
         when(ownerService.findPublicSalonBySlug("magiccuts-salon"))
                 .thenReturn(salon);
@@ -188,13 +197,13 @@ class BookingControllerTests {
                 .with(user("customer@test.com").roles("CUSTOMER"))
                 .param("service", "service1")
                 .param("salon", "magiccuts-salon")
-                .param("appointmentDate", "2026-11-02")
+                .param("appointmentDate", appointmentDate)
                 .param("appointmentTime", "10:00"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("customer/booking-summary"))
                 .andExpect(model().attribute("salonName", "Magic Cuts"))
                 .andExpect(model().attribute("serviceName", "Haircut"))
-                .andExpect(model().attribute("appointmentDate", "2026-11-02"))
+                .andExpect(model().attribute("appointmentDate", appointmentDate))
                 .andExpect(model().attribute("appointmentTime", "10:00"))
                 .andExpect(model().attribute("bookedService", service));
     }
@@ -207,18 +216,39 @@ class BookingControllerTests {
 
         when(ownerService.findPublicSalonBySlug("magiccuts-salon"))
                 .thenReturn(salon);
+        when(ownerService.findPublicSalon("salon1"))
+        .thenReturn(salon);
+        when(salon.getId())
+                .thenReturn("salon1");
+        when(salon.getSlug())
+                .thenReturn("magiccuts-salon");
+        when(salon.getName()).thenReturn("Magic Cuts");
 
         when(salon.getServices())
                 .thenReturn(List.of(service));
 
-        when(salon.getName())
-                .thenReturn("Magic Cuts");
-
         when(service.getId())
                 .thenReturn("service1");
-
         when(service.getName())
                 .thenReturn("Haircut");
+        /*Tests that the controller correctly handles a successful booking by simulating the booking service returning an appointment 
+        and checking that the customer is redirected to the booking confirmation page with the correct details */
+        String appointmentDate = LocalDate.now().plusDays(2).toString();
+        Appointment appointment = mock(Appointment.class);
+        when(appointment.getServiceId()).thenReturn("service1");
+        when(appointment.getServiceName()).thenReturn("Haircut");
+        when(appointment.getAppointmentDate()).thenReturn(
+                LocalDate.parse(appointmentDate));
+        when(appointment.getAppointmentTime()).thenReturn("10:00");
+        when(appointment.getSalonId()).thenReturn("salon1");
+
+        when(bookingService.bookAppointment(
+                "service1",
+                "magiccuts-salon",
+                appointmentDate,
+                "10:00",
+                "customer@test.com"))
+                .thenReturn(appointment); 
 
         // Confirmation now reads the returned appointment and resolves its salon by ID.
         Appointment appointment = new Appointment("Haircut", "service1", "salon1",
@@ -233,13 +263,13 @@ class BookingControllerTests {
                 .with(csrf())
                 .param("service", "service1")
                 .param("salon", "magiccuts-salon")
-                .param("appointmentDate", "2026-11-02")
+                .param("appointmentDate", appointmentDate)
                 .param("appointmentTime", "10:00"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("customer/booking-confirmation"))
                 .andExpect(model().attribute("salonName", "Magic Cuts"))
                 .andExpect(model().attribute("serviceName", "Haircut"))
-                .andExpect(model().attribute("appointmentDate", LocalDate.parse("2026-11-02")))
+                .andExpect(model().attribute("appointmentDate", LocalDate.parse(appointmentDate)))
                 .andExpect(model().attribute("appointmentTime", "10:00"))
                 .andExpect(model().attribute("bookedService", service));
     }
@@ -249,6 +279,7 @@ class BookingControllerTests {
 
         Salon salon = mock(Salon.class);
         SalonService service = mock(SalonService.class);
+        String appointmentDate = LocalDate.now().plusDays(2).toString();
 
         when(ownerService.findPublicSalonBySlug("magiccuts-salon"))
                 .thenReturn(salon);
@@ -264,7 +295,7 @@ class BookingControllerTests {
 
         when(bookingService.getAvailableTimes(
                 "magiccuts-salon",
-                LocalDate.parse("2026-11-02")))
+                LocalDate.parse(appointmentDate)))
                 .thenReturn(List.of("09:00", "10:00"));
 
         doThrow(new IllegalArgumentException("Appointment time is no longer available"))
@@ -272,7 +303,7 @@ class BookingControllerTests {
                 .bookAppointment(
                         "service1",
                         "magiccuts-salon",
-                        "2026-11-02",
+                        appointmentDate,
                         "10:00",
                         "customer@test.com");
 
@@ -281,7 +312,7 @@ class BookingControllerTests {
                 .with(csrf())
                 .param("service", "service1")
                 .param("salon", "magiccuts-salon")
-                .param("appointmentDate", "2026-11-02")
+                .param("appointmentDate", appointmentDate)
                 .param("appointmentTime", "10:00"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("customer/select-time"))
@@ -292,5 +323,47 @@ class BookingControllerTests {
                 .andExpect(model().attribute(
                         "availableTimes",
                         List.of("09:00", "10:00")));
+    }
+
+    @Test
+    void shouldReturnToDatePageWhenBookingDateIsInPast() throws Exception {
+
+        Salon salon = mock(Salon.class);
+        SalonService service = mock(SalonService.class);
+        String pastDate = LocalDate.now().minusDays(1).toString();
+
+        when(ownerService.findPublicSalonBySlug("magiccuts-salon"))
+                .thenReturn(salon);
+
+        when(salon.getServices())
+                .thenReturn(List.of(service));
+
+        when(service.getId())
+                .thenReturn("service1");
+
+        when(service.getName())
+                .thenReturn("Haircut");
+
+        doThrow(new IllegalArgumentException("Sorry, this date has already passed."))
+                .when(bookingService)
+                .bookAppointment(
+                        "service1",
+                        "magiccuts-salon",
+                        pastDate,
+                        "10:00",
+                        "customer@test.com");
+
+        mockMvc.perform(post("/customer/booking/confirm")
+                .with(user("customer@test.com").roles("CUSTOMER"))
+                .with(csrf())
+                .param("service", "service1")
+                .param("salon", "magiccuts-salon")
+                .param("appointmentDate", pastDate)
+                .param("appointmentTime", "10:00"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("customer/select-date"))
+                .andExpect(model().attribute("error", "Sorry, this date has already passed."))
+                .andExpect(model().attribute("serviceName", "Haircut"))
+                .andExpect(model().attributeExists("minDate"));
     }
 }

@@ -9,20 +9,13 @@
     <link rel="stylesheet" th:href="@{/css/style.css}" />
   </head>
 
+
   <body>
     <main class="container py-5">
       <div class="mb-4">
         <h1>Choose Your Appointment Time</h1>
-
-        <p class="text-muted mb-1">
-          Selected Service:
-          <strong th:text="${serviceName}"></strong>
-        </p>
-
-        <p class="text-muted">
-          Selected Date:
-          <strong th:text="${appointmentDate}"></strong>
-        </p>
+        <p class="text-muted mb-1">Selected Service:<strong th:text="${serviceName}"></strong></p>
+        <p class="text-muted">Selected Date:<strong th:text="${appointmentDate}"></strong></p>
       </div>
 
       <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
@@ -34,8 +27,7 @@
           <div
             th:if="${#lists.isEmpty(availableTimes)}"
             class="alert alert-secondary mb-0"
-          >
-            Sorry, there are no available appointment times for this date.
+            >Sorry, there are no available appointment times for this date.
           </div>
 
           <form
@@ -44,14 +36,8 @@
             method="get"
           >
             <input type="hidden" name="service" th:value="${service}" />
-
             <input type="hidden" name="salon" th:value="${salon}" />
-
-            <input
-              type="hidden"
-              name="appointmentDate"
-              th:value="${appointmentDate}"
-            />
+            <input type="hidden" name="appointmentDate" th:value="${appointmentDate}"/>
 
             <div class="mb-4">
               <div
@@ -85,8 +71,7 @@
         <a
           th:href="@{/customer/booking(service=${service}, salon=${salon})}"
           class="btn btn-outline-secondary"
-        >
-          Back to Date Selection
+          >Back to Date Selection
         </a>
       </div>
     </main>

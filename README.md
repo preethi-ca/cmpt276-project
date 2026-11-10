@@ -19,7 +19,7 @@ Key work completed included:
 3. **Customer dashboard:** A dashboard for customers to view and manage their appointments.
 4. **Public salon page:** A page where customers can browse salon information and access booking options.
 5. **Testing:** Controller tests for authentication, booking, appointments, and public salon pages.
-6. **tyling:** CSS and integrated Bootstrap to improve the appearance and consistency of the pages.
+6. **Styling:** CSS and integrated Bootstrap to improve the appearance and consistency of the pages.
 7. **Notification:** Send email confirmation messages to customers after successfully booking an appointment.
 
 ## Application Features
@@ -78,7 +78,7 @@ BookEasy follows the MVC architecture using Spring Boot
 - **Database:** PostgreSQL stores application information like customer accounts, salon details, and appointments.
 - **Email Notifications:** The application sends email confirmation messages to customers after successful bookings.
 
-## Known Issues/Limitations and Future Improvements
+## Known Issues/Limitations and Future Improvements for Iteration 2 and 3
 - **Search and Discoverability:** Customers may have difficulty finding salons if they do not already know the salon's name or that it exists. More advanced search, filtering, and salon discovery features are needed.
 - **User Flow:** Some parts of the application could have more intuitive navigation. The steps customers follow to browse salons, select services, and complete bookings could be simplified.
 - **Appointment Editing:** Customers currently cannot edit existing appointments.
