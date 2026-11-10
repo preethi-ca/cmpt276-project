@@ -21,7 +21,6 @@ import com.cmpt276.project.owner.model.OpeningDay;
 public class BookingService{
     private final AppointmentRepository appointmentRepository;
     private final AccountRepository accountRepository;
-
     private final OwnerService ownerService;
 
     public BookingService(AppointmentRepository appointmentRepository, AccountRepository accountRepository,OwnerService ownerService) {
@@ -50,6 +49,9 @@ public class BookingService{
             throw new IllegalArgumentException("Service not found in this salon");
         }
         LocalDate date = LocalDate.parse(appointmentDate);
+        if (date.isBefore(LocalDate.now())) { 
+            throw new IllegalArgumentException("Sorry, this date has already passed.");
+        }
         List<String> availableTimes = getAvailableTimes(salonSlug, date);
         if (!availableTimes.contains(appointmentTime)) {
             throw new IllegalArgumentException("Sorry, this appointment time is no longer available");
@@ -75,8 +77,7 @@ public class BookingService{
         }
         LocalTime openingTime = LocalTime.parse(selectedHours.getStartTime());
         LocalTime closingTime = LocalTime.parse(selectedHours.getEndTime());
-        List<Appointment> existingAppointments =
-                appointmentRepository.findBySalonIdAndAppointmentDate(salon.getId(), date);
+        List<Appointment> existingAppointments =appointmentRepository.findBySalonIdAndAppointmentDate(salon.getId(), date);
         List<String> availableTimes = new ArrayList<>();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm");
         LocalTime currentTime = openingTime;

@@ -54,7 +54,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class BookingEmailIntegrationTests {
     private static final String DATABASE_URL = "jdbc:h2:mem:booking-email-integration;DB_CLOSE_DELAY=-1";
     private static final String CUSTOMER_EMAIL = "alex@example.invalid";
-    private static final String DATE = "2026-11-03";
+    private static final String DATE = LocalDate.now().plusDays(2).toString();
 
     @Autowired
     private MockMvc mvc;
@@ -130,7 +130,7 @@ class BookingEmailIntegrationTests {
     @Test
     void sendsAfterCommitAndDoesNotResendForViewsOrARejectedRepeat() throws Exception {
         MvcResult result = book("09:00");
-        assertConfirmation(result, BookingEmailResult.ACCEPTED, "submitted for delivery");
+        assertConfirmation(result, BookingEmailResult.ACCEPTED, "Confirmation email submitted.");
         Appointment saved = appointmentRepository.findAll().get(0);
         assertEquals(1, emailServer.requestCount);
         assertEquals(1, emailServer.committedAppointments,
@@ -234,7 +234,7 @@ class BookingEmailIntegrationTests {
         assertEquals(expected, result.getModelAndView().getModel().get("emailResult"));
         String page = result.getResponse().getContentAsString();
         assertTrue(page.contains("Booking Confirmed!"));
-        assertTrue(page.contains(feedback));
+        assertTrue(page.contains(feedback), "Expected feedback: " + feedback + "\nActual page:\n" + page);
         assertTrue(page.contains("href=\"/customer/appointments\""));
         assertFalse(page.contains("fake-test-key"));
     }
