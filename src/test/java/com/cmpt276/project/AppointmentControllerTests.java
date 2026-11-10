@@ -2,6 +2,7 @@ package com.cmpt276.project;
 
 import com.cmpt276.project.model.Account;
 import com.cmpt276.project.model.Appointment;
+import com.cmpt276.project.model.RoleType;
 import com.cmpt276.project.owner.model.Salon;
 import com.cmpt276.project.owner.service.OwnerService;
 import com.cmpt276.project.repository.AccountRepository;
@@ -16,8 +17,15 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 import java.util.Optional;
+import java.time.LocalDate;
+import java.time.ZoneId;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -38,6 +46,66 @@ class AppointmentControllerTests {
 
     @MockitoBean
     private OwnerService ownerService;
+
+    @Test
+    void ownerAppointmentsShowUnavailableCountsWithoutReadingCustomerBookings() throws Exception {
+        Account owner = mock(Account.class);
+        Salon salon = mock(Salon.class);
+        when(owner.getId()).thenReturn(42);
+        when(owner.getRoleType()).thenReturn(RoleType.SALONOWNER);
+        when(accountRepository.findByEmail("owner@test.com")).thenReturn(Optional.of(owner));
+        when(ownerService.findForOwner("42")).thenReturn(salon);
+        when(salon.getName()).thenReturn("Owner Salon");
+        when(salon.getSlug()).thenReturn("owner-salon");
+        when(ownerService.findPublicSalonBySlug("owner-salon")).thenReturn(salon);
+
+        LocalDate before = LocalDate.now(ZoneId.of("America/Vancouver"));
+        mockMvc.perform(get("/owner/appointments").param("ownerId", "another-owner")
+                .with(user("owner@test.com").roles("SALONOWNER")))
+                .andExpect(status().isOk())
+                .andExpect(view().name("owner/workspace"))
+                .andExpect(model().attribute("section", "appointments"))
+                .andExpect(model().attribute("salon", salon))
+                .andExpect(model().attribute("salonUrl", "/salons/owner-salon"))
+                .andExpect(content().string(containsString("href=\"/salons/owner-salon\"")))
+                .andExpect(content().string(not(containsString("/demo/salons/"))))
+                .andExpect(content().string(containsString("href=\"/owner/appointments\" aria-current=\"page\"")))
+                .andExpect(content().string(containsString("No appointments to display")))
+                .andExpect(content().string(not(containsString("Booking data is not connected to this view yet."))))
+                .andExpect(content().string(not(containsString("Coming later"))))
+                .andExpect(content().string(not(containsString("Local demo"))))
+                .andExpect(result -> {
+                    // Thymeleaf renders HTML5, so XML XPath cannot parse boolean attributes such as defer.
+                    String html = result.getResponse().getContentAsString();
+                    assertEquals(3, html.split("<span class=\"sr-only\">Not available</span>", -1).length - 1);
+                    String date = (String) result.getModelAndView().getModel().get("appointmentDate");
+                    LocalDate after = LocalDate.now(ZoneId.of("America/Vancouver"));
+                    assertTrue(date.equals(before.toString()) || date.equals(after.toString()));
+                });
+        verifyNoInteractions(appointmentRepository);
+        mockMvc.perform(get("/salons/owner-salon"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("customer/public-salon"));
+    }
+
+    @Test
+    void ownerAppointmentsRequireAnExistingSalon() throws Exception {
+        Account owner = mock(Account.class);
+        when(owner.getId()).thenReturn(43);
+        when(owner.getRoleType()).thenReturn(RoleType.SALONOWNER);
+        when(accountRepository.findByEmail("new-owner@test.com")).thenReturn(Optional.of(owner));
+        mockMvc.perform(get("/owner/appointments").with(user("new-owner@test.com").roles("SALONOWNER")))
+                .andExpect(redirectedUrl("/owner/setup"));
+        verifyNoInteractions(appointmentRepository);
+    }
+
+    @Test
+    void ownerAppointmentsRejectGuestsAndCustomers() throws Exception {
+        mockMvc.perform(get("/owner/appointments")).andExpect(redirectedUrl("/login"));
+        mockMvc.perform(get("/owner/appointments").with(user("customer@test.com").roles("CUSTOMER")))
+                .andExpect(status().isForbidden());
+        verifyNoInteractions(appointmentRepository, ownerService);
+    }
 
     @Test
     void shouldShowCustomerAppointments() throws Exception {

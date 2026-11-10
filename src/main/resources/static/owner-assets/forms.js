@@ -102,3 +102,24 @@ var firstInvalid = document.querySelector('[aria-invalid="true"]');
 if (firstInvalid) {
   firstInvalid.focus();
 }
+
+var deleteDialog = document.getElementById('delete-service-dialog');
+var deleteForm = null;
+if (deleteDialog) {
+  document.querySelectorAll('form[data-delete-service]').forEach(function (form) {
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      deleteForm = form;
+      document.getElementById('delete-service-name').textContent = form.dataset.serviceName;
+      deleteDialog.returnValue = '';
+      deleteDialog.showModal();
+    });
+  });
+  deleteDialog.addEventListener('close', function () {
+    if (deleteDialog.returnValue === 'delete' && deleteForm) {
+      deleteForm.querySelector('button').disabled = true;
+      HTMLFormElement.prototype.submit.call(deleteForm);
+    }
+    deleteForm = null;
+  });
+}
