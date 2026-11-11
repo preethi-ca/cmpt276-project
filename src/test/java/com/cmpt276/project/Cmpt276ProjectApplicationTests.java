@@ -1,5 +1,6 @@
 package com.cmpt276.project;
-
+import java.time.DayOfWeek;
+import java.time.temporal.TemporalAdjusters;
 import com.cmpt276.project.model.Account;
 import com.cmpt276.project.model.Appointment;
 import com.cmpt276.project.model.RoleType;
@@ -222,7 +223,8 @@ class Cmpt276ProjectApplicationTests {
         Salon salon = store.findByOwnerId(ownerId);
         Account customer = accounts.save(new Account("Customer", UUID.randomUUID() + "@example.com",
                 "unused-test-hash", RoleType.CUSTOMER));
-        LocalDate monday = LocalDate.of(2026, 11, 9);
+        LocalDate monday = LocalDate.now()
+                .with(TemporalAdjusters.next(DayOfWeek.MONDAY));
         Appointment booked = bookings.bookAppointment(salon.getServices().get(0).getId(),
                 salon.getSlug(), monday.toString(), "10:00", customer.getEmail());
         saveHours("09:30", "13:30");
