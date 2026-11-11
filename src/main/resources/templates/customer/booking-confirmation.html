@@ -23,6 +23,13 @@
         th:text="${emailMessage}"
       ></div>
 
+      <div
+        th:if="${smsMessage}"
+        class="alert alert-info"
+        role="status"
+        th:text="${smsMessage}"
+      ></div>
+
       <div class="card shadow-sm mb-4">
         <div class="card-body">
           <h2 class="h5 mb-4">Appointment Details</h2>
