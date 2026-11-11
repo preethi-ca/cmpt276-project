@@ -8,6 +8,8 @@ import com.cmpt276.project.owner.store.SalonStore;
 import com.cmpt276.project.repository.AccountRepository;
 import com.cmpt276.project.repository.AppointmentRepository;
 import com.sun.net.httpserver.*;
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.servlet.ServletException;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.InetSocketAddress;
@@ -19,21 +21,28 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.*;
+import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.transaction.TransactionSystemException;
+import org.springframework.transaction.support.DefaultTransactionStatus;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 @SpringBootTest(properties = {
         "spring.datasource.url=jdbc:h2:mem:booking-sms-integration;DB_CLOSE_DELAY=-1",
@@ -49,6 +58,8 @@ class BookingSmsIntegrationTests {
     private static final String CUSTOMER_EMAIL = "alex@example.invalid";
     private static final String DATE = LocalDate.now().plusDays(2).toString();
     private static final String ACCOUNT_SID = "AC11111111111111111111111111111111";
+    private static final String API_KEY_SID = "SK22222222222222222222222222222222";
+    private static final String API_KEY_SECRET = "fake-test-secret";
 
     private static final String TEXT_ACCEPTED = "Confirmation text submitted for delivery.";
     private static final String TEXT_REJECTED = "The text message service could not send the confirmation text.";
@@ -77,10 +88,15 @@ class BookingSmsIntegrationTests {
     @Autowired
     private TestSmsSender smsSender;
 
+    @Autowired
+    private CommitFailureTransactionManager transactionManager;
+
     private Salon salon;
 
     @BeforeEach
     void prepareBooking() {
+        transactionManager.failNextCommit = false;
+        transactionManager.commitFailureTriggered = false;
         appointmentRepository.deleteAll();
         accountRepository.deleteAll();
         accountRepository.save(new Account("Alex Lee", CUSTOMER_EMAIL, "fake-password-hash", RoleType.CUSTOMER));
@@ -112,6 +128,15 @@ class BookingSmsIntegrationTests {
         smsSender.attempts = 0;
         smsSender.transactionActive = true;
         smsSender.failSending = false;
+    }
+
+    @AfterEach
+    void finishDelayedResponse() throws InterruptedException {
+        providers.sms.releaseBody.countDown();
+        if (providers.sms.delayBody) {
+            assertTrue(providers.sms.bodyFinished.await(2, TimeUnit.SECONDS),
+                    "Finish the delayed response before the next test uses the server");
+        }
     }
 
     @Test
@@ -269,6 +294,95 @@ class BookingSmsIntegrationTests {
         assertEquals(1, emailSender.attempts);
     }
 
+    @Test
+    void sendsNoTextForFailedSavesOrFailedCommits() throws Exception {
+        useCustomer(NotificationPreference.BOTH, "6045551234");
+
+        // H2 rejects this value during the real repository insert.
+        salon.getServices().get(0).setName("x".repeat(300));
+        assertBookingFails("09:00");
+        assertEquals(0, appointmentRepository.count());
+        salon.getServices().get(0).setName("Haircut");
+
+        // Fail in the transaction manager's commit path, after save has returned.
+        useCustomer(NotificationPreference.SMS, "6045551234");
+        transactionManager.failNextCommit = true;
+        assertBookingFails("10:00");
+        assertTrue(transactionManager.commitFailureTriggered);
+        assertEquals(0, appointmentRepository.count());
+
+        assertEquals(0, smsSender.attempts);
+        assertEquals(0, providers.sms.requestCount);
+        assertEquals(0, emailSender.attempts);
+        assertEquals(0, providers.email.requestCount);
+    }
+
+    @Test
+    void viewingPagesAfterABookingDoesNotSendAnotherText() throws Exception {
+        useCustomer(NotificationPreference.SMS, "6045551234");
+        assertConfirmation(book("09:00"));
+        Appointment saved = appointmentRepository.findAll().get(0);
+        assertEquals(1, providers.sms.requestCount);
+
+        mvc.perform(get("/customer/booking").param("service", "sms-test-service").param("salon", salon.getSlug())
+                .with(user(CUSTOMER_EMAIL).roles("CUSTOMER")))
+                .andExpect(status().isOk()).andExpect(view().name("customer/select-date"));
+        mvc.perform(get("/customer/booking/time").param("service", "sms-test-service").param("salon", salon.getSlug())
+                .param("appointmentDate", DATE).with(user(CUSTOMER_EMAIL).roles("CUSTOMER")))
+                .andExpect(status().isOk()).andExpect(view().name("customer/select-time"));
+        mvc.perform(get("/customer/booking/confirmation")
+                .param("service", "sms-test-service").param("salon", salon.getSlug())
+                .param("appointmentDate", DATE).param("appointmentTime", "09:00")
+                .with(user(CUSTOMER_EMAIL).roles("CUSTOMER")))
+                .andExpect(status().isOk()).andExpect(view().name("customer/booking-summary"));
+        mvc.perform(get("/customer/appointments").with(user(CUSTOMER_EMAIL).roles("CUSTOMER")))
+                .andExpect(status().isOk()).andExpect(view().name("customer/my-appointments"));
+        mvc.perform(get("/customer/appointments/details").param("id", String.valueOf(saved.getId()))
+                .with(user(CUSTOMER_EMAIL).roles("CUSTOMER")))
+                .andExpect(status().isOk()).andExpect(view().name("customer/appointment-details"));
+
+        assertEquals(1, appointmentRepository.count());
+        assertEquals(1, smsSender.attempts);
+        assertEquals(1, providers.sms.requestCount);
+        assertEquals(0, emailSender.attempts);
+    }
+
+    @Test
+    void showsUncertainFeedbackAndKeepsTheBookingWhenTwilioTimesOut() throws Exception {
+        useCustomer(NotificationPreference.SMS, "6045551234");
+
+        // The fake server holds the reply longer than the sender's 500 ms limit.
+        providers.sms.delayBody = true;
+        assertTextFeedback(book("09:00"), BookingSmsResult.UNCERTAIN, TEXT_UNCERTAIN);
+        assertEquals(1, appointmentRepository.count());
+        assertEquals(1, providers.sms.committedAppointments);
+        assertEquals(1, smsSender.attempts);
+        assertEquals(1, providers.sms.requestCount);
+    }
+
+    @Test
+    void sendsTheTextToTheBookingCustomersOwnPhone() throws Exception {
+        useCustomer(NotificationPreference.SMS, "(604) 555-1234");
+        Account sam = new Account("Sam Chen", "sam@example.invalid", "fake-password-hash", RoleType.CUSTOMER);
+        sam.setNotificationPreference(NotificationPreference.SMS);
+        sam.setPhoneNumber("778-555-0199");
+        accountRepository.save(sam);
+
+        assertConfirmation(book("09:00"));
+        Map<String, String> first = readForm(providers.sms.requestBody);
+        assertEquals("+16045551234", first.get("To"));
+        assertTrue(first.get("Body").contains(" at 09:00 "));
+
+        assertConfirmation(book("10:00", sam.getEmail()));
+        Map<String, String> second = readForm(providers.sms.requestBody);
+        assertEquals("+17785550199", second.get("To"));
+        assertTrue(second.get("Body").contains(" at 10:00 "));
+        assertFalse(second.get("Body").contains("09:00"));
+
+        assertEquals(2, providers.sms.requestCount);
+        assertEquals(0, emailSender.attempts);
+    }
+
     private void useCustomer(NotificationPreference preference, String phoneNumber) {
         Account customer = accountRepository.findByEmail(CUSTOMER_EMAIL).orElseThrow();
         customer.setNotificationPreference(preference);
@@ -287,11 +401,25 @@ class BookingSmsIntegrationTests {
     }
 
     private MvcResult book(String time) throws Exception {
+        return book(time, CUSTOMER_EMAIL);
+    }
+
+    private MvcResult book(String time, String customerEmail) throws Exception {
         return mvc.perform(post("/customer/booking/confirm")
                 .param("service", "sms-test-service").param("salon", salon.getSlug())
                 .param("appointmentDate", DATE).param("appointmentTime", time)
-                .with(user(CUSTOMER_EMAIL).roles("CUSTOMER")).with(csrf()))
+                .with(user(customerEmail).roles("CUSTOMER")).with(csrf()))
                 .andExpect(status().isOk()).andReturn();
+    }
+
+    private void assertBookingFails(String time) throws Exception {
+        boolean failed = false;
+        try {
+            book(time);
+        } catch (ServletException exception) {
+            failed = true;
+        }
+        assertTrue(failed, "A persistence failure must leave the successful booking path");
     }
 
     private void assertConfirmation(MvcResult result) throws Exception {
@@ -299,7 +427,10 @@ class BookingSmsIntegrationTests {
         String page = page(result);
         assertTrue(page.contains("Booking Confirmed!"));
         assertTrue(page.contains("href=\"/customer/appointments\""));
-        assertFalse(page.contains("fake-test-secret"));
+        // Twilio settings never reach the page, whatever the outcome.
+        assertFalse(page.contains(API_KEY_SECRET));
+        assertFalse(page.contains(API_KEY_SID));
+        assertFalse(page.contains(ACCOUNT_SID));
     }
 
     private void assertEmailOnlyConfirmation(MvcResult result) throws Exception {
@@ -358,13 +489,18 @@ class BookingSmsIntegrationTests {
         TestSmsSender testSmsSender(FakeProviderServer server) {
             return new TestSmsSender(new TestSmsSettings(), server.baseUrl);
         }
+
+        @Bean
+        CommitFailureTransactionManager transactionManager(EntityManagerFactory factory) {
+            return new CommitFailureTransactionManager(factory);
+        }
     }
 
     private static class TestSmsSettings extends BookingSmsSettings {
         private boolean ready = true;
 
         TestSmsSettings() {
-            super(true, ACCOUNT_SID, "SK22222222222222222222222222222222", "fake-test-secret", "+16045550100");
+            super(true, ACCOUNT_SID, API_KEY_SID, API_KEY_SECRET, "+16045550100");
         }
 
         @Override
@@ -414,6 +550,27 @@ class BookingSmsIntegrationTests {
         }
     }
 
+    // Same commit failure as the email test, so a save that never commits can be checked too.
+    private static class CommitFailureTransactionManager extends JpaTransactionManager {
+        private boolean failNextCommit;
+        private boolean commitFailureTriggered;
+
+        CommitFailureTransactionManager(EntityManagerFactory factory) {
+            super(factory);
+            setRollbackOnCommitFailure(true);
+        }
+
+        @Override
+        protected void doCommit(DefaultTransactionStatus status) {
+            if (failNextCommit) {
+                failNextCommit = false;
+                commitFailureTriggered = true;
+                throw new TransactionSystemException("Test commit-stage failure");
+            }
+            super.doCommit(status);
+        }
+    }
+
     // One local server stands in for both Brevo and Twilio, so nothing leaves the machine.
     private static class FakeProviderServer {
         private final HttpServer server;
@@ -441,6 +598,9 @@ class BookingSmsIntegrationTests {
         private volatile int committedAppointments;
         private volatile String requestPath;
         private volatile String requestBody;
+        private volatile boolean delayBody;
+        private CountDownLatch releaseBody = new CountDownLatch(1);
+        private CountDownLatch bodyFinished = new CountDownLatch(1);
 
         void reset(String acceptedBody) {
             status = 201;
@@ -449,6 +609,9 @@ class BookingSmsIntegrationTests {
             committedAppointments = 0;
             requestPath = null;
             requestBody = null;
+            delayBody = false;
+            releaseBody = new CountDownLatch(1);
+            bodyFinished = new CountDownLatch(1);
         }
 
         @Override
@@ -468,9 +631,21 @@ class BookingSmsIntegrationTests {
             exchange.getResponseHeaders().set("Content-Type", "application/json");
             exchange.sendResponseHeaders(status, body.length);
             try {
-                exchange.getResponseBody().write(body);
+                if (delayBody) {
+                    exchange.getResponseBody().write(body, 0, 1);
+                    exchange.getResponseBody().flush();
+                    releaseBody.await(3, TimeUnit.SECONDS);
+                    exchange.getResponseBody().write(body, 1, body.length - 1);
+                } else {
+                    exchange.getResponseBody().write(body);
+                }
+            } catch (InterruptedException exception) {
+                Thread.currentThread().interrupt();
             } finally {
                 exchange.close();
+                if (delayBody) {
+                    bodyFinished.countDown();
+                }
             }
         }
     }
