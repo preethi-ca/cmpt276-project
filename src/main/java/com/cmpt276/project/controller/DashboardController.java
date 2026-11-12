@@ -1,6 +1,7 @@
 package com.cmpt276.project.controller;
 
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import com.cmpt276.project.owner.controller.PublicSalon;
 import com.cmpt276.project.owner.service.OwnerService;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -28,7 +29,10 @@ public class DashboardController {
     }
 
     @GetMapping("/customer/dashboard")
-    public String customerDashboard() {
+    public String customerDashboard(Model model) {
+        // Expose public salon fields to the customer template without the owner's account identity.
+        model.addAttribute("salons", ownerService.findPublicSalons().stream()
+                .map(PublicSalon::new).toList());
         return "customer/customer-dashboard";
     }
 
