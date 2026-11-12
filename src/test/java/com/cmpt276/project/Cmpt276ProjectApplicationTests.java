@@ -128,6 +128,10 @@ class Cmpt276ProjectApplicationTests {
         assertEquals(List.of("100 First Street", "200 Second Street", "123 Main Street"),
                 listed.stream().map(PublicSalon::getAddress).toList());
         for (PublicSalon item : listed) {
+            // Exercise selection against persisted data before loading the destination page.
+            mvc.perform(get("/customer/salons/visit").param("slug", item.getSlug())
+                            .with(user("customer").roles("CUSTOMER")))
+                    .andExpect(redirectedUrl("/salons/" + item.getSlug()));
             mvc.perform(get("/salons/" + item.getSlug()))
                     .andExpect(status().isOk())
                     .andExpect(content().string(containsString(item.getAddress())));
