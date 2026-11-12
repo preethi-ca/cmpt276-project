@@ -4,6 +4,8 @@ import com.cmpt276.project.owner.auth.CurrentOwner;
 import com.cmpt276.project.owner.model.OpeningDay;
 import com.cmpt276.project.owner.model.Salon;
 import com.cmpt276.project.owner.service.OwnerService;
+
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.core.env.Environment;
@@ -98,8 +100,14 @@ public class OwnerController {
 
         String mostPopularService = analyticsService.getMostPopularService(salon.getId());
 
+        String busiestTime = analyticsService.getBusiestTime(salon.getId());
+
+        BigDecimal estimatedRevenue = analyticsService.getEstimatedRevenue(salon);
+
         model.addAttribute("totalAppointments", totalAppointments);
         model.addAttribute("mostPopularService", mostPopularService);
+        model.addAttribute("busiestTime", busiestTime);
+        model.addAttribute("estimatedRevenue", estimatedRevenue);
 
         return page(model, "dashboard", "Dashboard");
     }
