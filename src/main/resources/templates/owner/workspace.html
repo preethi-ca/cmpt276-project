@@ -128,6 +128,18 @@
                 <span class="analytics-label">Most Popular Service</span>
                 <strong th:text="${mostPopularService}">No appointments</strong>
               </div>
+
+              <div class="analytics-card">
+                <span class="analytics-label">Busiest Time </span>
+                <strong th:text="${busiestTime}">No appointments</strong>
+              </div>
+
+              <div class="analytics-card">
+                <span class="analytics-label">Estimated Revenue </span>
+                <strong
+                  >$<span th:text="${estimatedRevenue}">0.00</span></strong
+                >
+              </div>
             </div>
           </section>
 
