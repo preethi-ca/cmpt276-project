@@ -1,0 +1,87 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Edit Appointment</title>
+
+        <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}" />
+        <link rel="stylesheet" th:href="@{/css/style.css}" />
+    </head>
+
+    <body>
+        <main class="container py-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Edit Appointment</h1>
+
+            <a th:href="@{/customer/appointments/details(id=${appointment.id})}" class="btn btn-outline-secondary"
+                >Back to Appointment Details
+            </a>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-body">
+            <!-- Display an error if the appointment could not be updated -->
+            <div th:if="${errorMessage}" class="alert alert-danger" role="alert" th:text="${errorMessage}"></div>
+            <h2 class="h5 mb-3" th:text="${salon.name}">Salon Name</h2>
+
+            <!-- Display the service without allowing customers to change it -->
+            <p><strong>Service:</strong> <span th:text="${appointment.serviceName}"></span></p>
+
+            <div class="alert alert-info">
+                <strong>Want to change your service?</strong>
+                Editing an appointment only allows you to change the date and time. 
+                If you would like a different service, please cancel your current appointment and book a new one.
+            </div>
+
+            <!-- Form for updating the appointment date and time -->
+            <form id="editAppointmentForm" th:action="@{/customer/appointments/edit}" method="post" th:attr="data-appointment-id=${appointment.id}">
+                <input
+                type="hidden"
+                name="id"
+                th:value="${appointment.id}"
+                />
+
+                <div class="mb-3">
+                <label for="appointmentDate" class="form-label">Appointment Date</label>
+                <input
+                    type="date"
+                    class="form-control"
+                    id="appointmentDate"
+                    name="appointmentDate"
+                    th:value="${appointment.appointmentDate}"
+                    th:attr="min=${minDate}"
+                    required
+                />
+                </div>
+
+                <div class="mb-3">
+                <label for="appointmentTime" class="form-label">Appointment Time</label>
+                <select
+                    class="form-select"
+                    id="appointmentTime"
+                    name="appointmentTime"
+                    required
+                >
+                    <option
+                    th:each="time : ${availableTimes}"
+                    th:value="${time}"
+                    th:text="${time}"
+                    th:selected="${time == appointment.appointmentTime}"
+                    ></option>
+                </select>
+                <div id="availabilityMessage" class="form-text" aria-live="polite"></div>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </form>
+            </div>
+        </div>
+        </main>
+
+        <!-- load the JavaScript for editing appointments -->
+        <script th:src="@{/js/edit-appointment.js}"></script>
+
+    </body>
+
+</html>

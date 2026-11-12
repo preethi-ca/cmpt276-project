@@ -1,75 +1,82 @@
 <!doctype html>
 <html xmlns:th="http://www.thymeleaf.org">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Appointment Details</title>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Appointment Details</title>
 
-    <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}" />
-    <link rel="stylesheet" th:href="@{/css/style.css}" />
-  </head>
+        <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}" />
+        <link rel="stylesheet" th:href="@{/css/style.css}" />
+    </head>
 
-  <body>
-    <main class="container py-5">
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>Appointment Details</h1>
+    <body>
+        <main class="container py-5">
+            <!-- Display a confirmation after the appointment is successfully updated -->
+            <div th:if="${message}" class="alert alert-success" role="alert"
+                th:text="${message}">
+            </div>
+            <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Appointment Details</h1>
 
-        <a
-          th:href="@{/customer/appointments}"
-          class="btn btn-outline-secondary"
-        >
-          Back to My Appointments
-        </a>
-      </div>
-
-      <div class="card shadow-sm mb-4">
-        <div class="card-body">
-          <h2 class="h5 mb-3">Customer Information</h2>
-
-          <p class="mb-2">
-            <strong>Customer Name:</strong>
-            <span th:text="${appointment.customer.name}"></span>
-          </p>
-
-          <p class="mb-0">
-            <strong>Email:</strong>
-            <span th:text="${appointment.customer.email}"></span>
-          </p>
+            <a
+            th:href="@{/customer/appointments}"
+            class="btn btn-outline-secondary"
+            >
+            Back to My Appointments
+            </a>
         </div>
-      </div>
 
-      <div class="card shadow-sm">
-        <div class="card-body">
-          <h2 class="h5 mb-3">Booking Summary</h2>
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+            <h2 class="h5 mb-3">Customer Information</h2>
 
-          <h3 class="h6" th:text="${salon.name}">Salon Name</h3>
+            <p class="mb-2">
+                <strong>Customer Name:</strong>
+                <span th:text="${appointment.customer.name}"></span>
+            </p>
 
-          <p class="mb-2">
-            <strong>Address:</strong>
-            <span th:text="${salon.address}"></span>
-          </p>
-
-          <p class="mb-2">
-            <strong>Service:</strong>
-            <span th:text="${appointment.serviceName}"></span>
-          </p>
-
-          <p class="mb-2">
-            <strong>Date:</strong>
-            <span th:text="${appointment.appointmentDate}"></span>
-          </p>
-
-          <p class="mb-2">
-            <strong>Time:</strong>
-            <span th:text="${appointment.appointmentTime}"></span>
-          </p>
-
-          <p class="mb-0">
-            <strong>Price:</strong>
-            $<span th:text="${bookedService.price}"></span>
-          </p>
+            <p class="mb-0">
+                <strong>Email:</strong>
+                <span th:text="${appointment.customer.email}"></span>
+            </p>
+            </div>
         </div>
-      </div>
-    </main>
-  </body>
+
+        <div class="card shadow-sm">
+            <div class="card-body">
+            <h2 class="h5 mb-3">Booking Summary</h2>
+
+            <h3 class="h6" th:text="${salon.name}">Salon Name</h3>
+
+            <p class="mb-2"><strong>Address:</strong>
+                <span th:text="${salon.address}"></span>
+            </p>
+
+            <p class="mb-2">
+                <strong>Service:</strong>
+                <span th:text="${appointment.serviceName}"></span>
+            </p>
+
+            <p class="mb-2">
+                <strong>Date:</strong>
+                <span th:text="${appointment.appointmentDate}"></span>
+            </p>
+
+            <p class="mb-2">
+                <strong>Time:</strong>
+                <span th:text="${appointment.appointmentTime}"></span>
+            </p>
+
+            <p class="mb-0">
+                <strong>Price:</strong>
+                $<span th:text="${bookedService.price}"></span>
+            </p>
+          
+            <a th:href="@{/customer/appointments/edit(id=${appointment.id})}" class="btn btn-primary mt-3">
+                Edit Appointment
+            </a>
+            </div>
+        </div>
+        </main>
+    </body>
 </html>

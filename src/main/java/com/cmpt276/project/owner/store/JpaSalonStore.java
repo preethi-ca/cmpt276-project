@@ -60,6 +60,10 @@ public class JpaSalonStore implements SalonStore {
         entity.setSlug(salon.getSlug());
         entity.setDescription(salon.getDescription());
         entity.setAddress(salon.getAddress());
+        entity.setCity(salon.getCity());
+        entity.setProvince(salon.getProvince());
+        entity.setPhone(salon.getPhone());
+        entity.setEmail(salon.getEmail());
 
         try {
             entity.setServicesJson(
@@ -87,6 +91,10 @@ public class JpaSalonStore implements SalonStore {
         salon.setSlug(entity.getSlug());
         salon.setDescription(entity.getDescription());
         salon.setAddress(entity.getAddress());
+        salon.setCity(entity.getCity());
+        salon.setProvince(entity.getProvince());
+        salon.setPhone(entity.getPhone());
+        salon.setEmail(entity.getEmail());
 
         try {
             List<SalonService> services =

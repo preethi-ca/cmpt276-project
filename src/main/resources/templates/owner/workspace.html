@@ -13,12 +13,14 @@
             th:attr="aria-current=${section == 'dashboard' ? 'page' : null}"
             >Dashboard</a
           >
-          <button type="button" disabled aria-describedby="appointments-help">
-            Appointments <small>Coming later</small>
-          </button>
+          <a
+            th:href="@{/owner/appointments}"
+            th:attr="aria-current=${section == 'appointments' ? 'page' : null}"
+            >Appointments</a
+          >
           <a
             th:href="@{/owner/services}"
-            th:attr="aria-current=${section == 'services' or section == 'add-service' ? 'page' : null}"
+            th:attr="aria-current=${section == 'services' or section == 'add-service' or section == 'edit-service' ? 'page' : null}"
             >Services</a
           >
           <a
@@ -32,17 +34,10 @@
             >Salon Settings</a
           >
         </nav>
-        <p id="appointments-help" class="sidebar-note" th:if="${salon != null}">
-          Appointment management is not available yet.
-        </p>
         <div class="sidebar-salon" th:if="${salon != null}">
           <span class="eyebrow">Your salon</span>
           <strong th:text="${salon.name}"></strong>
           <span class="muted" th:text="${salon.address}"></span>
-          <a
-            th:href="@{${salonUrl}}"
-            th:text="${demo ? 'Preview salon' : 'View salon page'}"
-          ></a>
         </div>
       </aside>
       <div class="workspace-shell">
@@ -64,7 +59,6 @@
             </form>
           </div>
         </header>
-        <div th:if="${demo}" th:insert="~{owner/fragments :: demo}"></div>
         <main id="main" class="workspace">
           <div class="page-heading">
             <h1 th:text="${title}"></h1>
@@ -83,7 +77,7 @@
               Save Changes
             </button>
             <button
-              th:if="${section == 'hours' and !salon.hoursConfigured}"
+              th:if="${section == 'hours'}"
               type="submit"
               form="hours-form"
               class="button primary"
@@ -130,17 +124,98 @@
               </div>
 
               <div class="analytics-card">
-                <span class="analytics-label">Busiest Time </span>
+                <span class="analytics-label">Busiest Time</span>
                 <strong th:text="${busiestTime}">No appointments</strong>
               </div>
 
               <div class="analytics-card">
-                <span class="analytics-label">Estimated Revenue </span>
+                <span class="analytics-label">Estimated Revenue</span>
                 <strong
                   >$<span th:text="${estimatedRevenue}">0.00</span></strong
                 >
               </div>
             </div>
+          </section>
+
+          <section
+            th:if="${section == 'appointments'}"
+            class="appointments-layout"
+            aria-label="Appointment overview"
+          >
+            <p class="section-description">
+              Your salon's appointments, at a glance.
+            </p>
+            <dl class="appointment-stats" aria-label="Appointment counts">
+              <div class="panel appointment-stat">
+                <dt>Today's appointments</dt>
+                <dd class="appointment-count">
+                  <span aria-hidden="true">—</span
+                  ><span class="sr-only">Not available</span>
+                </dd>
+                <dd class="appointment-stat-note">
+                  Next appointment: not available
+                </dd>
+              </div>
+              <div class="panel appointment-stat">
+                <dt>Upcoming</dt>
+                <dd class="appointment-count">
+                  <span aria-hidden="true">—</span
+                  ><span class="sr-only">Not available</span>
+                </dd>
+                <dd class="appointment-stat-note">Future appointments</dd>
+              </div>
+              <div class="panel appointment-stat">
+                <dt>This week</dt>
+                <dd class="appointment-count">
+                  <span aria-hidden="true">—</span
+                  ><span class="sr-only">Not available</span>
+                </dd>
+                <dd class="appointment-stat-note">Weekly overview</dd>
+              </div>
+            </dl>
+            <section
+              class="panel appointment-schedule"
+              aria-labelledby="appointment-schedule-title"
+            >
+              <div class="section-heading">
+                <div>
+                  <h2 id="appointment-schedule-title">Today's appointments</h2>
+                  <p class="appointment-date">
+                    <time
+                      th:datetime="${appointmentDate}"
+                      th:text="${appointmentDateLabel}"
+                    ></time>
+                  </p>
+                </div>
+                <span class="badge"
+                  >Vancouver time · 60-minute appointments</span
+                >
+              </div>
+              <div class="empty-state appointment-empty">
+                <svg
+                  class="appointment-calendar"
+                  width="48"
+                  height="48"
+                  viewBox="0 0 48 48"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  aria-hidden="true"
+                  focusable="false"
+                >
+                  <rect x="7" y="10" width="34" height="32" rx="3" />
+                  <path d="M15 6v9M33 6v9M7 21h34M17 29h14M17 35h8" />
+                </svg>
+                <h3>No appointments to display</h3>
+                <p>
+                  Today's appointments will appear here once this view is
+                  connected to your bookings.
+                </p>
+                <a class="button" th:href="@{/owner/hours}"
+                  >View availability</a
+                >
+              </div>
+            </section>
           </section>
 
           <section
@@ -163,55 +238,22 @@
                 th:replace="~{owner/fragments :: field('Salon name *', 'name', 'text', 'Required · up to 80 characters')}"
               ></div>
               <div
-                th:replace="~{owner/fragments :: field(${section == 'setup' ? 'Salon address' : 'Street address'}, 'address', 'text', 'Optional · include your full address, city and province · up to 200 characters')}"
+                th:replace="~{owner/fragments :: field(${section == 'setup' ? 'Salon address' : 'Street address'}, 'address', 'text', 'Optional · up to 200 characters')}"
               ></div>
-              <div th:if="${section == 'profile'}" class="unavailable-fields">
-                <p id="unavailable-profile-fields" class="field-help">
-                  City, province, phone and email are not available to save yet.
-                  Include city and province in Street address for now.
-                </p>
-                <div class="form-grid">
-                  <div class="field">
-                    <label for="city">City</label
-                    ><input
-                      id="city"
-                      type="text"
-                      disabled
-                      placeholder="Not available yet"
-                      aria-describedby="unavailable-profile-fields"
-                    />
-                  </div>
-                  <div class="field">
-                    <label for="province">Province</label
-                    ><input
-                      id="province"
-                      type="text"
-                      disabled
-                      placeholder="Not available yet"
-                      aria-describedby="unavailable-profile-fields"
-                    />
-                  </div>
-                  <div class="field">
-                    <label for="phone">Phone number</label
-                    ><input
-                      id="phone"
-                      type="tel"
-                      disabled
-                      placeholder="Not available yet"
-                      aria-describedby="unavailable-profile-fields"
-                    />
-                  </div>
-                  <div class="field">
-                    <label for="email">Email</label
-                    ><input
-                      id="email"
-                      type="email"
-                      disabled
-                      placeholder="Not available yet"
-                      aria-describedby="unavailable-profile-fields"
-                    />
-                  </div>
-                </div>
+              <!--/* Shared fields preserve entered values and accessible validation errors. */-->
+              <div class="form-grid">
+                <div
+                  th:replace="~{owner/fragments :: field('City', 'city', 'text', 'Optional · up to 80 characters')}"
+                ></div>
+                <div
+                  th:replace="~{owner/fragments :: field('Province', 'province', 'text', 'Optional · up to 80 characters')}"
+                ></div>
+                <div
+                  th:replace="~{owner/fragments :: field('Phone number', 'phone', 'tel', 'Optional · 7–15 digits · for example, +1 (604) 555-0123')}"
+                ></div>
+                <div
+                  th:replace="~{owner/fragments :: field('Email', 'email', 'email', 'Optional · public salon contact email; does not change your sign-in email')}"
+                ></div>
               </div>
               <div class="field">
                 <label for="description">About your salon</label
@@ -254,9 +296,6 @@
             class="services-layout"
             aria-label="Service menu"
           >
-            <p class="section-description">
-              Your service menu and prices. Every appointment lasts one hour.
-            </p>
             <div class="service-list">
               <div th:if="${salon.services.isEmpty()}" class="empty-state">
                 <h2>No services yet.</h2>
@@ -281,28 +320,25 @@
                       <td class="service-name" th:text="${item.name}"></td>
                       <td class="price" th:text="'$' + ${item.price}"></td>
                       <td class="service-actions">
-                        <button
-                          type="button"
-                          disabled
-                          aria-describedby="service-actions-help"
+                        <a
+                          class="button"
+                          th:href="@{/owner/services/{id}/edit(id=${item.id})}"
+                          >Edit</a
                         >
-                          Edit</button
-                        ><button
-                          type="button"
-                          disabled
-                          aria-describedby="service-actions-help"
+                        <form
+                          th:action="@{/owner/services/{id}/delete(id=${item.id})}"
+                          method="post"
+                          data-delete-service
+                          th:attr="data-service-name=${item.name}"
                         >
-                          Delete
-                        </button>
+                          <button type="submit">Delete</button>
+                        </form>
                       </td>
                     </tr>
                   </tbody>
                 </table>
               </div>
-              <p id="service-actions-help" class="field-help">
-                Editing and deleting services are not available yet. You can add
-                a new service.
-              </p>
+
               <nav
                 class="pagination"
                 aria-label="Service pages"
@@ -325,7 +361,7 @@
           </section>
 
           <section
-            th:if="${section == 'add-service'}"
+            th:if="${section == 'add-service' or section == 'edit-service'}"
             class="add-service-layout"
           >
             <a class="back-link" th:href="@{/owner/services}"
@@ -333,18 +369,25 @@
             >
             <form
               class="panel service-form"
-              th:action="@{/owner/services}"
+              th:action="${section == 'edit-service'} ? @{/owner/services/{id}/edit(id=${serviceId})} : @{/owner/services}"
               method="post"
               th:object="${serviceForm}"
               novalidate
               data-dirty-guard
             >
               <h2>Service Details</h2>
-              <p class="muted">Each appointment reserves one hour.</p>
               <div th:replace="~{owner/fragments :: summary}"></div>
-              <div
-                th:replace="~{owner/fragments :: field('Service name *', 'name', 'text', 'For example, Haircut · up to 80 characters')}"
-              ></div>
+              <div class="field">
+                <label for="name">Service name *</label
+                ><input
+                  id="name"
+                  th:field="*{name}"
+                  maxlength="80"
+                  th:attr="aria-invalid=${#fields.hasErrors('name')}"
+                  aria-describedby="name-error"
+                />
+                <p id="name-error" class="field-error" th:errors="*{name}"></p>
+              </div>
               <div class="field">
                 <label for="price">Price (CAD) *</label
                 ><input
@@ -353,8 +396,8 @@
                   inputmode="decimal"
                   th:field="*{price}"
                   th:attr="aria-invalid=${#fields.hasErrors('price')}"
-                  aria-describedby="price-hint price-error"
-                /><small id="price-hint">For example, 35.00</small>
+                  aria-describedby="price-error"
+                />
                 <p
                   id="price-error"
                   class="field-error"
@@ -362,21 +405,29 @@
                 ></p>
               </div>
               <div class="field">
-                <label for="service-description">Description</label
+                <label for="description">Description</label
                 ><textarea
-                  id="service-description"
+                  id="description"
+                  th:field="*{description}"
                   rows="4"
+                  maxlength="500"
                   class="resize-none"
-                  disabled
-                  placeholder="Not available yet"
-                  aria-describedby="service-description-help"
-                ></textarea
-                ><small id="service-description-help"
-                  >Service descriptions are not available to save yet.</small
-                >
+                  th:attr="aria-invalid=${#fields.hasErrors('description')}"
+                  aria-describedby="description-error"
+                ></textarea>
+                <p
+                  id="description-error"
+                  class="field-error"
+                  th:errors="*{description}"
+                ></p>
               </div>
               <div class="actions">
-                <button class="button primary" type="submit">Add Service</button
+                <button
+                  class="button primary"
+                  type="submit"
+                  th:text="${section == 'edit-service' ? 'Save Changes' : 'Add Service'}"
+                >
+                  Add Service</button
                 ><a th:href="@{/owner/services}">Cancel</a>
               </div>
             </form>
@@ -386,30 +437,9 @@
             <p class="section-description">
               Set the weekly opening hours for your salon.
             </p>
-            <div class="notice info">
-              Vancouver time · One-hour appointments. Review before saving:
-              hours cannot be changed in this version.
-            </div>
-            <div class="panel saved-schedule" th:if="${salon.hoursConfigured}">
-              <div class="section-heading">
-                <h2>Your saved schedule</h2>
-                <span class="badge">Repeats every week</span>
-              </div>
-              <div th:each="day : ${salon.openingHours}" class="saved-day">
-                <strong th:text="${days[day.dayOfWeek - 1]}"></strong
-                ><span
-                  class="day-status"
-                  th:text="${day.open ? 'Open' : 'Closed'}"
-                ></span
-                ><span
-                  th:if="${day.open}"
-                  th:text="${day.startTime} + ' – ' + ${day.endTime}"
-                ></span>
-              </div>
-            </div>
+            <!--/* Saved and new schedules use the same editable seven-day form. */-->
             <form
               id="hours-form"
-              th:unless="${salon.hoursConfigured}"
               class="hours-form"
               th:action="@{/owner/hours}"
               method="post"
@@ -417,6 +447,9 @@
               novalidate
               data-dirty-guard
             >
+              <h2
+                th:text="${salon.hoursConfigured ? 'Edit weekly schedule' : 'Set weekly schedule'}"
+              ></h2>
               <div th:replace="~{owner/fragments :: summary}"></div>
               <div class="hours-columns" aria-hidden="true">
                 <span>Day</span><span>Open</span><span>Hours</span>
@@ -482,5 +515,15 @@
       </div>
     </div>
     <dialog th:replace="~{owner/fragments :: leaveDialog}"></dialog>
+    <dialog id="delete-service-dialog" aria-labelledby="delete-service-title">
+      <h2 id="delete-service-title">Delete service?</h2>
+      <p id="delete-service-name"></p>
+      <form method="dialog">
+        <div class="actions">
+          <button value="cancel" autofocus>Cancel</button
+          ><button value="delete">Delete</button>
+        </div>
+      </form>
+    </dialog>
   </body>
 </html>
