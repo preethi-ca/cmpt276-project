@@ -7,9 +7,11 @@ import com.cmpt276.project.model.RoleType;
 import com.cmpt276.project.owner.controller.OwnerController.HoursForm;
 import com.cmpt276.project.owner.controller.OwnerController.SalonForm;
 import com.cmpt276.project.owner.controller.OwnerController.ServiceForm;
+import com.cmpt276.project.owner.controller.PublicSalon;
 import com.cmpt276.project.owner.model.Salon;
 import com.cmpt276.project.owner.service.OwnerService;
 import com.cmpt276.project.owner.store.JpaSalonStore;
+import com.cmpt276.project.owner.store.MemorySalonStore;
 import com.cmpt276.project.owner.store.SalonStore;
 import com.cmpt276.project.repository.AccountRepository;
 import com.cmpt276.project.repository.AppointmentRepository;
@@ -70,6 +72,104 @@ class Cmpt276ProjectApplicationTests {
     @Test
     void contextLoads() {
         assertInstanceOf(JpaSalonStore.class, store);
+    }
+
+    @Test
+    void emptyMemoryStoreProvidesAnEmptyPublicSalonList() {
+        var memory = new MemorySalonStore();
+        assertTrue(memory.findAll().isEmpty());
+        assertTrue(new OwnerService(memory).findPublicSalons().isEmpty());
+    }
+
+    @Test
+    void memorySalonListDoesNotExposeTheBackingCollection() {
+        var memory = new MemorySalonStore();
+        Salon first = memorySalon("first", "First Salon");
+        memory.save(first);
+        var snapshot = memory.findAll();
+        memory.save(memorySalon("second", "Second Salon"));
+        assertEquals(List.of(first), snapshot);
+        // Changing the returned collection must not remove saved salons.
+        snapshot.clear();
+        assertEquals(2, memory.findAll().size());
+        assertSame(first, memory.findById(first.getId()));
+    }
+
+    @Test
+    void publicSalonsSortByNameThenSlugAndKeepSameNameSalons() {
+        var memory = new MemorySalonStore();
+        Salon zulu = memorySalon("zulu", "Zulu");
+        Salon secondAlpha = memorySalon("alpha-2", "Alpha");
+        Salon firstAlpha = memorySalon("alpha", "alpha");
+        memory.save(zulu);
+        memory.save(secondAlpha);
+        memory.save(firstAlpha);
+
+        assertEquals(List.of(firstAlpha, secondAlpha, zulu), new OwnerService(memory).findPublicSalons());
+        assertEquals(List.of(zulu, secondAlpha, firstAlpha), memory.findAll());
+    }
+
+    @Test
+    void customerDashboardListsPersistedSalonsAndReflectsOwnerUpdates() throws Exception {
+        // Unique names isolate these assertions from salons saved by other tests in this context.
+        String suffix = UUID.randomUUID().toString();
+        SalonForm zuluForm = profile();
+        zuluForm.setName("Zulu " + suffix);
+        assertTrue(owners.saveProfile(ownerId, zuluForm, false, errors(zuluForm, "salonForm")));
+        Salon zulu = store.findByOwnerId(ownerId);
+        Salon alpha = createAdditionalSalon("alpha " + suffix, "100 First Street");
+        Salon secondAlpha = createAdditionalSalon("Alpha " + suffix, "200 Second Street");
+        List<String> ids = List.of(alpha.getId(), secondAlpha.getId(), zulu.getId());
+
+        var listed = customerSalons().stream().filter(item -> ids.contains(item.getId())).toList();
+        assertEquals(ids, listed.stream().map(PublicSalon::getId).toList());
+        assertEquals(List.of(alpha.getSlug(), secondAlpha.getSlug(), zulu.getSlug()),
+                listed.stream().map(PublicSalon::getSlug).toList());
+        assertEquals(List.of("100 First Street", "200 Second Street", "123 Main Street"),
+                listed.stream().map(PublicSalon::getAddress).toList());
+        for (PublicSalon item : listed) {
+            mvc.perform(get("/salons/" + item.getSlug()))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(containsString(item.getAddress())));
+        }
+
+        mvc.perform(post("/owner/profile").with(user(owner.getEmail()).roles("SALONOWNER")).with(csrf())
+                .param("name", "Aardvark " + suffix).param("address", "Changed Address"))
+                .andExpect(redirectedUrl("/owner/profile"));
+        var refreshed = customerSalons().stream().filter(item -> ids.contains(item.getId())).toList();
+        assertEquals(List.of(zulu.getId(), alpha.getId(), secondAlpha.getId()),
+                refreshed.stream().map(PublicSalon::getId).toList());
+        assertEquals("Aardvark " + suffix, refreshed.get(0).getName());
+        assertEquals("Changed Address", refreshed.get(0).getAddress());
+        assertEquals(zulu.getSlug(), refreshed.get(0).getSlug());
+    }
+
+    @Test
+    void jpaSalonListingReloadsPublicContactsServicesAndHours() {
+        ServiceForm service = new ServiceForm();
+        service.setName("Haircut");
+        service.setDescription("Wash and cut");
+        service.setPrice("35");
+        assertTrue(owners.addService(ownerId, service, errors(service, "serviceForm")));
+        saveHours("09:00", "17:00");
+        Salon saved = store.findByOwnerId(ownerId);
+
+        Salon listed = store.findAll().stream().filter(item -> item.getId().equals(saved.getId()))
+                .findFirst().orElseThrow();
+        assertNotSame(saved, listed);
+        assertEquals(saved.getSlug(), listed.getSlug());
+        assertEquals("Burnaby", listed.getCity());
+        assertEquals("BC", listed.getProvince());
+        assertEquals("604-555-0123", listed.getPhone());
+        assertEquals("salon@example.com", listed.getEmail());
+        assertEquals(1, listed.getServices().size());
+        assertEquals("Haircut", listed.getServices().get(0).getName());
+        assertEquals("Wash and cut", listed.getServices().get(0).getDescription());
+        assertEquals("35.00", listed.getServices().get(0).getPrice().toPlainString());
+        assertEquals(7, listed.getOpeningHours().size());
+        assertTrue(listed.getOpeningHours().get(0).isOpen());
+        assertEquals("09:00", listed.getOpeningHours().get(0).getStartTime());
+        assertEquals("17:00", listed.getOpeningHours().get(0).getEndTime());
     }
 
     @Test
@@ -244,6 +344,34 @@ class Cmpt276ProjectApplicationTests {
         Salon salon = store.findByOwnerId(ownerId);
         assertTimeoutPreemptively(Duration.ofSeconds(2), () ->
                 assertEquals(List.of("22:00"), bookings.getAvailableTimes(salon.getSlug(), LocalDate.of(2026, 11, 9))));
+    }
+
+    private Salon memorySalon(String slug, String name) {
+        Salon salon = new Salon();
+        salon.setId(slug);
+        salon.setOwnerId("owner-" + slug);
+        salon.setSlug(slug);
+        salon.setName(name);
+        return salon;
+    }
+
+    private Salon createAdditionalSalon(String name, String address) {
+        Account otherOwner = accounts.save(new Account("Other Owner", UUID.randomUUID() + "@example.com",
+                "unused-test-hash", RoleType.SALONOWNER));
+        String otherOwnerId = String.valueOf(otherOwner.getId());
+        SalonForm form = profile();
+        form.setName(name);
+        form.setAddress(address);
+        assertTrue(owners.saveProfile(otherOwnerId, form, true, errors(form, "salonForm")));
+        return store.findByOwnerId(otherOwnerId);
+    }
+
+    private List<PublicSalon> customerSalons() throws Exception {
+        var result = mvc.perform(get("/customer/dashboard").with(user("customer").roles("CUSTOMER")))
+                .andExpect(status().isOk()).andExpect(view().name("customer/customer-dashboard"))
+                .andExpect(model().attributeExists("salons")).andReturn();
+        var salons = (List<?>) result.getModelAndView().getModel().get("salons");
+        return salons.stream().map(item -> assertInstanceOf(PublicSalon.class, item)).toList();
     }
 
     private SalonForm profile() {
