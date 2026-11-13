@@ -7,8 +7,10 @@ import com.cmpt276.project.owner.model.Salon;
 import com.cmpt276.project.owner.service.OwnerService;
 import com.cmpt276.project.repository.AccountRepository;
 import com.cmpt276.project.repository.AppointmentRepository;
+import com.cmpt276.project.service.BookingService;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -25,10 +27,13 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
@@ -47,6 +52,10 @@ class AppointmentControllerTests {
     @MockitoBean
     private OwnerService ownerService;
 
+    @MockitoBean
+    private BookingService bookingService;
+
+    //Test that the owner's appointments page displays unavailable counts without accessing customer bookings
     @Test
     void ownerAppointmentsShowUnavailableCountsWithoutReadingCustomerBookings() throws Exception {
         Account owner = mock(Account.class);
@@ -88,6 +97,7 @@ class AppointmentControllerTests {
                 .andExpect(view().name("customer/public-salon"));
     }
 
+    //Test that an owner must have an existing salon to access the appointments page
     @Test
     void ownerAppointmentsRequireAnExistingSalon() throws Exception {
         Account owner = mock(Account.class);
@@ -99,6 +109,7 @@ class AppointmentControllerTests {
         verifyNoInteractions(appointmentRepository);
     }
 
+    //Test that guests and customers cannot access the owner's appointments page
     @Test
     void ownerAppointmentsRejectGuestsAndCustomers() throws Exception {
         mockMvc.perform(get("/owner/appointments")).andExpect(redirectedUrl("/login"));
@@ -107,6 +118,7 @@ class AppointmentControllerTests {
         verifyNoInteractions(appointmentRepository, ownerService);
     }
 
+    //Test that a logged-in customer can view their appointments
     @Test
     void shouldShowCustomerAppointments() throws Exception {
 
@@ -138,5 +150,20 @@ class AppointmentControllerTests {
                 .andExpect(view().name("customer/my-appointments"))
                 .andExpect(model().attributeExists("appointments"))
                 .andExpect(model().attributeExists("salonNames"));
+    }
+
+    //Test that a customer can cancel an appointment successfully
+    @Test
+    void shouldCancelCustomerAppointment() throws Exception {
+        mockMvc.perform(post("/customer/appointments/cancel")
+                .param("id", "1")
+                .with(user("customer@test.com").roles("CUSTOMER"))
+                .with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/customer/appointments"))
+                .andExpect(flash().attribute(
+                        "message", "Your appointment has been cancelled"));
+
+        verify(bookingService).cancelAppointment(1, "customer@test.com");
     }
 }
