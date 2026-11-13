@@ -11,6 +11,8 @@
 
   <body>
     <main class="container py-5">
+      <!--Booking progress bar-->
+      <div th:replace="~{customer/fragments/booking-progress :: bookingProgress(5)}"></div>
       <div class="text-center mb-4">
         <h1>Booking Confirmed!</h1>
         <p class="text-muted">Your appointment has been successfully booked.</p>
