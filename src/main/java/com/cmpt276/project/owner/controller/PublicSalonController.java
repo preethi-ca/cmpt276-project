@@ -1,7 +1,6 @@
 
 package com.cmpt276.project.owner.controller;
 
-import com.cmpt276.project.owner.controller.PublicSalon;
 import com.cmpt276.project.owner.service.OwnerService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;

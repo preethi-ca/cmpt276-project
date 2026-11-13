@@ -1,7 +1,6 @@
 package com.cmpt276.project.owner.store;
 
 import com.cmpt276.project.owner.model.Salon;
-import com.cmpt276.project.owner.store.SalonStore;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.springframework.context.annotation.Profile;

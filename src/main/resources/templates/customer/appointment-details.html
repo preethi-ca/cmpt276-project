@@ -12,20 +12,12 @@
     <body>
         <main class="container py-5">
             <!-- Display a confirmation after the appointment is successfully updated -->
-            <div th:if="${message}" class="alert alert-success" role="alert"
-                th:text="${message}">
-            </div>
-            <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1>Appointment Details</h1>
-
-            <a
-            th:href="@{/customer/appointments}"
-            class="btn btn-outline-secondary"
-            >
-            Back to My Appointments
-            </a>
+            <div th:if="${message}" class="alert alert-success" role="alert" th:text="${message}"></div>
+            
+        <h1>Appointment Details</h1>
         </div>
 
+        <!--Customer Information-->
         <div class="card shadow-sm mb-4">
             <div class="card-body">
             <h2 class="h5 mb-3">Customer Information</h2>
@@ -42,11 +34,14 @@
             </div>
         </div>
 
+        <!--Appointment Information-->
         <div class="card shadow-sm">
             <div class="card-body">
             <h2 class="h5 mb-3">Booking Summary</h2>
 
-            <h3 class="h6" th:text="${salon.name}">Salon Name</h3>
+            <p class="mb-2"><strong>Salon Name:</strong>
+                <span th:text="${salon.name}"></span>
+            </p>
 
             <p class="mb-2"><strong>Address:</strong>
                 <span th:text="${salon.address}"></span>
@@ -67,14 +62,21 @@
                 <span th:text="${appointment.appointmentTime}"></span>
             </p>
 
-            <p class="mb-0">
+            <p class="mb-4">
                 <strong>Price:</strong>
                 $<span th:text="${bookedService.price}"></span>
             </p>
           
-            <a th:href="@{/customer/appointments/edit(id=${appointment.id})}" class="btn btn-primary mt-3">
+
+            <!--navigation buttons-->
+            <a th:href="@{/customer/appointments/edit(id=${appointment.id})}" class="btn btn-primary">
                 Edit Appointment
             </a>
+
+            <a th:href="@{/customer/appointments}" class="btn btn-outline-secondary">
+                Back to My Appointments
+            </a>
+
             </div>
         </div>
         </main>

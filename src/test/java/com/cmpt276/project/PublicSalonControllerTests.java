@@ -1,6 +1,5 @@
 package com.cmpt276.project;
 
-import com.cmpt276.project.owner.controller.PublicSalonController;
 import com.cmpt276.project.owner.model.Salon;
 import com.cmpt276.project.owner.service.OwnerService;
 
