@@ -28,6 +28,44 @@
 
       <section class="card shadow-sm mb-4">
         <div class="card-body">
+          <h3 class="card-title h5">Google Calendar</h3>
+
+          <div
+            th:if="${calendarMessage}"
+            class="alert alert-info"
+            role="status"
+            th:text="${calendarMessage}"
+          ></div>
+
+          <div th:if="${calendarConnected}">
+            <p class="text-success">Connected</p>
+
+            <form th:action="@{/calendar/google/disconnect}" method="post">
+              <button type="submit" class="btn btn-outline-secondary">
+                Disconnect
+              </button>
+            </form>
+          </div>
+
+          <p
+            th:if="${!calendarConnected and !calendarReady}"
+            class="text-muted mb-0"
+          >
+            Google Calendar isn't available right now.
+          </p>
+
+          <div th:if="${!calendarConnected and calendarReady}">
+            <p>Your bookings will be added to your Google Calendar.</p>
+
+            <a th:href="@{/calendar/google/connect}" class="btn btn-success">
+              Connect Google Calendar
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <section class="card shadow-sm mb-4">
+        <div class="card-body">
           <h3 class="card-title h5">Visit a Salon</h3>
 
           <p>

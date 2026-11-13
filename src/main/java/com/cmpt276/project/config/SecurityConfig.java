@@ -23,6 +23,7 @@ public class SecurityConfig {
 
                 // role-based pages
                 .requestMatchers("/customer", "/customer/**").hasRole("CUSTOMER")
+                .requestMatchers("/calendar/google/**").hasRole("CUSTOMER")
                 .requestMatchers("/owner", "/owner/**").hasRole("SALONOWNER")
 
                 // all other pages require login
