@@ -64,10 +64,53 @@ class PublicSalonControllerTests {
                 .andExpect(content().string(containsString("name=\"slug\"")))
                 .andExpect(content().string(containsString("value=\"same\"")))
                 .andExpect(content().string(containsString("value=\"same-2\"")))
-                .andExpect(content().string(containsString("Same &lt;Salon&gt; — 1 Main Street (Burnaby)")))
-                .andExpect(content().string(containsString("Same &lt;Salon&gt; — 2 Main Street (Burnaby)")))
+                .andExpect(content().string(containsString("value=\"same\">Same &lt;Salon&gt; — 1 Main Street (Burnaby)</option>")))
+                .andExpect(content().string(containsString("value=\"same-2\">Same &lt;Salon&gt; — 2 Main Street (Burnaby)</option>")))
                 .andExpect(content().string(containsString("aria-label=\"Choose a salon\"")))
                 .andExpect(content().string(not(containsString("<label for=\"salon\""))))
+                .andExpect(content().string(not(containsString("Same <Salon>"))));
+    }
+
+    @Test
+    void sameNameSalonsWithoutLocationsHaveDistinctLabelsAndKeepTheirDestinations() throws Exception {
+        Salon first = selectionSalon("sally-salon", "Sally Salon", "");
+        first.setCity("");
+        Salon second = selectionSalon("sally-salon-2", "Sally Salon", null);
+        second.setCity(null);
+        when(ownerService.findPublicSalons()).thenReturn(List.of(first, second));
+
+        for (String path : List.of("/customer/dashboard", "/customer/salons/visit")) {
+            mockMvc.perform(get(path).with(user("customer").roles("CUSTOMER")))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(containsString(
+                            "value=\"sally-salon\">Sally Salon [sally-salon]</option>")))
+                    .andExpect(content().string(containsString(
+                            "value=\"sally-salon-2\">Sally Salon [sally-salon-2]</option>")));
+        }
+        for (Salon salon : List.of(first, second)) {
+            when(ownerService.findPublicSalonBySlug(salon.getSlug())).thenReturn(salon);
+            mockMvc.perform(get("/customer/salons/visit").param("slug", salon.getSlug())
+                            .with(user("customer").roles("CUSTOMER")))
+                    .andExpect(status().isFound())
+                    .andExpect(redirectedUrl("/salons/" + salon.getSlug()));
+        }
+    }
+
+    @Test
+    void sameNameSalonsAtTheSameLocationHaveDistinctEscapedLabels() throws Exception {
+        when(ownerService.findPublicSalons()).thenReturn(List.of(
+                selectionSalon("same", "Same <Salon>", "1 Main Street"),
+                selectionSalon("same-2", "Same <Salon>", "1 Main Street"),
+                selectionSalon("other", "Other Salon", "1 Main Street")));
+
+        mockMvc.perform(get("/customer/dashboard").with(user("customer").roles("CUSTOMER")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString(
+                        "value=\"same\">Same &lt;Salon&gt; — 1 Main Street (Burnaby) [same]</option>")))
+                .andExpect(content().string(containsString(
+                        "value=\"same-2\">Same &lt;Salon&gt; — 1 Main Street (Burnaby) [same-2]</option>")))
+                .andExpect(content().string(containsString(
+                        "value=\"other\">Other Salon — 1 Main Street (Burnaby)</option>")))
                 .andExpect(content().string(not(containsString("Same <Salon>"))));
     }
 

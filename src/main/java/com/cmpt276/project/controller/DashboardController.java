@@ -1,5 +1,7 @@
 package com.cmpt276.project.controller;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import com.cmpt276.project.owner.controller.PublicSalon;
@@ -34,8 +36,24 @@ public class DashboardController {
     @GetMapping("/customer/dashboard")
     public String customerDashboard(Model model) {
         // Expose public salon fields to the customer template without the owner's account identity.
-        model.addAttribute("salons", ownerService.findPublicSalons().stream()
-                .map(PublicSalon::new).toList());
+        var salons = ownerService.findPublicSalons().stream().map(PublicSalon::new).toList();
+        Map<String, String> salonLabels = new HashMap<>();
+        Map<String, Integer> labelCounts = new HashMap<>();
+        for (PublicSalon salon : salons) {
+            String label = salon.getName();
+            if (salon.getAddress() != null && !salon.getAddress().isEmpty()) {
+                label += " — " + salon.getAddress();
+            }
+            if (salon.getCity() != null && !salon.getCity().isEmpty()) {
+                label += " (" + salon.getCity() + ")";
+            }
+            salonLabels.put(salon.getSlug(), label);
+            labelCounts.merge(label, 1, Integer::sum);
+        }
+        salonLabels.replaceAll((slug, label) -> labelCounts.get(label) > 1
+                ? label + " [" + slug + "]" : label);
+        model.addAttribute("salons", salons);
+        model.addAttribute("salonLabels", salonLabels);
         return "customer/customer-dashboard";
     }
 

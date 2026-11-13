@@ -40,7 +40,7 @@
                                aria-describedby=${salonError != null} ? 'salon-error' : (${#lists.isEmpty(salons)} ? 'salon-empty' : null)">
                 <option value="" selected>Select a salon</option>
                 <option th:each="salon : ${salons}" th:value="${salon.slug}"
-                        th:text="${salon.name + (#strings.isEmpty(salon.address) ? '' : ' — ' + salon.address) + (#strings.isEmpty(salon.city) ? '' : ' (' + salon.city + ')')}"></option>
+                        th:text="${salonLabels[salon.slug]}"></option>
               </select>
               <p th:if="${salonError != null}" id="salon-error" class="text-danger mt-2 mb-0"
                  role="alert" th:text="${salonError}"></p>
