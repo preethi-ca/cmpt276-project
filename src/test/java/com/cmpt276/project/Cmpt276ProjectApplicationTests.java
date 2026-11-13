@@ -18,6 +18,9 @@ import com.cmpt276.project.repository.AppointmentRepository;
 import com.cmpt276.project.service.BookingService;
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -368,6 +371,101 @@ class Cmpt276ProjectApplicationTests {
         form.setAddress(address);
         assertTrue(owners.saveProfile(otherOwnerId, form, true, errors(form, "salonForm")));
         return store.findByOwnerId(otherOwnerId);
+    }
+
+    @Test
+    void customerBookingRescheduleServiceDeletionAndCancellationReachOwner() throws Exception {
+        ServiceForm service = new ServiceForm();
+        service.setName("Original <Cut>");
+        service.setPrice("35");
+        assertTrue(owners.addService(ownerId, service, errors(service, "serviceForm")));
+        saveHours("09:00", "17:00");
+        Salon salon = store.findByOwnerId(ownerId);
+        String serviceId = salon.getServices().get(0).getId();
+        Account customer = accounts.save(new Account("Customer <Alice>", UUID.randomUUID() + "@example.com", "private-hash", RoleType.CUSTOMER));
+        LocalDate monday = LocalDate.now().plusDays(1).with(TemporalAdjusters.nextOrSame(DayOfWeek.MONDAY));
+        mvc.perform(post("/customer/booking/confirm").with(csrf()).with(user(customer.getEmail()).roles("CUSTOMER"))
+                        .param("salon", salon.getSlug()).param("service", serviceId)
+                        .param("appointmentDate", monday.toString()).param("appointmentTime", "10:00"))
+                .andExpect(status().isOk());
+        var savedBookings = appointments.findByCustomer(customer);
+        assertEquals(1, savedBookings.size());
+        var booked = savedBookings.get(0);
+        mvc.perform(get("/owner/appointments").with(user(owner.getEmail()).roles("SALONOWNER")))
+                .andExpect(status().isOk()).andExpect(model().attribute("upcomingAppointmentCount", 1L))
+                .andExpect(content().string(containsString("Customer &lt;Alice&gt;")))
+                .andExpect(content().string(containsString("Original &lt;Cut&gt;")))
+                .andExpect(content().string(containsString(monday.toString())))
+                .andExpect(content().string(not(containsString("private-hash"))));
+        mvc.perform(post("/customer/appointments/edit").with(csrf()).with(user(customer.getEmail()).roles("CUSTOMER"))
+                        .param("id", String.valueOf(booked.getId())).param("appointmentDate", monday.plusWeeks(1).toString())
+                        .param("appointmentTime", "11:00"))
+                .andExpect(redirectedUrl("/customer/appointments/details?id=" + booked.getId()));
+        owners.deleteService(ownerId, serviceId);
+        mvc.perform(get("/owner/appointments").with(user(owner.getEmail()).roles("SALONOWNER")))
+                .andExpect(status().isOk()).andExpect(content().string(containsString(monday.plusWeeks(1).toString())))
+                .andExpect(content().string(containsString("11:00")))
+                .andExpect(content().string(containsString("Original &lt;Cut&gt;")));
+        mvc.perform(post("/customer/appointments/cancel").with(csrf()).with(user(customer.getEmail()).roles("CUSTOMER"))
+                        .param("id", String.valueOf(booked.getId())))
+                .andExpect(redirectedUrl("/customer/appointments"));
+        mvc.perform(get("/owner/appointments").with(user(owner.getEmail()).roles("SALONOWNER")))
+                .andExpect(status().isOk()).andExpect(model().attribute("upcomingAppointmentCount", 0L))
+                .andExpect(model().attribute("todayAppointmentCount", 0L))
+                .andExpect(content().string(containsString("No appointments to display")));
+    }
+
+    @Test
+    void persistedOwnerAppointmentsAreScopedSortedPagedAndCountedAcrossWeekBoundaries() throws Exception {
+        Salon salon = store.findByOwnerId(ownerId);
+        Account customer = accounts.save(new Account("Visible Customer", UUID.randomUUID() + "@example.com", "hash", RoleType.CUSTOMER));
+        LocalDate today = LocalDate.now(ZoneId.of("America/Vancouver"));
+        LocalDate monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        ArrayList<Appointment> saved = new java.util.ArrayList<>();
+        for (int i = 11; i >= 0; i--) {
+            saved.add(appointments.save(new Appointment("Service " + i, "old-service", salon.getId(), today.plusDays(i / 3),
+                    String.format("%02d:00", 9 + i % 3), customer)));
+        }
+        saved.add(appointments.save(new Appointment("Week start", "old", salon.getId(), monday, "08:00", customer)));
+        saved.add(appointments.save(new Appointment("Week end", "old", salon.getId(), monday.plusDays(6), "16:00", customer)));
+        saved.add(appointments.save(new Appointment("Previous week", "old", salon.getId(), monday.minusDays(1), "09:00", customer)));
+        saved.add(appointments.save(new Appointment("Next week", "old", salon.getId(), monday.plusWeeks(1), "09:00", customer)));
+        Account otherOwner = accounts.save(new Account("Other owner", UUID.randomUUID() + "@example.com", "hash", RoleType.SALONOWNER));
+        SalonForm otherProfile = profile();
+        assertTrue(owners.saveProfile(String.valueOf(otherOwner.getId()), otherProfile, true, errors(otherProfile, "salonForm")));
+        Salon otherSalon = store.findByOwnerId(String.valueOf(otherOwner.getId()));
+        appointments.save(new Appointment("PRIVATE OTHER BOOKING", "other", otherSalon.getId(), today, "09:00", customer));
+        var expected = saved.stream().filter(a -> !a.getAppointmentDate().isBefore(today))
+                .sorted(Comparator.comparing(Appointment::getAppointmentDate)
+                        .thenComparing(Appointment::getAppointmentTime).thenComparingInt(Appointment::getId)).toList();
+        long expectedToday = saved.stream().filter(a -> a.getAppointmentDate().equals(today)).count();
+        long expectedWeek = saved.stream().filter(a -> !a.getAppointmentDate().isBefore(monday)
+                && !a.getAppointmentDate().isAfter(monday.plusDays(6))).count();
+        var first = mvc.perform(get("/owner/appointments").param("salonId", otherSalon.getId())
+                        .param("ownerId", String.valueOf(otherOwner.getId())).with(user(owner.getEmail()).roles("SALONOWNER")))
+                .andExpect(status().isOk()).andExpect(model().attribute("todayAppointmentCount", expectedToday))
+                .andExpect(model().attribute("upcomingAppointmentCount", expected.size() - expectedToday))
+                .andExpect(model().attribute("weekAppointmentCount", expectedWeek))
+                .andExpect(content().string(not(containsString("PRIVATE OTHER BOOKING"))))
+                .andReturn();
+        var page = (List<Appointment>) first.getModelAndView().getModel().get("appointments");
+        assertEquals(expected.subList(0, 10).stream().map(Appointment::getId).toList(), page.stream().map(Appointment::getId).toList());
+        var last = mvc.perform(get("/owner/appointments").param("page", "2147483647")
+                        .with(user(owner.getEmail()).roles("SALONOWNER")))
+                .andExpect(status().isOk()).andExpect(model().attribute("currentPage", 2)).andReturn();
+        var lastPage = (List<Appointment>) last.getModelAndView().getModel().get("appointments");
+        assertEquals(expected.subList(10, expected.size()).stream().map(Appointment::getId).toList(), lastPage.stream().map(Appointment::getId).toList());
+        mvc.perform(get("/owner/appointments").param("page", "-1").with(user(owner.getEmail()).roles("SALONOWNER")))
+                .andExpect(status().isOk()).andExpect(model().attribute("currentPage", 1));
+        mvc.perform(get("/owner/appointments").with(user(otherOwner.getEmail()).roles("SALONOWNER")))
+                .andExpect(status().isOk()).andExpect(model().attribute("todayAppointmentCount", 1L))
+                .andExpect(content().string(containsString("PRIVATE OTHER BOOKING")))
+                .andExpect(content().string(not(containsString("Service 0"))));
+        for (Appointment item : expected.subList(10, expected.size())) {
+            appointments.deleteById(item.getId());
+        }
+        mvc.perform(get("/owner/appointments").param("page", "2").with(user(owner.getEmail()).roles("SALONOWNER")))
+                .andExpect(status().isOk()).andExpect(model().attribute("currentPage", 1));
     }
 
     private List<PublicSalon> customerSalons() throws Exception {
