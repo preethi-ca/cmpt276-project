@@ -1,12 +1,12 @@
 # Iteration 2: booking confirmation text
 
-Vaibhav Grover - November 10, 2026
+Vaibhav Grover - November 12, 2026
 
 My Iteration 2 work lets customers get their booking confirmation as a text message, instead of the email or along with it. It's set up for the team's Render site at https://cmpt276-project-icc0.onrender.com.
 
 ## How it works
 
-Customers pick a confirmation preference when they register. SMS and BOTH need a phone number. Any format registration accepts, like (604) 555-1234 or 604.555.1234, gets sent as a +1 number, and we only support Canadian numbers.
+Customers pick a confirmation preference when they register. SMS and BOTH need a phone number. Any format registration accepts, like (604) 555-1234 or 604.555.1234, gets sent as a +1 number. The Twilio account only sends to Canadian numbers.
 
 - EMAIL gets the email only. Older accounts with nothing saved count as EMAIL.
 - SMS gets a text only.
@@ -58,7 +58,7 @@ As a customer, I want the confirmation page to say what happened to my text so t
 
 The app calls Twilio's Messages API over HTTPS with Java's HTTP client. No new dependency was needed. [Twilio Messages API](https://www.twilio.com/docs/messaging/api/message-resource)
 
-It needs an upgraded Twilio account, since trial accounts reject custom message text like ours with error 572006. [Error 572006](https://www.twilio.com/docs/api/errors/572006) The account has a Canadian number, a Standard API key and geo permissions limited to Canada. SMS is off by default and stays off until all five settings are set.
+We use a Twilio account with a Canadian phone number, a Standard API key and messaging geo permissions limited to Canada. Real texts go out from that number. SMS is off by default and stays off until all five settings are set.
 
 - `BOOKEASY_SMS_ENABLED`: `true` to send texts. Default is `false`.
 - `BOOKEASY_SMS_ACCOUNT_SID`: the Account SID, starts with AC.
@@ -74,7 +74,7 @@ Add the five `BOOKEASY_SMS_*` settings to the Render service's environment setti
 
 ## Tests and walkthrough
 
-The 20 automated SMS tests use fake credentials and a local fake server, so no real texts are sent.
+All 20 automated SMS tests pass. They use fake credentials and a local fake server, so no real texts are sent.
 
 - BookingSmsBuilderTests (5): the text has the right customer's details, every phone format registration accepts becomes +1, bad phones and booking details are refused, and a typical text fits in 160 characters.
 - TwilioSmsSenderTests (4): the request Twilio receives and how accepted, rejected, uncertain and unavailable replies are read.
@@ -87,7 +87,7 @@ The manual walkthrough on the Render site:
 3. Compare each text with the booking in My Appointments, and check the BOTH customer's email too.
 4. Reopen My Appointments and the details. No second text should come.
 
-A test with a Twilio trial account showed that when Twilio refuses a text, the app keeps the booking and shows the rejected line.
+On November 12 I ran the full flow by hand. I set up a salon as an owner, registered a customer with BOTH and booked an open slot. The confirmation email came in and the text came to my phone. The booking showed in My Appointments. The case where Twilio refuses a text is covered by the automated tests.
 
 ## Contribution and demo
 
