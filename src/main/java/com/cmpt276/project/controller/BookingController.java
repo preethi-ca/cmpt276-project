@@ -3,6 +3,7 @@ package com.cmpt276.project.controller;
 import com.cmpt276.project.model.Appointment;
 import com.cmpt276.project.model.BookingConfirmationMessage;
 import com.cmpt276.project.model.BookingEmailResult;
+import com.cmpt276.project.model.GoogleCalendarResult;
 import com.cmpt276.project.owner.service.OwnerService;
 import com.cmpt276.project.owner.model.OpeningDay;
 import com.cmpt276.project.owner.model.Salon;
@@ -16,6 +17,7 @@ import org.springframework.security.core.Authentication;
 import com.cmpt276.project.service.BookingService;
 import com.cmpt276.project.service.BookingConfirmationBuilder;
 import com.cmpt276.project.service.BrevoEmailSender;
+import com.cmpt276.project.service.GoogleCalendarSync;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -25,12 +27,14 @@ public class BookingController {
     private final BookingService bookingService;
     private final OwnerService ownerService;
     private final BrevoEmailSender emailSender;
+    private final GoogleCalendarSync calendarSync;
     private final BookingConfirmationBuilder confirmationBuilder = new BookingConfirmationBuilder();
 
-    public BookingController(BookingService bookingService, OwnerService ownerService, BrevoEmailSender emailSender) {
+    public BookingController(BookingService bookingService, OwnerService ownerService, BrevoEmailSender emailSender, GoogleCalendarSync calendarSync) {
         this.bookingService = bookingService;
         this.ownerService = ownerService;
         this.emailSender = emailSender;
+        this.calendarSync = calendarSync;
     }
 
     // Show the date selection page
@@ -178,6 +182,9 @@ public class BookingController {
         }
         model.addAttribute("emailResult", emailResult);
         model.addAttribute("emailMessage", emailFeedback(emailResult));
+        // Google Calendar runs after the booking is saved, a failure only changes the message
+        GoogleCalendarResult calendarResult = calendarSync.addBooking(appointment);
+        model.addAttribute("calendarMessage", calendarSync.feedback(calendarResult));
         return "customer/booking-confirmation";
     }
 

@@ -56,6 +56,13 @@
         </div>
       </div>
 
+      <div
+        th:if="${calendarMessage}"
+        class="alert alert-info"
+        role="status"
+        th:text="${calendarMessage}"
+      ></div>
+
       <div class="d-flex gap-2 flex-wrap">
         <a th:href="@{/customer/appointments}" class="btn btn-success">
           My Appointments
