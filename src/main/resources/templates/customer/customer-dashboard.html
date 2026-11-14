@@ -7,6 +7,7 @@
 
     <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}" />
     <link rel="stylesheet" th:href="@{/css/style.css}" />
+    <script th:src="@{/owner-assets/forms.js}" defer></script>
   </head>
 
   <body>
@@ -28,18 +29,29 @@
 
       <section class="card shadow-sm mb-4">
         <div class="card-body">
-          <h3 class="card-title h5">Visit a Salon</h3>
+          <h3 class="card-title h5 mb-3">Visit a Salon</h3>
 
-          <p>
-            To visit a salon page, use:
-            <strong>/salons/salon-name</strong>
-          </p>
-
-          <p class="mb-1">Example: Sally Salon</p>
-          <p class="text-muted">/salons/sally-salon</p>
-
-          <p class="mb-1">Example: BestNails</p>
-          <p class="text-muted">/salons/best-nails</p>
+          <!-- Use the platform's native selector and the existing server-rendered navigation flow. -->
+          <form th:action="@{/customer/salons/visit}" method="get" novalidate data-submit-guard>
+            <div class="mb-3">
+              <select id="salon" name="slug" class="form-select" aria-label="Choose a salon" required
+                      th:disabled="${#lists.isEmpty(salons)}"
+                      th:attr="aria-invalid=${salonError != null} ? 'true' : null,
+                               aria-describedby=${salonError != null} ? 'salon-error' : (${#lists.isEmpty(salons)} ? 'salon-empty' : null)">
+                <option value="" selected>Select a salon</option>
+                <option th:each="salon : ${salons}" th:value="${salon.slug}"
+                        th:text="${salonLabels[salon.slug]}"></option>
+              </select>
+              <p th:if="${salonError != null}" id="salon-error" class="text-danger mt-2 mb-0"
+                 role="alert" th:text="${salonError}"></p>
+              <p th:if="${#lists.isEmpty(salons)}" id="salon-empty" class="text-muted mt-2 mb-0">
+                No salons are available yet.
+              </p>
+            </div>
+            <button type="submit" class="btn btn-success" th:disabled="${#lists.isEmpty(salons)}">
+              Visit Salon
+            </button>
+          </form>
         </div>
       </section>
 
@@ -49,4 +61,3 @@
     </main>
   </body>
 </html>
-```

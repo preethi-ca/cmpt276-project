@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -31,6 +32,14 @@ public class OwnerService {
 
     public Salon findForOwner(String ownerId) {
         return store.findByOwnerId(ownerId);
+    }
+
+    public List<Salon> findPublicSalons() {
+        // Sort in one place for both stores; the unique slug keeps same-name salons in a stable order.
+        return store.findAll().stream()
+                .sorted(Comparator.comparing(Salon::getName, String.CASE_INSENSITIVE_ORDER)
+                        .thenComparing(Salon::getSlug))
+                .toList();
     }
 
     public Salon findPublicSalon(String id) {

@@ -4,13 +4,17 @@ import com.cmpt276.project.owner.auth.CurrentOwner;
 import com.cmpt276.project.owner.model.OpeningDay;
 import com.cmpt276.project.owner.model.Salon;
 import com.cmpt276.project.owner.service.OwnerService;
+import com.cmpt276.project.repository.AppointmentRepository;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import org.springframework.core.env.Environment;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -30,12 +34,15 @@ public class OwnerController {
     private final OwnerService service;
     private final CurrentOwner currentOwner;
     private final Environment environment;
+    private final AppointmentRepository appointments;
     private static final String[] DAYS = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
 
-    public OwnerController(OwnerService service, CurrentOwner currentOwner, Environment environment) {
+    public OwnerController(OwnerService service, CurrentOwner currentOwner, Environment environment,
+                           AppointmentRepository appointments) {
         this.service = service;
         this.currentOwner = currentOwner;
         this.environment = environment;
+        this.appointments = appointments;
     }
 
     @InitBinder("salonForm")
@@ -99,11 +106,27 @@ public class OwnerController {
     }
 
     @GetMapping("/appointments")
-    public String appointments(Model model) {
-        if (model.getAttribute("salon") == null) {
+    public String appointments(@RequestParam(defaultValue = "1") int page, Model model) {
+        Salon salon = (Salon) model.getAttribute("salon");
+        if (salon == null) {
             return "redirect:/owner/setup";
         }
         LocalDate today = LocalDate.now(ZoneId.of("America/Vancouver"));
+        LocalDate weekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        long todayCount = appointments.countBySalonIdAndAppointmentDate(salon.getId(), today);
+        long upcomingCount = appointments.countBySalonIdAndAppointmentDateAfter(salon.getId(), today);
+        model.addAttribute("todayAppointmentCount", todayCount);
+        model.addAttribute("upcomingAppointmentCount", upcomingCount);
+        model.addAttribute("weekAppointmentCount", appointments.countBySalonIdAndAppointmentDateBetween(
+                salon.getId(), weekStart, weekStart.plusDays(6)));
+
+        long totalPages = Math.max(1, (todayCount + upcomingCount + 9) / 10);
+        int currentPage = (int) Math.max(1, Math.min(page, totalPages));
+        model.addAttribute("appointments", appointments
+                .findBySalonIdAndAppointmentDateGreaterThanEqualOrderByAppointmentDateAscAppointmentTimeAscIdAsc(
+                        salon.getId(), today, PageRequest.of(currentPage - 1, 10)));
+        model.addAttribute("currentPage", currentPage);
+        model.addAttribute("totalPages", totalPages);
         model.addAttribute("appointmentDate", today.toString());
         model.addAttribute("appointmentDateLabel", today.format(
                 DateTimeFormatter.ofPattern("EEEE, MMMM d, uuuu", Locale.CANADA)));
