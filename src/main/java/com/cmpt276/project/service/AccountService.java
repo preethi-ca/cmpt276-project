@@ -64,6 +64,28 @@ public class AccountService {
         return true;
     }
 
+    public boolean changePassword(String email, String currentPassword, String newPassword) {
+        String normalizedEmail = normalizeEmail(email);
+    
+        Account account = accountRepository.findByEmail(normalizedEmail).orElseThrow(() -> new IllegalArgumentException("Account not found"));
+    
+        // verify the current password
+        if (currentPassword == null || !passwordEncoder.matches(currentPassword, account.getPasswordHash())) {
+            return false;
+        }
+    
+        // validate the new password
+        if (newPassword == null || newPassword.length() < 8 || newPassword.length() > 64 || newPassword.getBytes(StandardCharsets.UTF_8).length > 72) {
+            throw new IllegalArgumentException("Password must be 8 to 64 characters and at most 72 UTF-8 bytes.");
+        }
+    
+        // hash and save the new password
+        account.setPasswordHash(passwordEncoder.encode(newPassword));
+        accountRepository.save(account);
+    
+        return true;
+    }
+
     private String normalizeEmail(String email) {
         return email.trim().toLowerCase(Locale.ROOT);
     }
