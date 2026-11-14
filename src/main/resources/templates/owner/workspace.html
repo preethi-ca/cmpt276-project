@@ -44,8 +44,8 @@
           <li><a th:href="@{/owner/profile}">Edit salon profile</a></li>
           <li><a th:href="@{/owner/services}">Manage services</a> — <span th:text="${salon.services.size()} + ' services'"></span></li>
           <li><a th:href="@{/owner/hours}">Opening hours</a> — <span th:text="${salon.hoursConfigured ? 'Saved' : 'Not set'}"></span></li>
+          <li><a th:href="@{/owner/appointments}">View appointments</a></li>
         </ul>
-        <p class="notice info">Appointment management and booking statistics are not available yet.</p>
       </section>
 
       <section th:if="${section == 'appointments'}" class="appointments-layout" aria-label="Appointment overview">
@@ -53,31 +53,48 @@
         <dl class="appointment-stats" aria-label="Appointment counts">
           <div class="panel appointment-stat">
             <dt>Today's appointments</dt>
-            <dd class="appointment-count"><span aria-hidden="true">—</span><span class="sr-only">Not available</span></dd>
-            <dd class="appointment-stat-note">Next appointment: not available</dd>
+            <dd class="appointment-count" th:text="${todayAppointmentCount}"></dd>
+            <dd class="appointment-stat-note">All appointments today</dd>
           </div>
           <div class="panel appointment-stat">
             <dt>Upcoming</dt>
-            <dd class="appointment-count"><span aria-hidden="true">—</span><span class="sr-only">Not available</span></dd>
-            <dd class="appointment-stat-note">Future appointments</dd>
+            <dd class="appointment-count" th:text="${upcomingAppointmentCount}"></dd>
+            <dd class="appointment-stat-note">From tomorrow onward</dd>
           </div>
           <div class="panel appointment-stat">
             <dt>This week</dt>
-            <dd class="appointment-count"><span aria-hidden="true">—</span><span class="sr-only">Not available</span></dd>
-            <dd class="appointment-stat-note">Weekly overview</dd>
+            <dd class="appointment-count" th:text="${weekAppointmentCount}"></dd>
+            <dd class="appointment-stat-note">Monday through Sunday</dd>
           </div>
         </dl>
         <section class="panel appointment-schedule" aria-labelledby="appointment-schedule-title">
           <div class="section-heading">
-            <div><h2 id="appointment-schedule-title">Today's appointments</h2><p class="appointment-date"><time th:datetime="${appointmentDate}" th:text="${appointmentDateLabel}"></time></p></div>
+            <div><h2 id="appointment-schedule-title">Today and upcoming appointments</h2><p class="appointment-date">Today: <time th:datetime="${appointmentDate}" th:text="${appointmentDateLabel}"></time></p></div>
             <span class="badge">Vancouver time · 60-minute appointments</span>
           </div>
-          <div class="empty-state appointment-empty">
+          <div th:if="${appointments.isEmpty()}" class="empty-state appointment-empty">
             <svg class="appointment-calendar" width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" focusable="false"><rect x="7" y="10" width="34" height="32" rx="3"/><path d="M15 6v9M33 6v9M7 21h34M17 29h14M17 35h8"/></svg>
             <h3>No appointments to display</h3>
-            <p>Today's appointments will appear here once this view is connected to your bookings.</p>
+            <p>Your salon has no appointments scheduled for today or later.</p>
             <a class="button" th:href="@{/owner/hours}">View availability</a>
           </div>
+          <div th:unless="${appointments.isEmpty()}" class="table-scroll" tabindex="0" role="region" aria-label="Appointment list">
+            <table class="appointment-table">
+              <caption class="sr-only">Your salon's appointments, ordered by date and time</caption>
+              <thead><tr><th scope="col">Date</th><th scope="col">Time</th><th scope="col">Customer</th><th scope="col">Service</th></tr></thead>
+              <tbody><tr th:each="appointment : ${appointments}">
+                <td><time th:datetime="${appointment.appointmentDate}" th:text="${appointment.appointmentDate}"></time></td>
+                <td th:text="${appointment.appointmentTime}"></td>
+                <td><span th:text="${appointment.customer.name}"></span><br><span class="muted" th:text="${appointment.customer.email}"></span></td>
+                <td th:text="${appointment.serviceName}"></td>
+              </tr></tbody>
+            </table>
+          </div>
+          <nav class="pagination" aria-label="Appointment pages" th:if="${totalPages > 1}">
+            <a th:if="${currentPage > 1}" th:href="@{/owner/appointments(page=${currentPage - 1})}">Previous</a>
+            <span th:text="'Page ' + ${currentPage} + ' of ' + ${totalPages}"></span>
+            <a th:if="${currentPage < totalPages}" th:href="@{/owner/appointments(page=${currentPage + 1})}">Next</a>
+          </nav>
         </section>
       </section>
 

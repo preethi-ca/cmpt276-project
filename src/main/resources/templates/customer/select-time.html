@@ -12,6 +12,8 @@
 
   <body>
     <main class="container py-5">
+      <!--Booking progress bar-->
+      <div th:replace="~{customer/fragments/booking-progress :: bookingProgress(3)}"></div>
       <div class="mb-4">
         <h1>Choose Your Appointment Time</h1>
         <p class="text-muted mb-1">Selected Service:<strong th:text="${serviceName}"></strong></p>

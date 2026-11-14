@@ -30,6 +30,12 @@ public class JpaSalonStore implements SalonStore {
     }
 
     @Override
+    public List<Salon> findAll() {
+        // Reuse the single-salon mapping for persisted public details and services.
+        return repository.findAll().stream().map(this::toSalon).toList();
+    }
+
+    @Override
     public Salon findById(String id) {
         return repository.findById(id)
                 .map(this::toSalon)

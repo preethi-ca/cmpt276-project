@@ -1,0 +1,37 @@
+<nav class="booking-progress" aria-label="Booking progress"
+    th:fragment="bookingProgress(currentStep)">
+
+    <ol class="booking-progress__list">
+    
+        <li class="booking-progress__step"
+            th:classappend="${currentStep == 1} ? ' is-active' : (${currentStep > 1} ? ' is-complete' : '')">
+            <span class="booking-progress__number">1</span>
+            <span class="booking-progress__label">Select service</span>
+        </li>
+    
+        <li class="booking-progress__step"
+            th:classappend="${currentStep == 2} ? ' is-active' : (${currentStep > 2} ? ' is-complete' : '')">
+            <span class="booking-progress__number">2</span>
+            <span class="booking-progress__label">Select date</span>
+        </li>
+    
+        <li class="booking-progress__step"
+            th:classappend="${currentStep == 3} ? ' is-active' : (${currentStep > 3} ? ' is-complete' : '')">
+            <span class="booking-progress__number">3</span>
+            <span class="booking-progress__label">Select time</span>
+        </li>
+    
+        <li class="booking-progress__step"
+            th:classappend="${currentStep == 4} ? ' is-active' : (${currentStep > 4} ? ' is-complete' : '')">
+            <span class="booking-progress__number">4</span>
+            <span class="booking-progress__label">Review booking</span>
+        </li>
+    
+        <li class="booking-progress__step"
+            th:classappend="${currentStep == 5} ? ' is-active' : (${currentStep > 5} ? ' is-complete' : '')">
+            <span class="booking-progress__number">5</span>
+            <span class="booking-progress__label">Confirm booking</span>
+        </li>
+    
+    </ol>
+</nav>
