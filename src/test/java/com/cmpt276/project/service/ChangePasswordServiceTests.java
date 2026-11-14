@@ -14,7 +14,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-class AccountServiceTests {
+class ChangePasswordServiceTests {
 
     private AccountRepository accountRepository;
     private PasswordEncoder passwordEncoder;
