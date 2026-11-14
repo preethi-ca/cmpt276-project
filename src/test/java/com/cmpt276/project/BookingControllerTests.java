@@ -29,333 +29,464 @@ import com.cmpt276.project.owner.model.Salon;
 import com.cmpt276.project.owner.model.SalonService;
 import com.cmpt276.project.owner.service.OwnerService;
 import com.cmpt276.project.service.BookingService;
-
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 class BookingControllerTests {
 
-    @Autowired
-    private MockMvc mockMvc;
+        @Autowired
+        private MockMvc mockMvc;
 
-    @MockitoBean
-    private BookingService bookingService;
+        @Autowired
+        private org.springframework.session.FindByIndexNameSessionRepository<?> sessionRepository;
 
-    @MockitoBean
-    private OwnerService ownerService;
+        @MockitoBean
+        private BookingService bookingService;
 
-    @Test
-    void shouldShowBookingDatePage() throws Exception {
+        @MockitoBean
+        private OwnerService ownerService;
 
-        Salon salon = mock(Salon.class);
-        SalonService service = mock(SalonService.class);
+        @Test
+        void shouldShowBookingDatePage() throws Exception {
 
-        when(ownerService.findPublicSalonBySlug("magiccuts-salon"))
-                .thenReturn(salon);
+                Salon salon = mock(Salon.class);
+                SalonService service = mock(SalonService.class);
 
-        when(salon.getServices())
-                .thenReturn(List.of(service));
+                when(ownerService.findPublicSalonBySlug("magiccuts-salon"))
+                                .thenReturn(salon);
 
-        when(service.getId())
-                .thenReturn("service1");
+                when(salon.getServices())
+                                .thenReturn(List.of(service));
 
-        when(service.getName())
-                .thenReturn("Haircut");
+                when(service.getId())
+                                .thenReturn("service1");
 
-        when(salon.getOpeningHours())
-                .thenReturn(List.of());
+                when(service.getName())
+                                .thenReturn("Haircut");
 
-        mockMvc.perform(get("/customer/booking")
-                .with(user("customer@test.com").roles("CUSTOMER"))
-                .param("service", "service1")
-                .param("salon", "magiccuts-salon"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("customer/select-date"))
-                .andExpect(model().attribute("service", "service1"))
-                .andExpect(model().attribute("serviceName", "Haircut"))
-                .andExpect(model().attribute("salon", "magiccuts-salon"))
-                .andExpect(model().attributeExists("openingHours"))
-                .andExpect(model().attributeExists("days"))
-                .andExpect(model().attributeExists("minDate"));
-    }
+                when(salon.getOpeningHours())
+                                .thenReturn(List.of());
 
-    @Test
-    void shouldReturnToDatePageWhenSalonIsClosed() throws Exception {
+                mockMvc.perform(get("/customer/booking")
+                                .with(user("customer@test.com").roles("CUSTOMER"))
+                                .param("service", "service1")
+                                .param("salon", "magiccuts-salon"))
+                                .andExpect(status().isOk())
+                                .andExpect(view().name("customer/select-date"))
+                                .andExpect(model().attribute("service", "service1"))
+                                .andExpect(model().attribute("serviceName", "Haircut"))
+                                .andExpect(model().attribute("salon", "magiccuts-salon"))
+                                .andExpect(model().attributeExists("openingHours"))
+                                .andExpect(model().attributeExists("days"))
+                                .andExpect(model().attributeExists("minDate"));
+        }
 
-        Salon salon = mock(Salon.class);
-        SalonService service = mock(SalonService.class);
-        OpeningDay monday = mock(OpeningDay.class);
-        String appointmentDate = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.MONDAY)).toString();
+        @Test
+        void shouldReturnToDatePageWhenSalonIsClosed() throws Exception {
 
-        when(ownerService.findPublicSalonBySlug("magiccuts-salon"))
-                .thenReturn(salon);
+                Salon salon = mock(Salon.class);
+                SalonService service = mock(SalonService.class);
+                OpeningDay monday = mock(OpeningDay.class);
+                String appointmentDate = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.MONDAY)).toString();
 
-        when(salon.getServices())
-                .thenReturn(List.of(service));
+                when(ownerService.findPublicSalonBySlug("magiccuts-salon"))
+                                .thenReturn(salon);
 
-        when(service.getId())
-                .thenReturn("service1");
+                when(salon.getServices())
+                                .thenReturn(List.of(service));
 
-        when(service.getName())
-                .thenReturn("Haircut");
+                when(service.getId())
+                                .thenReturn("service1");
 
-        when(monday.getDayOfWeek())
-                .thenReturn(1);
+                when(service.getName())
+                                .thenReturn("Haircut");
 
-        when(monday.isOpen())
-                .thenReturn(false);
+                when(monday.getDayOfWeek())
+                                .thenReturn(1);
 
-        when(salon.getOpeningHours())
-                .thenReturn(List.of(monday));
+                when(monday.isOpen())
+                                .thenReturn(false);
 
-        mockMvc.perform(get("/customer/booking/time")
-                .with(user("customer@test.com").roles("CUSTOMER"))
-                .param("service", "service1")
-                .param("salon", "magiccuts-salon")
-                .param("appointmentDate", appointmentDate))
-                .andExpect(status().isOk())
-                .andExpect(view().name("customer/select-date"))
-                .andExpect(model().attribute(
-                        "error",
-                        "Sorry, salon is closed on the selected date"))
-                .andExpect(model().attribute("serviceName", "Haircut"))
-                .andExpect(model().attributeExists("openingHours"))
-                .andExpect(model().attributeExists("days"));
-    }
+                when(salon.getOpeningHours())
+                                .thenReturn(List.of(monday));
 
-    @Test
-    void shouldShowAvailableTimesWhenSalonIsOpen() throws Exception {
+                mockMvc.perform(get("/customer/booking/time")
+                                .with(user("customer@test.com").roles("CUSTOMER"))
+                                .param("service", "service1")
+                                .param("salon", "magiccuts-salon")
+                                .param("appointmentDate", appointmentDate))
+                                .andExpect(status().isOk())
+                                .andExpect(view().name("customer/select-date"))
+                                .andExpect(model().attribute(
+                                                "error",
+                                                "Sorry, salon is closed on the selected date"))
+                                .andExpect(model().attribute("serviceName", "Haircut"))
+                                .andExpect(model().attributeExists("openingHours"))
+                                .andExpect(model().attributeExists("days"));
+        }
 
-        Salon salon = mock(Salon.class);
-        SalonService service = mock(SalonService.class);
-        OpeningDay monday = mock(OpeningDay.class);
-        String appointmentDate = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.MONDAY)).toString();
+        @Test
+        void shouldShowAvailableTimesWhenSalonIsOpen() throws Exception {
 
-        when(ownerService.findPublicSalonBySlug("magiccuts-salon"))
-                .thenReturn(salon);
+                Salon salon = mock(Salon.class);
+                SalonService service = mock(SalonService.class);
+                OpeningDay monday = mock(OpeningDay.class);
+                String appointmentDate = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.MONDAY)).toString();
 
-        when(salon.getServices())
-                .thenReturn(List.of(service));
+                when(ownerService.findPublicSalonBySlug("magiccuts-salon"))
+                                .thenReturn(salon);
 
-        when(service.getId())
-                .thenReturn("service1");
+                when(salon.getServices())
+                                .thenReturn(List.of(service));
 
-        when(service.getName())
-                .thenReturn("Haircut");
+                when(service.getId())
+                                .thenReturn("service1");
 
-        when(monday.getDayOfWeek())
-                .thenReturn(1);
+                when(service.getName())
+                                .thenReturn("Haircut");
 
-        when(monday.isOpen())
-                .thenReturn(true);
+                when(monday.getDayOfWeek())
+                                .thenReturn(1);
 
-        when(salon.getOpeningHours())
-                .thenReturn(List.of(monday));
+                when(monday.isOpen())
+                                .thenReturn(true);
 
-        when(bookingService.getAvailableTimes(
-                "magiccuts-salon",
-                LocalDate.parse(appointmentDate)))
-                .thenReturn(List.of("09:00", "10:00"));
+                when(salon.getOpeningHours())
+                                .thenReturn(List.of(monday));
 
-        mockMvc.perform(get("/customer/booking/time")
-                .with(user("customer@test.com").roles("CUSTOMER"))
-                .param("service", "service1")
-                .param("salon", "magiccuts-salon")
-                .param("appointmentDate", appointmentDate))
-                .andExpect(status().isOk())
-                .andExpect(view().name("customer/select-time"))
-                .andExpect(model().attribute("serviceName", "Haircut"))
-                .andExpect(model().attribute("appointmentDate", appointmentDate))
-                .andExpect(model().attribute(
-                        "availableTimes",
-                        List.of("09:00", "10:00")));
-    }
+                when(bookingService.getAvailableTimes(
+                                "magiccuts-salon",
+                                LocalDate.parse(appointmentDate)))
+                                .thenReturn(List.of("09:00", "10:00"));
 
-    @Test
-    void shouldShowBookingSummary() throws Exception {
+                mockMvc.perform(get("/customer/booking/time")
+                                .with(user("customer@test.com").roles("CUSTOMER"))
+                                .param("service", "service1")
+                                .param("salon", "magiccuts-salon")
+                                .param("appointmentDate", appointmentDate))
+                                .andExpect(status().isOk())
+                                .andExpect(view().name("customer/select-time"))
+                                .andExpect(model().attribute("serviceName", "Haircut"))
+                                .andExpect(model().attribute("appointmentDate", appointmentDate))
+                                .andExpect(model().attribute(
+                                                "availableTimes",
+                                                List.of("09:00", "10:00")));
+        }
 
-        Salon salon = mock(Salon.class);
-        SalonService service = mock(SalonService.class);
-        String appointmentDate = LocalDate.now().plusDays(2).toString();
+        @Test
+        void shouldShowBookingSummary() throws Exception {
 
-        when(ownerService.findPublicSalonBySlug("magiccuts-salon"))
-                .thenReturn(salon);
+                Salon salon = mock(Salon.class);
+                SalonService service = mock(SalonService.class);
+                String appointmentDate = LocalDate.now().plusDays(2).toString();
 
-        when(salon.getServices())
-                .thenReturn(List.of(service));
+                when(ownerService.findPublicSalonBySlug("magiccuts-salon"))
+                                .thenReturn(salon);
 
-        when(salon.getName())
-                .thenReturn("Magic Cuts");
+                when(salon.getServices())
+                                .thenReturn(List.of(service));
 
-        when(service.getId())
-                .thenReturn("service1");
+                when(salon.getName())
+                                .thenReturn("Magic Cuts");
 
-        when(service.getName())
-                .thenReturn("Haircut");
+                when(service.getId())
+                                .thenReturn("service1");
 
-        mockMvc.perform(get("/customer/booking/confirmation")
-                .with(user("customer@test.com").roles("CUSTOMER"))
-                .param("service", "service1")
-                .param("salon", "magiccuts-salon")
-                .param("appointmentDate", appointmentDate)
-                .param("appointmentTime", "10:00"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("customer/booking-summary"))
-                .andExpect(model().attribute("salonName", "Magic Cuts"))
-                .andExpect(model().attribute("serviceName", "Haircut"))
-                .andExpect(model().attribute("appointmentDate", appointmentDate))
-                .andExpect(model().attribute("appointmentTime", "10:00"))
-                .andExpect(model().attribute("bookedService", service));
-    }
+                when(service.getName())
+                                .thenReturn("Haircut");
 
-    @Test
-    void shouldConfirmBookingSuccessfully() throws Exception {
+                mockMvc.perform(get("/customer/booking/confirmation")
+                                .with(user("customer@test.com").roles("CUSTOMER"))
+                                .param("service", "service1")
+                                .param("salon", "magiccuts-salon")
+                                .param("appointmentDate", appointmentDate)
+                                .param("appointmentTime", "10:00"))
+                                .andExpect(status().isOk())
+                                .andExpect(view().name("customer/booking-summary"))
+                                .andExpect(model().attribute("salonName", "Magic Cuts"))
+                                .andExpect(model().attribute("serviceName", "Haircut"))
+                                .andExpect(model().attribute("appointmentDate", appointmentDate))
+                                .andExpect(model().attribute("appointmentTime", "10:00"))
+                                .andExpect(model().attribute("bookedService", service));
+        }
 
-        Salon salon = mock(Salon.class);
-        SalonService service = mock(SalonService.class);
+        @Test
+        void shouldConfirmBookingSuccessfully() throws Exception {
 
-        when(ownerService.findPublicSalonBySlug("magiccuts-salon"))
-                .thenReturn(salon);
-        when(ownerService.findPublicSalon("salon1"))
-        .thenReturn(salon);
-        when(salon.getId())
-                .thenReturn("salon1");
-        when(salon.getSlug())
-                .thenReturn("magiccuts-salon");
-        when(salon.getName()).thenReturn("Magic Cuts");
+                Salon salon = mock(Salon.class);
+                SalonService service = mock(SalonService.class);
 
-        when(salon.getServices())
-                .thenReturn(List.of(service));
+                when(ownerService.findPublicSalonBySlug("magiccuts-salon"))
+                                .thenReturn(salon);
+                when(ownerService.findPublicSalon("salon1"))
+                                .thenReturn(salon);
+                when(salon.getId())
+                                .thenReturn("salon1");
+                when(salon.getSlug())
+                                .thenReturn("magiccuts-salon");
+                when(salon.getName()).thenReturn("Magic Cuts");
 
-        when(service.getId())
-                .thenReturn("service1");
-        when(service.getName())
-                .thenReturn("Haircut");
-        /*Tests that the controller correctly handles a successful booking by simulating the booking service returning an appointment 
-        and checking that the customer is redirected to the booking confirmation page with the correct details */
-        String appointmentDate = LocalDate.now().plusDays(2).toString();
-        Appointment appointment = mock(Appointment.class);
-        when(appointment.getServiceId()).thenReturn("service1");
-        when(appointment.getServiceName()).thenReturn("Haircut");
-        when(appointment.getAppointmentDate()).thenReturn(
-                LocalDate.parse(appointmentDate));
-        when(appointment.getAppointmentTime()).thenReturn("10:00");
-        when(appointment.getSalonId()).thenReturn("salon1");
+                when(salon.getServices())
+                                .thenReturn(List.of(service));
 
-        when(bookingService.bookAppointment(
-                "service1",
-                "magiccuts-salon",
-                appointmentDate,
-                "10:00",
-                "customer@test.com"))
-                .thenReturn(appointment);
+                when(service.getId())
+                                .thenReturn("service1");
+                when(service.getName())
+                                .thenReturn("Haircut");
+                /*
+                 * Tests that the controller correctly handles a successful booking by
+                 * simulating the booking service returning an appointment
+                 * and checking that the customer is redirected to the booking confirmation page
+                 * with the correct details
+                 */
+                String appointmentDate = LocalDate.now().plusDays(2).toString();
+                Appointment appointment = mock(Appointment.class);
+                when(appointment.getServiceId()).thenReturn("service1");
+                when(appointment.getServiceName()).thenReturn("Haircut");
+                when(appointment.getAppointmentDate()).thenReturn(
+                                LocalDate.parse(appointmentDate));
+                when(appointment.getAppointmentTime()).thenReturn("10:00");
+                when(appointment.getSalonId()).thenReturn("salon1");
 
-        mockMvc.perform(post("/customer/booking/confirm")
-                .with(user("customer@test.com").roles("CUSTOMER"))
-                .with(csrf())
-                .param("service", "service1")
-                .param("salon", "magiccuts-salon")
-                .param("appointmentDate", appointmentDate)
-                .param("appointmentTime", "10:00"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("customer/booking-confirmation"))
-                .andExpect(model().attribute("salonName", "Magic Cuts"))
-                .andExpect(model().attribute("serviceName", "Haircut"))
-                .andExpect(model().attribute("appointmentDate", LocalDate.parse(appointmentDate)))
-                .andExpect(model().attribute("appointmentTime", "10:00"))
-                .andExpect(model().attribute("bookedService", service));
-    }
+                when(bookingService.bookAppointment(
+                                "service1",
+                                "magiccuts-salon",
+                                appointmentDate,
+                                "10:00",
+                                "customer@test.com"))
+                                .thenReturn(appointment);
 
-    @Test
-    void shouldReturnToTimePageWhenBookingFails() throws Exception {
+                mockMvc.perform(post("/customer/booking/confirm")
+                                .with(user("customer@test.com").roles("CUSTOMER"))
+                                .with(csrf())
+                                .param("service", "service1")
+                                .param("salon", "magiccuts-salon")
+                                .param("appointmentDate", appointmentDate)
+                                .param("appointmentTime", "10:00"))
+                                .andExpect(status().isOk())
+                                .andExpect(view().name("customer/booking-confirmation"))
+                                .andExpect(model().attribute("salonName", "Magic Cuts"))
+                                .andExpect(model().attribute("serviceName", "Haircut"))
+                                .andExpect(model().attribute("appointmentDate", LocalDate.parse(appointmentDate)))
+                                .andExpect(model().attribute("appointmentTime", "10:00"))
+                                .andExpect(model().attribute("bookedService", service));
+        }
 
-        Salon salon = mock(Salon.class);
-        SalonService service = mock(SalonService.class);
-        String appointmentDate = LocalDate.now().plusDays(2).toString();
+        @Test
+        void shouldReturnToTimePageWhenBookingFails() throws Exception {
 
-        when(ownerService.findPublicSalonBySlug("magiccuts-salon"))
-                .thenReturn(salon);
+                Salon salon = mock(Salon.class);
+                SalonService service = mock(SalonService.class);
+                String appointmentDate = LocalDate.now().plusDays(2).toString();
 
-        when(salon.getServices())
-                .thenReturn(List.of(service));
+                when(ownerService.findPublicSalonBySlug("magiccuts-salon"))
+                                .thenReturn(salon);
 
-        when(service.getId())
-                .thenReturn("service1");
+                when(salon.getServices())
+                                .thenReturn(List.of(service));
 
-        when(service.getName())
-                .thenReturn("Haircut");
+                when(service.getId())
+                                .thenReturn("service1");
 
-        when(bookingService.getAvailableTimes(
-                "magiccuts-salon",
-                LocalDate.parse(appointmentDate)))
-                .thenReturn(List.of("09:00", "10:00"));
+                when(service.getName())
+                                .thenReturn("Haircut");
 
-        doThrow(new IllegalArgumentException("Appointment time is no longer available"))
-                .when(bookingService)
-                .bookAppointment(
-                        "service1",
-                        "magiccuts-salon",
-                        appointmentDate,
-                        "10:00",
-                        "customer@test.com");
+                when(bookingService.getAvailableTimes(
+                                "magiccuts-salon",
+                                LocalDate.parse(appointmentDate)))
+                                .thenReturn(List.of("09:00", "10:00"));
 
-        mockMvc.perform(post("/customer/booking/confirm")
-                .with(user("customer@test.com").roles("CUSTOMER"))
-                .with(csrf())
-                .param("service", "service1")
-                .param("salon", "magiccuts-salon")
-                .param("appointmentDate", appointmentDate)
-                .param("appointmentTime", "10:00"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("customer/select-time"))
-                .andExpect(model().attribute(
-                        "error",
-                        "Appointment time is no longer available"))
-                .andExpect(model().attribute("serviceName", "Haircut"))
-                .andExpect(model().attribute(
-                        "availableTimes",
-                        List.of("09:00", "10:00")));
-    }
+                doThrow(new IllegalArgumentException("Appointment time is no longer available"))
+                                .when(bookingService)
+                                .bookAppointment(
+                                                "service1",
+                                                "magiccuts-salon",
+                                                appointmentDate,
+                                                "10:00",
+                                                "customer@test.com");
 
-    @Test
-    void shouldReturnToDatePageWhenBookingDateIsInPast() throws Exception {
+                mockMvc.perform(post("/customer/booking/confirm")
+                                .with(user("customer@test.com").roles("CUSTOMER"))
+                                .with(csrf())
+                                .param("service", "service1")
+                                .param("salon", "magiccuts-salon")
+                                .param("appointmentDate", appointmentDate)
+                                .param("appointmentTime", "10:00"))
+                                .andExpect(status().isOk())
+                                .andExpect(view().name("customer/select-time"))
+                                .andExpect(model().attribute(
+                                                "error",
+                                                "Appointment time is no longer available"))
+                                .andExpect(model().attribute("serviceName", "Haircut"))
+                                .andExpect(model().attribute(
+                                                "availableTimes",
+                                                List.of("09:00", "10:00")));
+        }
 
-        Salon salon = mock(Salon.class);
-        SalonService service = mock(SalonService.class);
-        String pastDate = LocalDate.now().minusDays(1).toString();
+        @Test
+        void shouldReturnToDatePageWhenBookingDateIsInPast() throws Exception {
 
-        when(ownerService.findPublicSalonBySlug("magiccuts-salon"))
-                .thenReturn(salon);
+                Salon salon = mock(Salon.class);
+                SalonService service = mock(SalonService.class);
+                String pastDate = LocalDate.now().minusDays(1).toString();
 
-        when(salon.getServices())
-                .thenReturn(List.of(service));
+                when(ownerService.findPublicSalonBySlug("magiccuts-salon"))
+                                .thenReturn(salon);
 
-        when(service.getId())
-                .thenReturn("service1");
+                when(salon.getServices())
+                                .thenReturn(List.of(service));
 
-        when(service.getName())
-                .thenReturn("Haircut");
+                when(service.getId())
+                                .thenReturn("service1");
 
-        doThrow(new IllegalArgumentException("Sorry, this date has already passed."))
-                .when(bookingService)
-                .bookAppointment(
-                        "service1",
-                        "magiccuts-salon",
-                        pastDate,
-                        "10:00",
-                        "customer@test.com");
+                when(service.getName())
+                                .thenReturn("Haircut");
 
-        mockMvc.perform(post("/customer/booking/confirm")
-                .with(user("customer@test.com").roles("CUSTOMER"))
-                .with(csrf())
-                .param("service", "service1")
-                .param("salon", "magiccuts-salon")
-                .param("appointmentDate", pastDate)
-                .param("appointmentTime", "10:00"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("customer/select-date"))
-                .andExpect(model().attribute("error", "Sorry, this date has already passed."))
-                .andExpect(model().attribute("serviceName", "Haircut"))
-                .andExpect(model().attributeExists("minDate"));
-    }
+                doThrow(new IllegalArgumentException("Sorry, this date has already passed."))
+                                .when(bookingService)
+                                .bookAppointment(
+                                                "service1",
+                                                "magiccuts-salon",
+                                                pastDate,
+                                                "10:00",
+                                                "customer@test.com");
+
+                mockMvc.perform(post("/customer/booking/confirm")
+                                .with(user("customer@test.com").roles("CUSTOMER"))
+                                .with(csrf())
+                                .param("service", "service1")
+                                .param("salon", "magiccuts-salon")
+                                .param("appointmentDate", pastDate)
+                                .param("appointmentTime", "10:00"))
+                                .andExpect(status().isOk())
+                                .andExpect(view().name("customer/select-date"))
+                                .andExpect(model().attribute("error", "Sorry, this date has already passed."))
+                                .andExpect(model().attribute("serviceName", "Haircut"))
+                                .andExpect(model().attributeExists("minDate"));
+        }
+
+        @Test
+        void guestCanAccessBookingDatePage() throws Exception {
+                Salon salon = mock(Salon.class);
+                SalonService service = mock(SalonService.class);
+
+                when(ownerService.findPublicSalonBySlug("magiccuts-salon"))
+                                .thenReturn(salon);
+
+                when(salon.getServices())
+                                .thenReturn(List.of(service));
+
+                when(service.getId())
+                                .thenReturn("service1");
+
+                when(service.getName())
+                                .thenReturn("Haircut");
+
+                when(salon.getOpeningHours())
+                                .thenReturn(List.of());
+
+                mockMvc.perform(get("/customer/booking")
+                                .param("service", "service1")
+                                .param("salon", "magiccuts-salon"))
+                                .andExpect(status().isOk())
+                                .andExpect(view().name("customer/select-date"))
+                                .andExpect(model().attribute("serviceName", "Haircut"))
+                                .andExpect(model().attribute("salon", "magiccuts-salon"));
+        }
+
+        @Test
+        void guestCanAccessBookingTimePage() throws Exception {
+                Salon salon = mock(Salon.class);
+                SalonService service = mock(SalonService.class);
+                OpeningDay monday = mock(OpeningDay.class);
+
+                String appointmentDate = LocalDate.now()
+                                .with(TemporalAdjusters.next(DayOfWeek.MONDAY))
+                                .toString();
+
+                when(ownerService.findPublicSalonBySlug("magiccuts-salon"))
+                                .thenReturn(salon);
+
+                when(salon.getServices())
+                                .thenReturn(List.of(service));
+
+                when(service.getId())
+                                .thenReturn("service1");
+
+                when(service.getName())
+                                .thenReturn("Haircut");
+
+                when(monday.getDayOfWeek())
+                                .thenReturn(1);
+
+                when(monday.isOpen())
+                                .thenReturn(true);
+
+                when(salon.getOpeningHours())
+                                .thenReturn(List.of(monday));
+
+                when(bookingService.getAvailableTimes(
+                                "magiccuts-salon",
+                                LocalDate.parse(appointmentDate)))
+                                .thenReturn(List.of("09:00", "10:00"));
+
+                mockMvc.perform(get("/customer/booking/time")
+                                .param("service", "service1")
+                                .param("salon", "magiccuts-salon")
+                                .param("appointmentDate", appointmentDate))
+                                .andExpect(status().isOk())
+                                .andExpect(view().name("customer/select-time"))
+                                .andExpect(model().attribute(
+                                                "availableTimes",
+                                                List.of("09:00", "10:00")));
+        }
+
+        @Test
+        void guestMustLoginBeforeReviewingBooking() throws Exception {
+                String appointmentDate = LocalDate.now().plusDays(2).toString();
+
+                mockMvc.perform(get("/customer/booking/confirmation")
+                                .param("service", "service1")
+                                .param("salon", "magiccuts-salon")
+                                .param("appointmentDate", appointmentDate)
+                                .param("appointmentTime", "10:00"))
+                                .andExpect(status().is3xxRedirection())
+                                .andExpect(redirectedUrl("/login"));
+        }
+
+        @Test
+        void guestBookingDetailsAreSavedBeforeLogin() throws Exception {
+                String appointmentDate = LocalDate.now().plusDays(2).toString();
+
+                var result = mockMvc.perform(get(
+                                "/customer/booking/confirmation?service={service}&salon={salon}&appointmentDate={date}&appointmentTime={time}",
+                                "service1",
+                                "magiccuts-salon",
+                                appointmentDate,
+                                "10:00"))
+                                .andExpect(status().is3xxRedirection())
+                                .andExpect(redirectedUrl("/login"))
+                                .andReturn();
+
+                String encodedSessionId = result.getResponse().getCookie("SESSION").getValue();
+
+                String sessionId = new String(
+                                java.util.Base64.getDecoder().decode(encodedSessionId),
+                                java.nio.charset.StandardCharsets.UTF_8);
+
+                var storedSession = sessionRepository.findById(sessionId);
+
+                var savedRequest = (org.springframework.security.web.savedrequest.SavedRequest) storedSession
+                                .getAttribute("SPRING_SECURITY_SAVED_REQUEST");
+
+                org.junit.jupiter.api.Assertions.assertNotNull(savedRequest);
+
+                String savedUrl = savedRequest.getRedirectUrl();
+
+                org.junit.jupiter.api.Assertions.assertTrue(savedUrl.contains("service=service1"));
+                org.junit.jupiter.api.Assertions.assertTrue(savedUrl.contains("salon=magiccuts-salon"));
+                org.junit.jupiter.api.Assertions.assertTrue(savedUrl.contains("appointmentDate=" + appointmentDate));
+                org.junit.jupiter.api.Assertions.assertTrue(savedUrl.contains("appointmentTime=10:00"));
+        }
 }
