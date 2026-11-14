@@ -15,6 +15,9 @@
             <div th:if="${message}" class="alert alert-success" role="alert"
                 th:text="${message}">
             </div>
+            <div th:if="${calendarMessage}" class="alert alert-info" role="status"
+                th:text="${calendarMessage}">
+            </div>
             <div class="d-flex justify-content-between align-items-center mb-4">
             <h1>Appointment Details</h1>
 

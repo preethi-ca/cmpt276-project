@@ -20,6 +20,13 @@
       </div>
 
       <div
+        th:if="${calendarMessage}"
+        class="alert alert-info"
+        role="status"
+        th:text="${calendarMessage}"
+      ></div>
+
+      <div
         th:if="${#lists.isEmpty(appointments)}"
         class="alert alert-secondary"
       >

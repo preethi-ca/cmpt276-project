@@ -147,4 +147,109 @@ class GoogleCalendarSyncTests {
                 sync.feedback(GoogleCalendarResult.FAILED));
         assertNull(sync.feedback(GoogleCalendarResult.NOT_CONNECTED));
     }
+
+    @Test
+    void editedAppointmentUpdatesTheSameEvent() {
+        appointment.setGoogleEventId("existing-event-id");
+        when(client.updateEvent(eq(REFRESH_TOKEN), eq("existing-event-id"), any(GoogleCalendarEvent.class))).thenReturn(true);
+
+        assertEquals(GoogleCalendarResult.UPDATED, sync.updateBooking(appointment));
+
+        verify(client, times(1)).updateEvent(eq(REFRESH_TOKEN), eq("existing-event-id"), any(GoogleCalendarEvent.class));
+        verify(client, never()).createEvent(anyString(), any());
+        assertEquals("existing-event-id", appointment.getGoogleEventId());
+    }
+
+    @Test
+    void updateRejectedByGoogleGivesFailed() {
+        appointment.setGoogleEventId("existing-event-id");
+        when(client.updateEvent(anyString(), anyString(), any(GoogleCalendarEvent.class))).thenReturn(false);
+
+        assertEquals(GoogleCalendarResult.FAILED, sync.updateBooking(appointment));
+    }
+
+    @Test
+    void updateWithNoEventYetAddsANewOne() {
+        when(client.createEvent(eq(REFRESH_TOKEN), any(GoogleCalendarEvent.class))).thenReturn("new-event-id");
+
+        assertEquals(GoogleCalendarResult.ADDED, sync.updateBooking(appointment));
+
+        verify(client, never()).updateEvent(anyString(), anyString(), any());
+        assertEquals("new-event-id", appointment.getGoogleEventId());
+        verify(appointmentRepository).save(appointment);
+    }
+
+    @Test
+    void updateForCustomerWithoutAConnectionIsNotSentToGoogle() {
+        appointment.setGoogleEventId("existing-event-id");
+        when(connectionRepository.findByCustomer(alex)).thenReturn(Optional.empty());
+
+        assertEquals(GoogleCalendarResult.NOT_CONNECTED, sync.updateBooking(appointment));
+        assertEquals(GoogleCalendarResult.NOT_CONNECTED, sync.updateBooking(null));
+
+        verifyNoInteractions(client, appointmentRepository);
+    }
+
+    @Test
+    void cancelledAppointmentRemovesTheEvent() {
+        appointment.setGoogleEventId("existing-event-id");
+        when(client.deleteEvent(REFRESH_TOKEN, "existing-event-id")).thenReturn(true);
+
+        assertEquals(GoogleCalendarResult.REMOVED, sync.removeBooking(appointment));
+
+        verify(client, times(1)).deleteEvent(REFRESH_TOKEN, "existing-event-id");
+        verifyNoInteractions(appointmentRepository);
+    }
+
+    @Test
+    void removeRejectedByGoogleGivesFailed() {
+        appointment.setGoogleEventId("existing-event-id");
+        when(client.deleteEvent(anyString(), anyString())).thenReturn(false);
+
+        assertEquals(GoogleCalendarResult.FAILED, sync.removeBooking(appointment));
+    }
+
+    @Test
+    void removeWithNoEventOrNoConnectionIsNotSentToGoogle() {
+        assertEquals(GoogleCalendarResult.NOT_CONNECTED, sync.removeBooking(appointment));
+
+        appointment.setGoogleEventId("existing-event-id");
+        when(connectionRepository.findByCustomer(alex)).thenReturn(Optional.empty());
+        assertEquals(GoogleCalendarResult.NOT_CONNECTED, sync.removeBooking(appointment));
+
+        when(settings.isReady()).thenReturn(false);
+        assertEquals(GoogleCalendarResult.NOT_CONNECTED, sync.removeBooking(appointment));
+        assertEquals(GoogleCalendarResult.NOT_CONNECTED, sync.removeBooking(null));
+
+        verifyNoInteractions(client, appointmentRepository);
+    }
+
+    @Test
+    void clientErrorsOnUpdateOrRemoveGiveFailedWithoutThrowing() {
+        appointment.setGoogleEventId("existing-event-id");
+        when(client.updateEvent(anyString(), anyString(), any(GoogleCalendarEvent.class)))
+                .thenThrow(new IllegalStateException("Test client failure"));
+        when(client.deleteEvent(anyString(), anyString()))
+                .thenThrow(new IllegalStateException("Test client failure"));
+
+        assertEquals(GoogleCalendarResult.FAILED, sync.updateBooking(appointment));
+        assertEquals(GoogleCalendarResult.FAILED, sync.removeBooking(appointment));
+
+        when(ownerService.findPublicSalon("salon-1")).thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND));
+        assertEquals(GoogleCalendarResult.FAILED, sync.updateBooking(appointment));
+    }
+
+    @Test
+    void editAndCancelFeedbackTextMatchesEachResult() {
+        assertEquals("Your Google Calendar event was updated.", sync.updateFeedback(GoogleCalendarResult.UPDATED));
+        assertEquals("Added to your Google Calendar.", sync.updateFeedback(GoogleCalendarResult.ADDED));
+        assertEquals("Couldn't update Google Calendar. Your appointment change is still saved.",
+                sync.updateFeedback(GoogleCalendarResult.FAILED));
+        assertNull(sync.updateFeedback(GoogleCalendarResult.NOT_CONNECTED));
+
+        assertEquals("Removed from your Google Calendar.", sync.removeFeedback(GoogleCalendarResult.REMOVED));
+        assertEquals("Couldn't remove it from Google Calendar. Your appointment is still cancelled.",
+                sync.removeFeedback(GoogleCalendarResult.FAILED));
+        assertNull(sync.removeFeedback(GoogleCalendarResult.NOT_CONNECTED));
+    }
 }
