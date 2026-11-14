@@ -23,9 +23,13 @@
   <div class="workspace-shell">
     <header class="workspace-header">
       <p class="breadcrumb"><span th:text="${salon != null ? salon.name : 'Your salon'}"></span><span aria-hidden="true"> / </span><span th:text="${title}"></span></p>
-      <div class="owner-account"><span>Salon Owner</span>
-        <!--/* th:action 自动加入 CSRF token；不硬编码原型中的示例账号姓名。 */-->
-        <form th:action="@{/logout}" method="post" novalidate data-submit-guard><button type="submit" class="text-button">Sign out</button></form>
+      <div class="owner-account">
+        <span>Salon Owner</span>
+        <div class="owner-account-links">
+          <a th:href="@{/account-settings}" class="text-button">Account Settings</a>
+          <!--/* th:action automatically includes the CSRF token. */-->
+          <form th:action="@{/logout}" method="post" novalidate data-submit-guard><button type="submit" class="text-button">Sign out</button></form>
+        </div>
       </div>
     </header>
     <main id="main" class="workspace">

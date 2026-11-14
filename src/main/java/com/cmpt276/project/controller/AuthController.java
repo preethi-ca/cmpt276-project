@@ -8,9 +8,11 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import com.cmpt276.project.model.Account;
 
 /**
- * Shared authentication endpoints; Spring Security handles login and logout POSTs.
+ * Shared authentication endpoints; Spring Security handles login and logout
+ * POSTs.
  */
 @Controller
 public class AuthController {
@@ -72,7 +74,7 @@ public class AuthController {
         if (!newPassword.equals(confirmPassword)) {
             redirectAttributes.addFlashAttribute(
                     "error", "New passwords do not match.");
-            return "redirect:/change-password";
+            return "redirect:/account-settings";
         }
 
         try {
@@ -82,18 +84,56 @@ public class AuthController {
             if (!changed) {
                 redirectAttributes.addFlashAttribute(
                         "error", "Current password is incorrect.");
-                return "redirect:/change-password";
+                return "redirect:/account-settings";
             }
 
             redirectAttributes.addFlashAttribute(
                     "message", "Your password has been changed successfully.");
-            return "redirect:/change-password";
+            return "redirect:/account-settings";
 
         } catch (IllegalArgumentException exception) {
             redirectAttributes.addFlashAttribute(
                     "error", exception.getMessage());
-            return "redirect:/change-password";
+            return "redirect:/account-settings";
         }
+    }
+
+    @GetMapping("/account-settings")
+    public String showAccountSettings(
+            Authentication authentication,
+            Model model) {
+
+        Account account = accountService.findByEmail(authentication.getName());
+
+        model.addAttribute("account", account);
+
+        return "account-settings";
+    }
+
+    @PostMapping("/account-settings")
+    public String updateAccountSettings(
+            @RequestParam String name,
+            @RequestParam(required = false) String phoneNumber,
+            @RequestParam String notificationPreference,
+            Authentication authentication,
+            RedirectAttributes redirectAttributes) {
+
+        try {
+            accountService.updateAccountSettings(
+                    authentication.getName(),
+                    name,
+                    phoneNumber,
+                    notificationPreference);
+
+            redirectAttributes.addFlashAttribute(
+                    "message", "Account settings updated successfully.");
+
+        } catch (IllegalArgumentException exception) {
+            redirectAttributes.addFlashAttribute(
+                    "error", exception.getMessage());
+        }
+
+        return "redirect:/account-settings";
     }
 
     public static class RegistrationForm {
@@ -151,8 +191,7 @@ public class AuthController {
         }
 
         public void setNotificationPreference(String notificationPreference) {
-            this.notificationPreference =
-                    notificationPreference == null ? "EMAIL" : notificationPreference;
+            this.notificationPreference = notificationPreference == null ? "EMAIL" : notificationPreference;
         }
     }
 }
