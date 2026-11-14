@@ -147,28 +147,17 @@ public class AppointmentController {
 
     //Cancel appointment
     @PostMapping("/customer/appointments/cancel")
-    public String cancelAppointment(@RequestParam int id,Authentication authentication, RedirectAttributes redirectAttributes) {
-        String customerEmail = authentication.getName();
-        Optional<Account> customerOpt = accountRepository.findByEmail(customerEmail);
-        if (!customerOpt.isPresent()) {
-            throw new IllegalArgumentException("Customer account not found");
-        }
-        Account customer = customerOpt.get();
+    public String cancelAppointment(@RequestParam("id") int appointmentId, Authentication authentication, RedirectAttributes redirectAttributes) {
 
-        Optional<Appointment> appointmentOpt = appointmentRepository.findByIdAndCustomer(id, customer);
-        if (!appointmentOpt.isPresent()) {
-            throw new IllegalArgumentException("Appointment not found");
-        }
-        Appointment appointment = appointmentOpt.get();
+        //cancel the appointment belonging to the logged-in customer
+        Appointment appointment = bookingService.cancelAppointment(appointmentId, authentication.getName());
 
-        // remove the Google Calendar event first because we need its id, a failure only changes the message
+        // Google Calendar runs after the appointment is deleted, a failure only changes the message
         GoogleCalendarResult calendarResult = calendarSync.removeBooking(appointment);
 
-        //delete the appointment from database
-        appointmentRepository.delete(appointment);
+        //Show a success message
         redirectAttributes.addFlashAttribute("message", "Your appointment has been cancelled");
         redirectAttributes.addFlashAttribute("calendarMessage", calendarSync.removeFeedback(calendarResult));
-
         return "redirect:/customer/appointments";
     }
 

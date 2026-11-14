@@ -86,7 +86,7 @@ public class GoogleCalendarSync {
         }
     }
 
-    // called before the appointment is deleted, so the event id is still there
+    // the deleted appointment object still has its event id, so this works after the delete
     public GoogleCalendarResult removeBooking(Appointment appointment) {
         try {
             Optional<GoogleCalendarConnection> connection = findConnection(appointment);
