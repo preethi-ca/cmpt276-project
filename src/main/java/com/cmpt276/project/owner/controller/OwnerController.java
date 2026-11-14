@@ -4,6 +4,8 @@ import com.cmpt276.project.owner.auth.CurrentOwner;
 import com.cmpt276.project.owner.model.OpeningDay;
 import com.cmpt276.project.owner.model.Salon;
 import com.cmpt276.project.owner.service.OwnerService;
+
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -23,6 +25,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import com.cmpt276.project.owner.service.SalonAnalyticsService;
 
 @Controller
 @RequestMapping("/owner")
@@ -30,12 +33,16 @@ public class OwnerController {
     private final OwnerService service;
     private final CurrentOwner currentOwner;
     private final Environment environment;
-    private static final String[] DAYS = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
+    private final SalonAnalyticsService analyticsService;
+    private static final String[] DAYS = { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",
+            "Sunday" };
 
-    public OwnerController(OwnerService service, CurrentOwner currentOwner, Environment environment) {
+    public OwnerController(OwnerService service, CurrentOwner currentOwner, Environment environment,
+            SalonAnalyticsService salonAnalyticsService) {
         this.service = service;
         this.currentOwner = currentOwner;
         this.environment = environment;
+        this.analyticsService = salonAnalyticsService;
     }
 
     @InitBinder("salonForm")
@@ -82,7 +89,7 @@ public class OwnerController {
 
     @PostMapping("/setup")
     public String create(@ModelAttribute("salonForm") SalonForm salonForm, BindingResult errors, Model model,
-                         RedirectAttributes redirect) {
+            RedirectAttributes redirect) {
         if (!service.saveProfile(currentOwner.getOwnerId(), salonForm, true, errors)) {
             return page(model, "setup", "Create your salon");
         }
@@ -92,9 +99,26 @@ public class OwnerController {
 
     @GetMapping("/dashboard")
     public String dashboard(Model model) {
-        if (model.getAttribute("salon") == null) {
+
+        Salon salon = (Salon) model.getAttribute("salon");
+
+        if (salon == null) {
             return "redirect:/owner/setup";
         }
+
+        int totalAppointments = analyticsService.getTotalAppointments(salon.getId());
+
+        String mostPopularService = analyticsService.getMostPopularService(salon.getId());
+
+        String busiestTime = analyticsService.getBusiestTime(salon.getId());
+
+        BigDecimal estimatedRevenue = analyticsService.getEstimatedRevenue(salon);
+
+        model.addAttribute("totalAppointments", totalAppointments);
+        model.addAttribute("mostPopularService", mostPopularService);
+        model.addAttribute("busiestTime", busiestTime);
+        model.addAttribute("estimatedRevenue", estimatedRevenue);
+
         return page(model, "dashboard", "Dashboard");
     }
 
@@ -130,7 +154,7 @@ public class OwnerController {
 
     @PostMapping("/profile")
     public String saveProfile(@ModelAttribute("salonForm") SalonForm salonForm, BindingResult errors, Model model,
-                              RedirectAttributes redirect) {
+            RedirectAttributes redirect) {
         if (!service.saveProfile(currentOwner.getOwnerId(), salonForm, false, errors)) {
             return page(model, "profile", "Salon Settings");
         }
@@ -140,7 +164,7 @@ public class OwnerController {
 
     @GetMapping("/services")
     public String services(@RequestParam(defaultValue = "1") int page,
-                           @RequestParam(defaultValue = "") String view, Model model) {
+            @RequestParam(defaultValue = "") String view, Model model) {
         if (model.getAttribute("salon") == null) {
             return "redirect:/owner/setup";
         }
@@ -154,7 +178,7 @@ public class OwnerController {
 
     @PostMapping("/services")
     public String addService(@ModelAttribute("serviceForm") ServiceForm serviceForm, BindingResult errors, Model model,
-                             RedirectAttributes redirect) {
+            RedirectAttributes redirect) {
         if (!service.addService(currentOwner.getOwnerId(), serviceForm, errors)) {
             return page(model, "add-service", "Add Service");
         }
@@ -202,7 +226,8 @@ public class OwnerController {
         }
         Salon salon = (Salon) model.getAttribute("salon");
         HoursForm form = new HoursForm();
-        // Copy saved values so editing or rejecting input cannot mutate the stored schedule.
+        // Copy saved values so editing or rejecting input cannot mutate the stored
+        // schedule.
         for (OpeningDay saved : salon.getOpeningHours()) {
             OpeningDay day = form.getDays().get(saved.getDayOfWeek() - 1);
             day.setOpen(saved.isOpen());
@@ -217,7 +242,7 @@ public class OwnerController {
 
     @PostMapping("/hours")
     public String saveHours(@ModelAttribute("hoursForm") HoursForm hoursForm, BindingResult errors, Model model,
-                            RedirectAttributes redirect) {
+            RedirectAttributes redirect) {
         if (!service.setOpeningHours(currentOwner.getOwnerId(), hoursForm, errors)) {
             return page(model, "hours", "Availability");
         }
@@ -251,34 +276,91 @@ public class OwnerController {
         private String phone = "";
         private String email = "";
 
+        public String getName() {
+            return name;
+        }
 
-        public String getName() { return name; }
-        public void setName(String name) { this.name = name; }
-        public String getDescription() { return description; }
-        public void setDescription(String description) { this.description = description; }
-        public String getAddress() { return address; }
-        public void setAddress(String address) { this.address = address; }
+        public void setName(String name) {
+            this.name = name;
+        }
 
-        public String getCity() { return city; }
-        public void setCity(String city) { this.city = city; }
-        public String getProvince() { return province; }
-        public void setProvince(String province) { this.province = province; }
-        public String getPhone() { return phone; }
-        public void setPhone(String phone) { this.phone = phone; }
-        public String getEmail() { return email; }
-        public void setEmail(String email) { this.email = email; }
+        public String getDescription() {
+            return description;
+        }
+
+        public void setDescription(String description) {
+            this.description = description;
+        }
+
+        public String getAddress() {
+            return address;
+        }
+
+        public void setAddress(String address) {
+            this.address = address;
+        }
+
+        public String getCity() {
+            return city;
+        }
+
+        public void setCity(String city) {
+            this.city = city;
+        }
+
+        public String getProvince() {
+            return province;
+        }
+
+        public void setProvince(String province) {
+            this.province = province;
+        }
+
+        public String getPhone() {
+            return phone;
+        }
+
+        public void setPhone(String phone) {
+            this.phone = phone;
+        }
+
+        public String getEmail() {
+            return email;
+        }
+
+        public void setEmail(String email) {
+            this.email = email;
+        }
     }
 
     public static class ServiceForm {
         private String name = "";
         private String price = "";
         private String description = "";
-        public String getDescription() { return description; }
-        public void setDescription(String description) { this.description = description; }
-        public String getName() { return name; }
-        public void setName(String name) { this.name = name; }
-        public String getPrice() { return price; }
-        public void setPrice(String price) { this.price = price; }
+
+        public String getDescription() {
+            return description;
+        }
+
+        public void setDescription(String description) {
+            this.description = description;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public String getPrice() {
+            return price;
+        }
+
+        public void setPrice(String price) {
+            this.price = price;
+        }
     }
 
     public static class HoursForm {
@@ -297,7 +379,12 @@ public class OwnerController {
             }
         }
 
-        public List<OpeningDay> getDays() { return days; }
-        public void setDays(List<OpeningDay> days) { this.days = days; }
+        public List<OpeningDay> getDays() {
+            return days;
+        }
+
+        public void setDays(List<OpeningDay> days) {
+            this.days = days;
+        }
     }
 }

@@ -232,5 +232,28 @@ dialog::backdrop { background: rgb(25 34 28 / 35%); }
     .sidebar nav a[aria-current="page"] { border-color: Highlight; }
 }
 
+.analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.analytics-card {
+  padding: 20px;
+  border: 1px solid #d7ddd2;
+  border-radius: 8px;
+  background: #f8faf6;
+}
+
+.analytics-label {
+  display: block;
+  margin-bottom: 8px;
+  color: #5b665d;
+}
+
+.analytics-card strong {
+  font-size: 24px;
+}
 .service-actions form { display: inline-block; margin: 0; }
 .service-actions .button { margin: 3px 8px 3px 0; min-height: 38px; padding: 7px 13px; font-size: 13px; }
