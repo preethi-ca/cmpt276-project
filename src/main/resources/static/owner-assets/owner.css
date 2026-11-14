@@ -141,6 +141,10 @@ th, td { border: 1px solid #c8ccc8; padding: 12px; text-align: left; }
 .appointment-empty h3 { margin-bottom: 10px; font-size: 19px; font-weight: 600; }
 .appointment-empty p { max-width: 420px; margin: 0 auto; font-size: 14px; }
 .appointment-empty .button { margin-top: 24px; font-size: 14px; }
+.appointment-table { min-width: 540px; margin-top: 20px; table-layout: fixed; }
+.appointment-table th, .appointment-table td { overflow-wrap: anywhere; vertical-align: top; }
+.appointment-table th:first-child { width: 24%; }
+.appointment-table th:nth-child(2) { width: 14%; }
 
 /* time sheet */
 .hours-form { margin-top: 24px; }
