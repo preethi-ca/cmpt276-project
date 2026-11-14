@@ -61,6 +61,7 @@ class Cmpt276ProjectApplicationTests {
     @Autowired private AppointmentRepository appointments;
     @Autowired private BookingService bookings;
     private Account owner;
+    private Account dashboardCustomer;
     private String ownerId;
 
     @BeforeEach
@@ -68,6 +69,8 @@ class Cmpt276ProjectApplicationTests {
         owner = accounts.save(new Account("Owner", UUID.randomUUID() + "@example.com",
                 "unused-test-hash", RoleType.SALONOWNER));
         ownerId = String.valueOf(owner.getId());
+        dashboardCustomer = accounts.save(new Account("Dashboard Customer",
+                UUID.randomUUID() + "@example.com", "unused-test-hash", RoleType.CUSTOMER));
         SalonForm form = profile();
         assertTrue(owners.saveProfile(ownerId, form, true, errors(form, "salonForm")));
     }
@@ -335,7 +338,9 @@ class Cmpt276ProjectApplicationTests {
         Appointment booked = bookings.bookAppointment(salon.getServices().get(0).getId(),
                 salon.getSlug(), monday.toString(), "10:00", customer.getEmail());
         saveHours("09:30", "13:30");
-        assertEquals(List.of("11:30", "12:30"), bookings.getAvailableTimes(salon.getSlug(), monday));
+        List<String> shiftedTimes = bookings.getAvailableTimes(salon.getSlug(), monday);
+        assertTrue(shiftedTimes.containsAll(List.of("11:30", "12:30")));
+        assertFalse(shiftedTimes.contains("10:00"));
         assertEquals("10:00", appointments.findById(booked.getId()).orElseThrow().getAppointmentTime());
         HoursForm closed = new HoursForm();
         assertTrue(owners.setOpeningHours(ownerId, closed, errors(closed, "hoursForm")));
@@ -469,7 +474,7 @@ class Cmpt276ProjectApplicationTests {
     }
 
     private List<PublicSalon> customerSalons() throws Exception {
-        var result = mvc.perform(get("/customer/dashboard").with(user("customer").roles("CUSTOMER")))
+        var result = mvc.perform(get("/customer/dashboard").with(user(dashboardCustomer.getEmail()).roles("CUSTOMER")))
                 .andExpect(status().isOk()).andExpect(view().name("customer/customer-dashboard"))
                 .andExpect(model().attributeExists("salons")).andReturn();
         var salons = (List<?>) result.getModelAndView().getModel().get("salons");

@@ -1,14 +1,17 @@
 package com.cmpt276.project;
 
 import com.cmpt276.project.controller.DashboardController;
+import com.cmpt276.project.model.Account;
 import com.cmpt276.project.owner.controller.PublicSalon;
 import com.cmpt276.project.owner.model.Salon;
 import com.cmpt276.project.owner.service.OwnerService;
+import com.cmpt276.project.service.AccountService;
 import java.util.List;
 import java.util.regex.Pattern;
 import tools.jackson.databind.json.JsonMapper;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -18,6 +21,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.ui.ExtendedModelMap;
 import org.springframework.web.server.ResponseStatusException;
 
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
@@ -36,6 +40,32 @@ class PublicSalonControllerTests {
     @MockitoBean
     private OwnerService ownerService;
 
+    @MockitoBean
+    private AccountService accountService;
+
+    @BeforeEach
+    void setUp() {
+        Account customer = mock(Account.class);
+        when(customer.getName()).thenReturn("Test Customer");
+        when(accountService.findByEmail("customer")).thenReturn(customer);
+    }
+
+    private void assertSalonOption(String html, String slug, String expectedLabel) {
+        Pattern optionPattern = Pattern.compile(
+                "<option\\b[^>]*\\bvalue\\s*=\\s*\""
+                        + Pattern.quote(slug)
+                        + "\"[^>]*>\\s*"
+                        + Pattern.quote(expectedLabel)
+                        + "\\s*</option>",
+                Pattern.DOTALL
+        );
+
+        assertTrue(
+                optionPattern.matcher(html).find(),
+                "Expected salon option: " + slug + " with label: " + expectedLabel
+        );
+    }
+
     @Test
     void customerDashboardAcceptsAnEmptySalonList() throws Exception {
         when(ownerService.findPublicSalons()).thenReturn(List.of());
@@ -44,6 +74,7 @@ class PublicSalonControllerTests {
                 .andExpect(status().isOk())
                 .andExpect(view().name("customer/customer-dashboard"))
                 .andExpect(model().attribute("salons", List.of()))
+                .andExpect(model().attribute("customerName", "Test Customer"))
                 .andExpect(content().string(containsString("No salons are available yet.")))
                 .andReturn();
         String html = result.getResponse().getContentAsString();
@@ -55,64 +86,75 @@ class PublicSalonControllerTests {
     @Test
     void salonDropdownRendersDistinctChoicesAndEscapesPublicText() throws Exception {
         when(ownerService.findPublicSalons()).thenReturn(List.of(
-                selectionSalon("same", "Same <Salon>", "1 Main Street"),
-                selectionSalon("same-2", "Same <Salon>", "2 Main Street")));
+            selectionSalon("same", "Same <Salon>", "1 Main Street"),
+            selectionSalon("same-2", "Same <Salon>", "2 Main Street")));
 
-        mockMvc.perform(get("/customer/dashboard").with(user("customer").roles("CUSTOMER")))
+        var result = mockMvc.perform(get("/customer/dashboard").with(user("customer").roles("CUSTOMER")))
+            .andExpect(status().isOk())
+            .andExpect(content().string(containsString("action=\"/customer/salons/visit\"")))
+            .andExpect(content().string(containsString("name=\"slug\"")))
+            .andExpect(content().string(containsString("aria-label=\"Choose a salon\"")))
+            .andExpect(content().string(not(containsString("<label for=\"salon\""))))
+            .andExpect(content().string(not(containsString("Same <Salon>"))))
+            .andReturn();
+
+        String html = result.getResponse().getContentAsString();
+
+        assertSalonOption(html, "same",
+            "Same &lt;Salon&gt; — 1 Main Street (Burnaby)");
+        assertSalonOption(html, "same-2",
+            "Same &lt;Salon&gt; — 2 Main Street (Burnaby)");
+}
+
+@Test
+void sameNameSalonsWithoutLocationsHaveDistinctLabelsAndKeepTheirDestinations() throws Exception {
+    Salon first = selectionSalon("sally-salon", "Sally Salon", "");
+    first.setCity("");
+    Salon second = selectionSalon("sally-salon-2", "Sally Salon", null);
+    second.setCity(null);
+    when(ownerService.findPublicSalons()).thenReturn(List.of(first, second));
+
+    for (String path : List.of("/customer/dashboard", "/customer/salons/visit")) {
+        var result = mockMvc.perform(get(path).with(user("customer").roles("CUSTOMER")))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("action=\"/customer/salons/visit\"")))
-                .andExpect(content().string(containsString("name=\"slug\"")))
-                .andExpect(content().string(containsString("value=\"same\"")))
-                .andExpect(content().string(containsString("value=\"same-2\"")))
-                .andExpect(content().string(containsString("value=\"same\">Same &lt;Salon&gt; — 1 Main Street (Burnaby)</option>")))
-                .andExpect(content().string(containsString("value=\"same-2\">Same &lt;Salon&gt; — 2 Main Street (Burnaby)</option>")))
-                .andExpect(content().string(containsString("aria-label=\"Choose a salon\"")))
-                .andExpect(content().string(not(containsString("<label for=\"salon\""))))
-                .andExpect(content().string(not(containsString("Same <Salon>"))));
+                .andReturn();
+
+        String html = result.getResponse().getContentAsString();
+
+        assertSalonOption(html, "sally-salon", "Sally Salon [sally-salon]");
+        assertSalonOption(html, "sally-salon-2", "Sally Salon [sally-salon-2]");
     }
 
-    @Test
-    void sameNameSalonsWithoutLocationsHaveDistinctLabelsAndKeepTheirDestinations() throws Exception {
-        Salon first = selectionSalon("sally-salon", "Sally Salon", "");
-        first.setCity("");
-        Salon second = selectionSalon("sally-salon-2", "Sally Salon", null);
-        second.setCity(null);
-        when(ownerService.findPublicSalons()).thenReturn(List.of(first, second));
-
-        for (String path : List.of("/customer/dashboard", "/customer/salons/visit")) {
-            mockMvc.perform(get(path).with(user("customer").roles("CUSTOMER")))
-                    .andExpect(status().isOk())
-                    .andExpect(content().string(containsString(
-                            "value=\"sally-salon\">Sally Salon [sally-salon]</option>")))
-                    .andExpect(content().string(containsString(
-                            "value=\"sally-salon-2\">Sally Salon [sally-salon-2]</option>")));
-        }
-        for (Salon salon : List.of(first, second)) {
-            when(ownerService.findPublicSalonBySlug(salon.getSlug())).thenReturn(salon);
-            mockMvc.perform(get("/customer/salons/visit").param("slug", salon.getSlug())
-                            .with(user("customer").roles("CUSTOMER")))
-                    .andExpect(status().isFound())
-                    .andExpect(redirectedUrl("/salons/" + salon.getSlug()));
-        }
+    for (Salon salon : List.of(first, second)) {
+        when(ownerService.findPublicSalonBySlug(salon.getSlug())).thenReturn(salon);
+        mockMvc.perform(get("/customer/salons/visit").param("slug", salon.getSlug())
+                        .with(user("customer").roles("CUSTOMER")))
+                .andExpect(status().isFound())
+                .andExpect(redirectedUrl("/salons/" + salon.getSlug()));
     }
+}
 
-    @Test
-    void sameNameSalonsAtTheSameLocationHaveDistinctEscapedLabels() throws Exception {
-        when(ownerService.findPublicSalons()).thenReturn(List.of(
-                selectionSalon("same", "Same <Salon>", "1 Main Street"),
-                selectionSalon("same-2", "Same <Salon>", "1 Main Street"),
-                selectionSalon("other", "Other Salon", "1 Main Street")));
+@Test
+void sameNameSalonsAtTheSameLocationHaveDistinctEscapedLabels() throws Exception {
+    when(ownerService.findPublicSalons()).thenReturn(List.of(
+            selectionSalon("same", "Same <Salon>", "1 Main Street"),
+            selectionSalon("same-2", "Same <Salon>", "1 Main Street"),
+            selectionSalon("other", "Other Salon", "1 Main Street")));
 
-        mockMvc.perform(get("/customer/dashboard").with(user("customer").roles("CUSTOMER")))
-                .andExpect(status().isOk())
-                .andExpect(content().string(containsString(
-                        "value=\"same\">Same &lt;Salon&gt; — 1 Main Street (Burnaby) [same]</option>")))
-                .andExpect(content().string(containsString(
-                        "value=\"same-2\">Same &lt;Salon&gt; — 1 Main Street (Burnaby) [same-2]</option>")))
-                .andExpect(content().string(containsString(
-                        "value=\"other\">Other Salon — 1 Main Street (Burnaby)</option>")))
-                .andExpect(content().string(not(containsString("Same <Salon>"))));
-    }
+    var result = mockMvc.perform(get("/customer/dashboard").with(user("customer").roles("CUSTOMER")))
+            .andExpect(status().isOk())
+            .andExpect(content().string(not(containsString("Same <Salon>"))))
+            .andReturn();
+
+    String html = result.getResponse().getContentAsString();
+
+    assertSalonOption(html, "same",
+            "Same &lt;Salon&gt; — 1 Main Street (Burnaby) [same]");
+    assertSalonOption(html, "same-2",
+            "Same &lt;Salon&gt; — 1 Main Street (Burnaby) [same-2]");
+    assertSalonOption(html, "other",
+            "Other Salon — 1 Main Street (Burnaby)");
+}
 
     @Test
     void missingOrBlankSelectionShowsErrorAndReloadsChoices() throws Exception {
@@ -167,8 +209,9 @@ class PublicSalonControllerTests {
         var failure = new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
         when(ownerService.findPublicSalonBySlug("broken")).thenThrow(failure);
         assertSame(failure, assertThrows(ResponseStatusException.class,
-                () -> new DashboardController(ownerService).visitSalon("broken", new ExtendedModelMap())));
-    }
+            () -> new DashboardController(ownerService, accountService)
+                    .visitSalon("broken", new ExtendedModelMap(), null)));
+        }
 
     @Test
     void salonVisitRequiresCustomerRole() throws Exception {
