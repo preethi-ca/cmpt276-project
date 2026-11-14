@@ -13,42 +13,49 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .authorizeHttpRequests(auth -> auth
-                // Error rendering must preserve the original 403/404 instead of redirecting to login.
-                .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
-                // public pages
-                .requestMatchers("/", "/register", "/login", "/css/**", "/js/**", "/images/**",
-                    "/error", "/owner-assets/**", "/api/salons/**", "/demo/salons/**",
-                    "/salons/**").permitAll()
+                .authorizeHttpRequests(auth -> auth
+                        // Error rendering must preserve the original 403/404 instead of redirecting to
+                        // login.
+                        .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
+                        // public pages
+                        .requestMatchers("/", "/register", "/login", "/css/**", "/js/**", "/images/**",
+                                "/error", "/owner-assets/**", "/api/salons/**", "/demo/salons/**",
+                                "/salons/**")
+                        .permitAll()
 
-                // role-based pages
-                .requestMatchers("/customer", "/customer/**").hasRole("CUSTOMER")
-                .requestMatchers("/owner", "/owner/**").hasRole("SALONOWNER")
+                        // Allow guests to browse and select appointment dates/times
+                        .requestMatchers(
+                                "/customer/booking",
+                                "/customer/booking/time")
+                        .permitAll()
 
-                // all other pages require login
-                .anyRequest().authenticated()
-            )
+                        // Role-based pages
+                        .requestMatchers("/customer", "/customer/**").hasRole("CUSTOMER")
+                        .requestMatchers("/owner", "/owner/**").hasRole("SALONOWNER")
 
-            // Keep owner-page protections in the shared chain, including anonymous error pages.
-            .headers(headers -> headers.contentSecurityPolicy(csp -> csp.policyDirectives(
-                "default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self' data:; "
-                + "object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'")))
+                        // all other pages require login
+                        .anyRequest().authenticated())
 
-            // login configuration
-            .formLogin(form -> form
-                .loginPage("/login")
-                .defaultSuccessUrl("/dashboard", true)
-                .permitAll()
-            )
+                // Keep owner-page protections in the shared chain, including anonymous error
+                // pages.
+                .headers(headers -> headers.contentSecurityPolicy(csp -> csp.policyDirectives(
+                        "default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self' data:; "
+                                + "object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'")))
 
-            // logout configuration
-            .logout(logout -> logout
-                .logoutUrl("/logout")
-                .logoutSuccessUrl("/login?logout")
-                .permitAll()
-            );
+                // login configuration
+                .formLogin(form -> form
+                        .loginPage("/login")
+                        .defaultSuccessUrl("/dashboard", false)
+                        .permitAll())
+
+                // logout configuration
+                .logout(logout -> logout
+                        .logoutUrl("/logout")
+                        .logoutSuccessUrl("/login?logout")
+                        .permitAll());
         return http.build();
     }
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();

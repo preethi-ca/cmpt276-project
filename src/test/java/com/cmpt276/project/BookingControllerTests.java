@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -22,6 +23,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.session.FindByIndexNameSessionRepository;
 
 import com.cmpt276.project.model.Appointment;
 import com.cmpt276.project.owner.model.OpeningDay;
@@ -37,6 +39,9 @@ class BookingControllerTests {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private FindByIndexNameSessionRepository<?> sessionRepository;
 
     @MockitoBean
     private BookingService bookingService;
@@ -231,7 +236,7 @@ class BookingControllerTests {
                 .thenReturn("service1");
         when(service.getName())
                 .thenReturn("Haircut");
-        /*Tests that the controller correctly handles a successful booking by simulating the booking service returning an appointment 
+        /*Tests that the controller correctly handles a successful booking by simulating the booking service returning an appointment
         and checking that the customer is redirected to the booking confirmation page with the correct details */
         String appointmentDate = LocalDate.now().plusDays(2).toString();
         Appointment appointment = mock(Appointment.class);
@@ -358,4 +363,128 @@ class BookingControllerTests {
                 .andExpect(model().attribute("serviceName", "Haircut"))
                 .andExpect(model().attributeExists("minDate"));
     }
+
+        @Test
+        void guestCanAccessBookingDatePage() throws Exception {
+                Salon salon = mock(Salon.class);
+                SalonService service = mock(SalonService.class);
+
+                when(ownerService.findPublicSalonBySlug("magiccuts-salon"))
+                                .thenReturn(salon);
+
+                when(salon.getServices())
+                                .thenReturn(List.of(service));
+
+                when(service.getId())
+                                .thenReturn("service1");
+
+                when(service.getName())
+                                .thenReturn("Haircut");
+
+                when(salon.getOpeningHours())
+                                .thenReturn(List.of());
+
+                mockMvc.perform(get("/customer/booking")
+                                .param("service", "service1")
+                                .param("salon", "magiccuts-salon"))
+                                .andExpect(status().isOk())
+                                .andExpect(view().name("customer/select-date"))
+                                .andExpect(model().attribute("serviceName", "Haircut"))
+                                .andExpect(model().attribute("salon", "magiccuts-salon"));
+        }
+
+        @Test
+        void guestCanAccessBookingTimePage() throws Exception {
+                Salon salon = mock(Salon.class);
+                SalonService service = mock(SalonService.class);
+                OpeningDay monday = mock(OpeningDay.class);
+
+                String appointmentDate = LocalDate.now()
+                                .with(TemporalAdjusters.next(DayOfWeek.MONDAY))
+                                .toString();
+
+                when(ownerService.findPublicSalonBySlug("magiccuts-salon"))
+                                .thenReturn(salon);
+
+                when(salon.getServices())
+                                .thenReturn(List.of(service));
+
+                when(service.getId())
+                                .thenReturn("service1");
+
+                when(service.getName())
+                                .thenReturn("Haircut");
+
+                when(monday.getDayOfWeek())
+                                .thenReturn(1);
+
+                when(monday.isOpen())
+                                .thenReturn(true);
+
+                when(salon.getOpeningHours())
+                                .thenReturn(List.of(monday));
+
+                when(bookingService.getAvailableTimes(
+                                "magiccuts-salon",
+                                LocalDate.parse(appointmentDate)))
+                                .thenReturn(List.of("09:00", "10:00"));
+
+                mockMvc.perform(get("/customer/booking/time")
+                                .param("service", "service1")
+                                .param("salon", "magiccuts-salon")
+                                .param("appointmentDate", appointmentDate))
+                                .andExpect(status().isOk())
+                                .andExpect(view().name("customer/select-time"))
+                                .andExpect(model().attribute(
+                                                "availableTimes",
+                                                List.of("09:00", "10:00")));
+        }
+
+        @Test
+        void guestMustLoginBeforeReviewingBooking() throws Exception {
+                String appointmentDate = LocalDate.now().plusDays(2).toString();
+
+                mockMvc.perform(get("/customer/booking/confirmation")
+                                .param("service", "service1")
+                                .param("salon", "magiccuts-salon")
+                                .param("appointmentDate", appointmentDate)
+                                .param("appointmentTime", "10:00"))
+                                .andExpect(status().is3xxRedirection())
+                                .andExpect(redirectedUrl("/login"));
+        }
+
+        @Test
+        void guestBookingDetailsAreSavedBeforeLogin() throws Exception {
+                String appointmentDate = LocalDate.now().plusDays(2).toString();
+
+                var result = mockMvc.perform(get(
+                                "/customer/booking/confirmation?service={service}&salon={salon}&appointmentDate={date}&appointmentTime={time}",
+                                "service1",
+                                "magiccuts-salon",
+                                appointmentDate,
+                                "10:00"))
+                                .andExpect(status().is3xxRedirection())
+                                .andExpect(redirectedUrl("/login"))
+                                .andReturn();
+
+                String encodedSessionId = result.getResponse().getCookie("SESSION").getValue();
+
+                String sessionId = new String(
+                                java.util.Base64.getDecoder().decode(encodedSessionId),
+                                java.nio.charset.StandardCharsets.UTF_8);
+
+                var storedSession = sessionRepository.findById(sessionId);
+
+                var savedRequest = (org.springframework.security.web.savedrequest.SavedRequest) storedSession
+                                .getAttribute("SPRING_SECURITY_SAVED_REQUEST");
+
+                org.junit.jupiter.api.Assertions.assertNotNull(savedRequest);
+
+                String savedUrl = savedRequest.getRedirectUrl();
+
+                org.junit.jupiter.api.Assertions.assertTrue(savedUrl.contains("service=service1"));
+                org.junit.jupiter.api.Assertions.assertTrue(savedUrl.contains("salon=magiccuts-salon"));
+                org.junit.jupiter.api.Assertions.assertTrue(savedUrl.contains("appointmentDate=" + appointmentDate));
+                org.junit.jupiter.api.Assertions.assertTrue(savedUrl.contains("appointmentTime=10:00"));
+        }
 }
