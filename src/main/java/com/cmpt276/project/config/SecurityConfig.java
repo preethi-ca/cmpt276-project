@@ -17,7 +17,7 @@ public class SecurityConfig {
                 // Error rendering must preserve the original 403/404 instead of redirecting to login.
                 .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                 // public pages
-                .requestMatchers("/", "/register", "/login", "/css/**", "/js/**", "/images/**",
+                .requestMatchers("/", "/about", "/privacy", "/terms", "/register", "/login", "/css/**", "/js/**", "/images/**",
                     "/error", "/owner-assets/**", "/api/salons/**", "/demo/salons/**",
                     "/salons/**").permitAll()
 
