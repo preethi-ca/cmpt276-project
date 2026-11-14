@@ -15,16 +15,10 @@ public class Appointment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
-    /*Name of the service being booked 
-    - This is temporary until we connect Edwin's service data*/
     private String serviceName;
-
     private String serviceId;
-
     private String salonId;
-
     private LocalDate appointmentDate;
-
     private String appointmentTime;
 
     //connects the appointment to the customer who booked it
@@ -69,5 +63,12 @@ public class Appointment {
 
     public Account getCustomer() {
         return customer;
+    }
+
+    public void setAppointmentDate(LocalDate appointmentDate) {
+        this.appointmentDate = appointmentDate;
+    }
+    public void setAppointmentTime(String appointmentTime) {
+        this.appointmentTime = appointmentTime;
     }
 }

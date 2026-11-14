@@ -17,6 +17,10 @@ public class PublicSalon {
     public String getSlug() {return salon.getSlug();}
     public String getDescription() { return salon.getDescription(); }
     public String getAddress() { return salon.getAddress(); }
+    public String getCity() { return salon.getCity(); }
+    public String getProvince() { return salon.getProvince(); }
+    public String getPhone() { return salon.getPhone(); }
+    public String getEmail() { return salon.getEmail(); }
     public List<SalonService> getServices() { return salon.getServices(); }
     public List<OpeningDay> getOpeningHours() { return salon.getOpeningHours(); }
     public boolean isHoursConfigured() { return salon.isHoursConfigured(); }

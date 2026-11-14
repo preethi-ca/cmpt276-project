@@ -15,6 +15,11 @@ public class Salon {
     private String slug;
     private String description;
     private String address;
+    // Public salon contacts are independent of the owner's login account.
+    private String city;
+    private String province;
+    private String phone;
+    private String email;
     private List<SalonService> services = new ArrayList<>();
     private List<OpeningDay> openingHours = new ArrayList<>();
 
@@ -30,6 +35,14 @@ public class Salon {
     public void setDescription(String description) { this.description = description; }
     public String getAddress() { return address; }
     public void setAddress(String address) { this.address = address; }
+    public String getCity() { return city; }
+    public void setCity(String city) { this.city = city; }
+    public String getProvince() { return province; }
+    public void setProvince(String province) { this.province = province; }
+    public String getPhone() { return phone; }
+    public void setPhone(String phone) { this.phone = phone; }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
     public List<SalonService> getServices() { return services; }
     public void setServices(List<SalonService> services) { this.services = services; }
     public List<OpeningDay> getOpeningHours() { return openingHours; }

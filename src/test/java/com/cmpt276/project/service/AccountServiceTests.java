@@ -1,100 +1,142 @@
 package com.cmpt276.project.service;
 
+import com.cmpt276.project.controller.AuthController.RegistrationForm;
 import com.cmpt276.project.model.Account;
-import com.cmpt276.project.model.RoleType;
+import com.cmpt276.project.model.NotificationPreference;
 import com.cmpt276.project.repository.AccountRepository;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
-
-import java.util.Optional;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.validation.BeanPropertyBindingResult;
+import org.springframework.validation.Errors;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
+@SpringBootTest
 class AccountServiceTests {
 
-    private AccountRepository accountRepository;
-    private PasswordEncoder passwordEncoder;
-    private AccountService accountService;
-    private Account account;
+        @Autowired
+        private AccountService accountService;
 
-    @BeforeEach
-    void setUp() {
-        accountRepository = mock(AccountRepository.class);
-        passwordEncoder = new BCryptPasswordEncoder();
-        accountService = new AccountService(accountRepository, passwordEncoder);
+        @Autowired
+        private AccountRepository accountRepository;
 
-        account = new Account(
-                "Test Customer",
-                "customer@test.com",
-                passwordEncoder.encode("OldPassword123"),
-                RoleType.CUSTOMER
-        );
+        private RegistrationForm createForm(
+                        String email, String phone, String preference) {
 
-        when(accountRepository.findByEmail("customer@test.com"))
-                .thenReturn(Optional.of(account));
-    }
+                RegistrationForm form = new RegistrationForm();
+                form.setName("Test Customer");
+                form.setEmail(email);
+                form.setPassword("TestPassword123!");
+                form.setRoleType("CUSTOMER");
+                form.setPhoneNumber(phone);
+                form.setNotificationPreference(preference);
 
-    @Test
-    void shouldChangePasswordSuccessfully() {
-        boolean result = accountService.changePassword(
-                "customer@test.com", "OldPassword123", "NewPassword123");
+                return form;
+        }
 
-        assertTrue(result);
-        assertTrue(passwordEncoder.matches(
-                "NewPassword123", account.getPasswordHash()));
-        assertFalse(passwordEncoder.matches(
-                "OldPassword123", account.getPasswordHash()));
+        private Errors createErrors(RegistrationForm form) {
+                return new BeanPropertyBindingResult(form, "registrationForm");
+        }
 
-        verify(accountRepository).save(account);
-    }
+        @Test
+        void shouldSavePhoneNumberAndSmsPreference() {
+                RegistrationForm form = createForm(
+                                "sms-test@example.com", "6045550123", "SMS");
 
-    @Test
-    void shouldRejectIncorrectCurrentPassword() {
-        boolean result = accountService.changePassword(
-                "customer@test.com", "WrongPassword", "NewPassword123");
+                Errors errors = createErrors(form);
 
-        assertFalse(result);
-        verify(accountRepository, never()).save(any(Account.class));
-    }
+                boolean result = accountService.register(form, errors);
 
-    @Test
-    void shouldRejectShortNewPassword() {
-        assertThrows(IllegalArgumentException.class, () ->
-                accountService.changePassword(
-                        "customer@test.com", "OldPassword123", "short"));
+                assertTrue(result);
+                assertFalse(errors.hasErrors());
 
-        verify(accountRepository, never()).save(any(Account.class));
-    }
+                Account account = accountRepository
+                                .findByEmail("sms-test@example.com")
+                                .orElseThrow();
 
-    @Test
-    void shouldRejectMissingCurrentPassword() {
-        boolean result = accountService.changePassword(
-                "customer@test.com", null, "NewPassword123");
+                assertEquals("6045550123", account.getPhoneNumber());
+                assertEquals(NotificationPreference.SMS,
+                                account.getNotificationPreference());
+        }
 
-        assertFalse(result);
-        verify(accountRepository, never()).save(any(Account.class));
-    }
+        @Test
+        void shouldRejectSmsWithoutPhoneNumber() {
+                RegistrationForm form = createForm(
+                                "no-phone@example.com", "", "SMS");
 
-    @Test
-    void shouldRejectUnknownAccount() {
-        when(accountRepository.findByEmail("unknown@test.com"))
-                .thenReturn(Optional.empty());
+                Errors errors = createErrors(form);
 
-        assertThrows(IllegalArgumentException.class, () ->
-                accountService.changePassword(
-                        "unknown@test.com", "OldPassword123", "NewPassword123"));
-    }
+                boolean result = accountService.register(form, errors);
 
-    @Test
-    void shouldNormalizeEmailBeforeChangingPassword() {
-        boolean result = accountService.changePassword(
-                " CUSTOMER@TEST.COM ", "OldPassword123", "NewPassword123");
+                assertFalse(result);
+                assertTrue(errors.hasFieldErrors("phoneNumber"));
+                assertTrue(accountRepository
+                                .findByEmail("no-phone@example.com")
+                                .isEmpty());
+        }
 
-        assertTrue(result);
-        verify(accountRepository).findByEmail("customer@test.com");
-    }
+        @Test
+        void shouldAllowEmailWithoutPhoneNumber() {
+                RegistrationForm form = createForm(
+                                "email-test@example.com", "", "EMAIL");
+
+                Errors errors = createErrors(form);
+
+                boolean result = accountService.register(form, errors);
+
+                assertTrue(result);
+                assertFalse(errors.hasErrors());
+
+                Account account = accountRepository
+                                .findByEmail("email-test@example.com")
+                                .orElseThrow();
+
+                assertNull(account.getPhoneNumber());
+                assertEquals(NotificationPreference.EMAIL,
+                                account.getNotificationPreference());
+        }
+
+        @Test
+        void shouldRejectInvalidPhoneNumber() {
+                RegistrationForm form = createForm(
+                                "invalid-phone@example.com", "123", "SMS");
+
+                Errors errors = createErrors(form);
+
+                boolean result = accountService.register(form, errors);
+
+                assertFalse(result);
+                assertTrue(errors.hasFieldErrors("phoneNumber"));
+                assertTrue(accountRepository
+                                .findByEmail("invalid-phone@example.com")
+                                .isEmpty());
+        }
+
+        @Test
+        void shouldRejectInvalidNotificationPreference() {
+                RegistrationForm form = createForm(
+                                "invalid-pref@example.com", "6045550123", "INVALID");
+
+                Errors errors = createErrors(form);
+
+                boolean result = accountService.register(form, errors);
+
+                assertFalse(result);
+                assertTrue(errors.hasFieldErrors("notificationPreference"));
+                assertTrue(accountRepository
+                                .findByEmail("invalid-pref@example.com")
+                                .isEmpty());
+        }
+
+        @Test
+        void shouldDefaultToEmailForExistingAccounts() {
+                Account account = new Account();
+                account.setNotificationPreference(null);
+
+                assertEquals(
+                                NotificationPreference.EMAIL,
+                                account.getNotificationPreference());
+        }
 }

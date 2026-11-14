@@ -3,6 +3,9 @@ package com.cmpt276.project.controller;
 import com.cmpt276.project.model.Appointment;
 import com.cmpt276.project.model.BookingConfirmationMessage;
 import com.cmpt276.project.model.BookingEmailResult;
+import com.cmpt276.project.model.BookingSmsMessage;
+import com.cmpt276.project.model.BookingSmsResult;
+import com.cmpt276.project.model.NotificationPreference;
 import com.cmpt276.project.owner.service.OwnerService;
 import com.cmpt276.project.owner.model.OpeningDay;
 import com.cmpt276.project.owner.model.Salon;
@@ -16,6 +19,8 @@ import org.springframework.security.core.Authentication;
 import com.cmpt276.project.service.BookingService;
 import com.cmpt276.project.service.BookingConfirmationBuilder;
 import com.cmpt276.project.service.BrevoEmailSender;
+import com.cmpt276.project.service.BookingSmsBuilder;
+import com.cmpt276.project.service.TwilioSmsSender;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -26,11 +31,14 @@ public class BookingController {
     private final OwnerService ownerService;
     private final BrevoEmailSender emailSender;
     private final BookingConfirmationBuilder confirmationBuilder = new BookingConfirmationBuilder();
+    private final TwilioSmsSender smsSender;
+    private final BookingSmsBuilder smsBuilder = new BookingSmsBuilder();
 
-    public BookingController(BookingService bookingService, OwnerService ownerService, BrevoEmailSender emailSender) {
+    public BookingController(BookingService bookingService, OwnerService ownerService, BrevoEmailSender emailSender, TwilioSmsSender smsSender) {
         this.bookingService = bookingService;
         this.ownerService = ownerService;
         this.emailSender = emailSender;
+        this.smsSender = smsSender;
     }
 
     // Show the date selection page
@@ -41,6 +49,7 @@ public class BookingController {
         model.addAttribute("service", service);
         model.addAttribute("serviceName", selectedService.getName());
         model.addAttribute("salon", salon);
+        model.addAttribute("minDate", LocalDate.now().toString());
         model.addAttribute("openingHours", selectedSalon.getOpeningHours());
         String[] days = {"Monday", "Tuesday", "Wednesday", "Thursday","Friday", "Saturday", "Sunday"};
         model.addAttribute("days", days);
@@ -53,9 +62,21 @@ public class BookingController {
         Salon selectedSalon = ownerService.findPublicSalonBySlug(salon);
         SalonService selectedService = findService(selectedSalon, service);
         LocalDate date = LocalDate.parse(appointmentDate);
+        //prevents customers from selecting an appointment date that has already passed
+        if (date.isBefore(LocalDate.now())){
+            model.addAttribute("error", "Sorry, this date has already passed");
+            model.addAttribute("service", service);
+            model.addAttribute("salon", salon);
+            model.addAttribute("serviceName", selectedService.getName());
+            model.addAttribute("openingHours", selectedSalon.getOpeningHours());
+            model.addAttribute("minDate", LocalDate.now().toString());
+            String[] days = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
+            model.addAttribute("days", days);
+            return "customer/select-date";
+        }
         int selectedDay = date.getDayOfWeek().getValue();
         boolean salonIsOpen = false;
-        for (OpeningDay day : selectedSalon.getOpeningHours()) {
+        for (OpeningDay day: selectedSalon.getOpeningHours()) {
             if (day.getDayOfWeek() == selectedDay && day.isOpen()) {
                 salonIsOpen = true;
                 break;
@@ -67,6 +88,7 @@ public class BookingController {
             model.addAttribute("salon", salon);
             model.addAttribute("serviceName", selectedService.getName());
             model.addAttribute("openingHours", selectedSalon.getOpeningHours());
+            model.addAttribute("minDate", LocalDate.now().toString());
             String[] days = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
             model.addAttribute("days", days);
             return "customer/select-date";
@@ -107,6 +129,18 @@ public class BookingController {
             Salon selectedSalon = ownerService.findPublicSalonBySlug(salon);
             SalonService selectedService = findService(selectedSalon, service);
             LocalDate date = LocalDate.parse(appointmentDate);
+            //return customers back to the select date page if they try to book a date that has already passed
+            if (date.isBefore(LocalDate.now())) { 
+                model.addAttribute("error", error.getMessage());
+                model.addAttribute("service", service);
+                model.addAttribute("salon", salon);
+                model.addAttribute("serviceName", selectedService.getName());
+                model.addAttribute("openingHours", selectedSalon.getOpeningHours());
+                model.addAttribute("minDate", LocalDate.now().toString());
+                String[] days = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
+                model.addAttribute("days", days);
+                return "customer/select-date"; // CHANGED
+            }
             List<String> availableTimes = bookingService.getAvailableTimes(salon, date);
             model.addAttribute("error", error.getMessage());
             model.addAttribute("service", service);
@@ -117,15 +151,40 @@ public class BookingController {
             model.addAttribute("bookedService", selectedService);
             return "customer/select-time";
         }
-        // Spring commits the service transaction before returning the appointment.
         model.addAttribute("service", appointment.getServiceId());
         model.addAttribute("serviceName", appointment.getServiceName());
         model.addAttribute("appointmentDate", appointment.getAppointmentDate());
         model.addAttribute("appointmentTime", appointment.getAppointmentTime());
         model.addAttribute("salonName", "Salon details are unavailable");
 
+
+        //Confirmation email
         BookingEmailResult emailResult = BookingEmailResult.UNAVAILABLE;
-        BookingConfirmationMessage message = null;
+        BookingSmsResult smsResult = BookingSmsResult.UNAVAILABLE;
+        Salon selectedSalon = showBookedSalon(appointment, model);
+
+        // Accounts without a saved choice already read as EMAIL, so only a missing customer needs a default.
+        NotificationPreference preference = NotificationPreference.EMAIL;
+        if (appointment.getCustomer() != null) {
+            preference = appointment.getCustomer().getNotificationPreference();
+        }
+
+        // Each channel is tried on its own so a problem with one never stops the other.
+        if (preference == NotificationPreference.EMAIL || preference == NotificationPreference.BOTH) {
+            emailResult = sendConfirmationEmail(appointment, selectedSalon);
+            model.addAttribute("emailResult", emailResult);
+            model.addAttribute("emailMessage", emailFeedback(emailResult));
+        }
+        if (preference == NotificationPreference.SMS || preference == NotificationPreference.BOTH) {
+            smsResult = sendConfirmationText(appointment, selectedSalon);
+            model.addAttribute("smsResult", smsResult);
+            model.addAttribute("smsMessage", smsFeedback(smsResult));
+        }
+        return "customer/booking-confirmation";
+    }
+
+    // Adds the salon details to the page. Returns null when the salon cannot be loaded.
+    private Salon showBookedSalon(Appointment appointment, Model model) {
         try {
             Salon selectedSalon = ownerService.findPublicSalon(appointment.getSalonId());
             model.addAttribute("salon", selectedSalon.getSlug());
@@ -136,35 +195,70 @@ public class BookingController {
                     break;
                 }
             }
-            message = confirmationBuilder.build(appointment, selectedSalon);
+            return selectedSalon;
+        } catch (RuntimeException error) {
+            // Missing salon details must not turn a committed booking into a failure.
+            return null;
+        }
+    }
+
+    private BookingEmailResult sendConfirmationEmail(Appointment appointment, Salon salon) {
+        BookingConfirmationMessage message;
+        try {
+            message = confirmationBuilder.build(appointment, salon);
         } catch (RuntimeException error) {
             // Missing email details must not turn a committed booking into a failure.
-            emailResult = BookingEmailResult.UNAVAILABLE;
+            return BookingEmailResult.UNAVAILABLE;
         }
-        if (message != null) {
-            try {
-                emailResult = emailSender.send(message);
-            } catch (RuntimeException error) {
-                // Sending may have started, so a definite failure would be misleading.
-                emailResult = BookingEmailResult.UNCERTAIN;
-            }
+        try {
+            return emailSender.send(message);
+        } catch (RuntimeException error) {
+            // Sending may have started, so a definite failure would be misleading.
+            return BookingEmailResult.UNCERTAIN;
         }
-        model.addAttribute("emailResult", emailResult);
-        model.addAttribute("emailMessage", emailFeedback(emailResult));
-        return "customer/booking-confirmation";
+    }
+
+    private BookingSmsResult sendConfirmationText(Appointment appointment, Salon salon) {
+        BookingSmsMessage message;
+        try {
+            message = smsBuilder.build(appointment, salon);
+        } catch (RuntimeException error) {
+            // A missing or invalid phone must not turn a committed booking into a failure.
+            return BookingSmsResult.UNAVAILABLE;
+        }
+        try {
+            return smsSender.send(message.getRecipient(), message.getText());
+        } catch (RuntimeException error) {
+            // Sending may have started, so a definite failure would be misleading.
+            return BookingSmsResult.UNCERTAIN;
+        }
     }
 
     private String emailFeedback(BookingEmailResult result) {
         if (result == BookingEmailResult.ACCEPTED) {
-            return "Confirmation email submitted for delivery.";
+            return "Confirmation email submitted.";
         }
         if (result == BookingEmailResult.REJECTED) {
             return "The email provider rejected the confirmation email. Your appointment is still booked.";
         }
         if (result == BookingEmailResult.UNCERTAIN) {
-            return "Email sending could not be confirmed; the email may still arrive. Your appointment is still booked.";
+            return "Email sending could not be confirmed, the email may still arrive. Your appointment is still booked.";
         }
         return "Confirmation email is unavailable. Your appointment is still booked.";
+    }
+
+    // A rejected text can also mean Twilio was busy, so the wording does not blame the number.
+    private String smsFeedback(BookingSmsResult result) {
+        if (result == BookingSmsResult.ACCEPTED) {
+            return "Confirmation text submitted for delivery.";
+        }
+        if (result == BookingSmsResult.REJECTED) {
+            return "The text message service could not send the confirmation text. Your appointment is still booked.";
+        }
+        if (result == BookingSmsResult.UNCERTAIN) {
+            return "Text sending could not be confirmed. The text may still arrive. Your appointment is still booked.";
+        }
+        return "Confirmation text is unavailable. Your appointment is still booked.";
     }
 
     private SalonService findService(Salon salon, String serviceId) {

@@ -1,17 +1,16 @@
 package com.cmpt276.project.controller;
 
 import com.cmpt276.project.service.AccountService;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /**
- * Shared authentication endpoints; Spring Security handles login and logout
- * POSTs.
+ * Shared authentication endpoints; Spring Security handles login and logout POSTs.
  */
 @Controller
 public class AuthController {
@@ -23,9 +22,14 @@ public class AuthController {
 
     @InitBinder("registrationForm")
     public void registrationFields(WebDataBinder binder) {
-        // Only public registration fields may bind; never accept an account ID or
-        // encoded password.
-        binder.setAllowedFields("name", "email", "password", "roleType");
+        // only public registration fields may bind
+        binder.setAllowedFields(
+                "name",
+                "email",
+                "password",
+                "roleType",
+                "phoneNumber",
+                "notificationPreference");
     }
 
     @GetMapping("/register")
@@ -40,11 +44,15 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public String register(@ModelAttribute("registrationForm") RegistrationForm form, BindingResult errors) {
+    public String register(
+            @ModelAttribute("registrationForm") RegistrationForm form,
+            BindingResult errors) {
+
         if (!accountService.register(form, errors)) {
-            form.setPassword(""); // Never echo submitted passwords on validation failure.
+            form.setPassword("");
             return "register";
         }
+
         return "redirect:/login?registered";
     }
 
@@ -61,7 +69,6 @@ public class AuthController {
             Authentication authentication,
             RedirectAttributes redirectAttributes) {
 
-        // Check that the new passwords match
         if (!newPassword.equals(confirmPassword)) {
             redirectAttributes.addFlashAttribute(
                     "error", "New passwords do not match.");
@@ -95,6 +102,10 @@ public class AuthController {
         private String password = "";
         private String roleType = "";
 
+        // iteration 2 fields
+        private String phoneNumber = "";
+        private String notificationPreference = "EMAIL";
+
         public String getName() {
             return name;
         }
@@ -125,6 +136,23 @@ public class AuthController {
 
         public void setRoleType(String roleType) {
             this.roleType = roleType == null ? "" : roleType;
+        }
+
+        public String getPhoneNumber() {
+            return phoneNumber;
+        }
+
+        public void setPhoneNumber(String phoneNumber) {
+            this.phoneNumber = phoneNumber == null ? "" : phoneNumber;
+        }
+
+        public String getNotificationPreference() {
+            return notificationPreference;
+        }
+
+        public void setNotificationPreference(String notificationPreference) {
+            this.notificationPreference =
+                    notificationPreference == null ? "EMAIL" : notificationPreference;
         }
     }
 }
