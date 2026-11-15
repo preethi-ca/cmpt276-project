@@ -27,45 +27,44 @@
             th:text="${emailMessage}">
         </div>
 
+        <div
+            th:if="${smsMessage}"
+            class="alert alert-info"
+            role="status"
+            th:text="${smsMessage}">
+        </div>
+
         <!--appointment details-->
         <div class="card shadow-sm mb-4">
             <div class="card-body">
-            <h2 class="h5 mb-4">Appointment Details</h2>
-      <div
-        th:if="${smsMessage}"
-        class="alert alert-info"
-        role="status"
-        th:text="${smsMessage}"
-      ></div>
-
-      <div class="card shadow-sm mb-4">
-        <div class="card-body">
-          <h2 class="h5 mb-4">Appointment Details</h2>
-
-            <div class="row mb-3">
-                <div class="col-sm-4 fw-bold">Salon</div>
-                <div class="col-sm-8" th:text="${salonName}"></div>
-            </div>
-
-            <div class="row mb-3">
-                <div class="col-sm-4 fw-bold">Service</div>
-                <div class="col-sm-8" th:text="${serviceName}"></div>
-            </div>
-
-            <div class="row mb-3">
-                <div class="col-sm-4 fw-bold">Date</div>
-                <div class="col-sm-8" th:text="${appointmentDate}"></div>
-            </div>
-
-            <div class="row mb-3">
-                <div class="col-sm-4 fw-bold">Time</div>
-                <div class="col-sm-8" th:text="${appointmentTime}"></div>
-            </div>
-
-            <div class="row mb-4" th:if="${bookedService != null}">
-                <div class="col-sm-4 fw-bold">Price</div>
-                <div class="col-sm-8">
-                $<span th:text="${bookedService.price}"></span>
+                <h2 class="h5 mb-4">Appointment Details</h2>
+    
+                <div class="row mb-3">
+                    <div class="col-sm-4 fw-bold">Salon</div>
+                    <div class="col-sm-8" th:text="${salonName}"></div>
+                </div>
+    
+                <div class="row mb-3">
+                    <div class="col-sm-4 fw-bold">Service</div>
+                    <div class="col-sm-8" th:text="${serviceName}"></div>
+                </div>
+    
+                <div class="row mb-3">
+                    <div class="col-sm-4 fw-bold">Date</div>
+                    <div class="col-sm-8" th:text="${appointmentDate}"></div>
+                </div>
+    
+                <div class="row mb-3">
+                    <div class="col-sm-4 fw-bold">Time</div>
+                    <div class="col-sm-8" th:text="${appointmentTime}"></div>
+                </div>
+    
+                <div class="row mb-4" th:if="${bookedService != null}">
+                    <div class="col-sm-4 fw-bold">Price</div>
+                    <div class="col-sm-8">
+                        $<span th:text="${bookedService.price}"></span>
+                    </div>
+                </div>
             </div>
         </div>
 
