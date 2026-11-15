@@ -1,81 +1,75 @@
 <!doctype html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>BookEasy - Select Time</title>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>BookEasy - Select Time</title>
 
-    <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}" />
-    <link rel="stylesheet" th:href="@{/css/style.css}" />
-  </head>
+        <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}" />
+        <link rel="stylesheet" th:href="@{/css/style.css}" />
+    </head>
 
 
-  <body>
-    <main class="container py-5">
-      <!--Booking progress bar-->
-      <div th:replace="~{customer/fragments/booking-progress :: bookingProgress(3)}"></div>
-      <div class="mb-4">
-        <h1>Choose Your Appointment Time</h1>
-        <p class="text-muted mb-1">Selected Service:<strong th:text="${serviceName}"></strong></p>
-        <p class="text-muted">Selected Date:<strong th:text="${appointmentDate}"></strong></p>
-      </div>
+    <body>
+        <main class="container py-5">
+        <!--Booking progress bar-->
+        <div th:replace="~{customer/fragments/booking-progress :: bookingProgress(3)}"></div>
+       
+        <div class="mb-4">
+            <h1>Choose Your Appointment Time</h1>
+            <p class="text-muted mb-1">Selected Service: <strong th:text="${serviceName}"></strong></p>
+            <p class="text-muted mb-1">Selected Date: <strong th:text="${appointmentDate}"></strong></p>
+            <p class="text-muted mb-1"> Duration: 1 hour</p>
+        </div>
 
-      <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+        <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
 
-      <div class="card shadow-sm">
-        <div class="card-body">
-          <h2 class="h5 mb-3">Available Appointment Times</h2>
+        <div class="card shadow-sm">
+            <div class="card-body">
+            <h2 class="h5 mb-3">Available Appointment Times</h2>
 
-          <div
-            th:if="${#lists.isEmpty(availableTimes)}"
-            class="alert alert-secondary mb-0"
-            >Sorry, there are no available appointment times for this date.
-          </div>
-
-          <form
-            th:unless="${#lists.isEmpty(availableTimes)}"
-            th:action="@{/customer/booking/confirmation}"
-            method="get"
-          >
-            <input type="hidden" name="service" th:value="${service}" />
-            <input type="hidden" name="salon" th:value="${salon}" />
-            <input type="hidden" name="appointmentDate" th:value="${appointmentDate}"/>
-
-            <div class="mb-4">
-              <div
-                th:each="time, status : ${availableTimes}"
-                class="form-check border rounded p-3 mb-2"
-              >
-                <input
-                  class="form-check-input"
-                  type="radio"
-                  th:id="'time' + ${status.index}"
-                  name="appointmentTime"
-                  th:value="${time}"
-                  required
-                />
-
-                <label
-                  class="form-check-label"
-                  th:for="'time' + ${status.index}"
-                  th:text="${time}"
-                >
-                </label>
-              </div>
+            <div th:if="${#lists.isEmpty(availableTimes)}" class="alert alert-secondary mb-0">
+                Sorry, there are no available appointment times for this date.
             </div>
 
-            <button type="submit" class="btn btn-success">Continue</button>
-          </form>
-        </div>
-      </div>
+            <form th:unless="${#lists.isEmpty(availableTimes)}" th:action="@{/customer/booking/confirmation}" method="get">
+                <input type="hidden" name="service" th:value="${service}" />
+                <input type="hidden" name="salon" th:value="${salon}" />
+                <input type="hidden" name="appointmentDate" th:value="${appointmentDate}"/>
 
-      <div class="mt-4">
-        <a
-          th:href="@{/customer/booking(service=${service}, salon=${salon})}"
-          class="btn btn-outline-secondary"
-          >Back to Date Selection
-        </a>
-      </div>
-    </main>
-  </body>
+                <!--create a radio button for each available appointment time-->
+                <div class="mb-4">
+                <div th:each="time, status : ${availableTimes}" class="form-check border rounded p-3 mb-2">
+                    <input 
+                        class="form-check-input" 
+                        type="radio" 
+                        th:id="'time' + ${status.index}" 
+                        name="appointmentTime" 
+                        th:value="${time}" 
+                        required/>
+                    <label class="form-check-label" th:for="'time' + ${status.index}" th:text="${time}"></label>
+                </div>
+                </div>
+
+                <button type="submit" class="btn btn-success">
+                    Continue
+                </button>
+
+            </form>
+            </div>
+        </div>
+
+        <!-- navigation buttons-->
+        <div class="mt-4">
+            <a th:href="@{/customer/booking(service=${service}, salon=${salon})}" class="btn btn-outline-secondary">
+                Back to Date Selection
+            </a>
+
+            <a th:if="${salon != null}" th:href="@{/salons/{slug}(slug=${salon})}" class="btn btn-outline-secondary">
+                Cancel
+            </a>
+        </div>
+
+        </main>
+    </body>
 </html>
