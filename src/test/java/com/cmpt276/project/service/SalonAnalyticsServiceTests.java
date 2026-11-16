@@ -23,136 +23,139 @@ import java.math.BigDecimal;
 @ExtendWith(MockitoExtension.class)
 public class SalonAnalyticsServiceTests {
 
-    @Mock
-    private AppointmentRepository appointmentRepository;
+        @Mock
+        private AppointmentRepository appointmentRepository;
 
-    @InjectMocks
-    private SalonAnalyticsService analyticsService;
+        @InjectMocks
+        private SalonAnalyticsService analyticsService;
 
-    @Test
-    void shouldReturnTotalAppointments() {
-        Appointment appointment1 = new Appointment();
-        Appointment appointment2 = new Appointment();
+        @Test
+        void shouldReturnTotalAppointments() {
+                Appointment appointment1 = new Appointment();
+                Appointment appointment2 = new Appointment();
 
-        when(appointmentRepository.findBySalonId("salon1"))
-                .thenReturn(List.of(appointment1, appointment2));
+                when(appointmentRepository.findBySalonId("salon1"))
+                                .thenReturn(List.of(appointment1, appointment2));
 
-        int result = analyticsService.getTotalAppointments("salon1");
+                int result = analyticsService.getTotalAppointments("salon1");
 
-        assertEquals(2, result);
-    }
+                assertEquals(2, result);
+        }
 
-    @Test
-    void shouldReturnZeroWhenNoAppointments() {
-        when(appointmentRepository.findBySalonId("salon1"))
-                .thenReturn(List.of());
+        @Test
+        void shouldReturnZeroWhenNoAppointments() {
+                when(appointmentRepository.findBySalonId("salon1"))
+                                .thenReturn(List.of());
 
-        int result = analyticsService.getTotalAppointments("salon1");
+                int result = analyticsService.getTotalAppointments("salon1");
 
-        assertEquals(0, result);
-    }
+                assertEquals(0, result);
+        }
 
-    @Test
-    void shouldReturnMostPopularService() {
-        Appointment haircut1 = new Appointment(
-                "Haircut", "service1", "salon1", null, null, null);
+        @Test
+        void shouldReturnMostPopularService() {
+                Appointment haircut1 = new Appointment(
+                                "Haircut", "service1", "salon1", null, null, null, BigDecimal.ZERO);
 
-        Appointment haircut2 = new Appointment(
-                "Haircut", "service1", "salon1", null, null, null);
+                Appointment haircut2 = new Appointment(
+                                "Haircut", "service1", "salon1", null, null, null, BigDecimal.ZERO);
 
-        Appointment color = new Appointment(
-                "Color", "service2", "salon1", null, null, null);
+                Appointment color = new Appointment(
+                                "Color", "service2", "salon1", null, null, null, BigDecimal.ZERO);
 
-        when(appointmentRepository.findBySalonId("salon1"))
-                .thenReturn(List.of(haircut1, haircut2, color));
+                when(appointmentRepository.findBySalonId("salon1"))
+                                .thenReturn(List.of(haircut1, haircut2, color));
 
-        String result = analyticsService.getMostPopularService("salon1");
+                String result = analyticsService.getMostPopularService("salon1");
 
-        assertEquals("Haircut", result);
-    }
+                assertEquals("Haircut", result);
+        }
 
-    @Test
-    void shouldReturnNoAppointmentsWhenNoServicesBooked() {
-        when(appointmentRepository.findBySalonId("salon1"))
-                .thenReturn(List.of());
+        @Test
+        void shouldReturnNoAppointmentsWhenNoServicesBooked() {
+                when(appointmentRepository.findBySalonId("salon1"))
+                                .thenReturn(List.of());
 
-        String result = analyticsService.getMostPopularService("salon1");
+                String result = analyticsService.getMostPopularService("salon1");
 
-        assertEquals("No appointments", result);
-    }
+                assertEquals("No appointments", result);
+        }
 
-    @Test
-    void shouldReturnBusiestTime() {
-        Appointment morning1 = new Appointment(
-                "Haircut", "service1", "salon1", null, "10:00", null);
+        @Test
+        void shouldReturnBusiestTime() {
+                Appointment morning1 = new Appointment(
+                                "Haircut", "service1", "salon1", null, "10:00", null, BigDecimal.ZERO);
 
-        Appointment morning2 = new Appointment(
-                "Color", "service2", "salon1", null, "10:00", null);
+                Appointment morning2 = new Appointment(
+                                "Color", "service2", "salon1", null, "10:00", null, BigDecimal.ZERO);
 
-        Appointment afternoon = new Appointment(
-                "Haircut", "service1", "salon1", null, "14:00", null);
+                Appointment afternoon = new Appointment(
+                                "Haircut", "service1", "salon1", null, "14:00", null, BigDecimal.ZERO);
 
-        when(appointmentRepository.findBySalonId("salon1"))
-                .thenReturn(List.of(morning1, morning2, afternoon));
+                when(appointmentRepository.findBySalonId("salon1"))
+                                .thenReturn(List.of(morning1, morning2, afternoon));
 
-        String result = analyticsService.getBusiestTime("salon1");
+                String result = analyticsService.getBusiestTime("salon1");
 
-        assertEquals("10:00", result);
-    }
+                assertEquals("10:00", result);
+        }
 
-    @Test
-    void shouldReturnNoAppointmentsWhenNoTimesBooked() {
-        when(appointmentRepository.findBySalonId("salon1"))
-                .thenReturn(List.of());
+        @Test
+        void shouldReturnNoAppointmentsWhenNoTimesBooked() {
+                when(appointmentRepository.findBySalonId("salon1"))
+                                .thenReturn(List.of());
 
-        String result = analyticsService.getBusiestTime("salon1");
+                String result = analyticsService.getBusiestTime("salon1");
 
-        assertEquals("No appointments", result);
-    }
+                assertEquals("No appointments", result);
+        }
 
-    @Test
-    void shouldReturnEstimatedRevenue() {
-        SalonService haircut = new SalonService();
-        haircut.setId("service1");
-        haircut.setPrice(new BigDecimal("25.00"));
+        @Test
+        void shouldReturnEstimatedRevenue() {
+                SalonService haircut = new SalonService();
+                haircut.setId("service1");
+                haircut.setPrice(new BigDecimal("25.00"));
 
-        SalonService color = new SalonService();
-        color.setId("service2");
-        color.setPrice(new BigDecimal("40.00"));
+                SalonService color = new SalonService();
+                color.setId("service2");
+                color.setPrice(new BigDecimal("40.00"));
 
-        Salon salon = new Salon();
-        salon.setId("salon1");
-        salon.setServices(List.of(haircut, color));
+                Salon salon = new Salon();
+                salon.setId("salon1");
+                salon.setServices(List.of(haircut, color));
 
-        Appointment appointment1 = new Appointment(
-                "Haircut", "service1", "salon1", null, null, null);
+                Appointment appointment1 = new Appointment(
+                                "Haircut", "service1", "salon1", null, null, null,
+                                new BigDecimal("25.00"));
 
-        Appointment appointment2 = new Appointment(
-                "Haircut", "service1", "salon1", null, null, null);
+                Appointment appointment2 = new Appointment(
+                                "Haircut", "service1", "salon1", null, null, null,
+                                new BigDecimal("25.00"));
 
-        Appointment appointment3 = new Appointment(
-                "Color", "service2", "salon1", null, null, null);
+                Appointment appointment3 = new Appointment(
+                                "Color", "service2", "salon1", null, null, null,
+                                new BigDecimal("40.00"));
 
-        when(appointmentRepository.findBySalonId("salon1"))
-                .thenReturn(List.of(appointment1, appointment2, appointment3));
+                when(appointmentRepository.findBySalonId("salon1"))
+                                .thenReturn(List.of(appointment1, appointment2, appointment3));
 
-        BigDecimal result = analyticsService.getEstimatedRevenue(salon);
+                BigDecimal result = analyticsService.getEstimatedRevenue(salon);
 
-        assertEquals(new BigDecimal("90.00"), result);
-    }
+                assertEquals(new BigDecimal("90.00"), result);
+        }
 
-    @Test
-    void shouldReturnZeroRevenueWhenNoAppointments() {
-        Salon salon = new Salon();
-        salon.setId("salon1");
-        salon.setServices(List.of());
+        @Test
+        void shouldReturnZeroRevenueWhenNoAppointments() {
+                Salon salon = new Salon();
+                salon.setId("salon1");
+                salon.setServices(List.of());
 
-        when(appointmentRepository.findBySalonId("salon1"))
-                .thenReturn(List.of());
+                when(appointmentRepository.findBySalonId("salon1"))
+                                .thenReturn(List.of());
 
-        BigDecimal result = analyticsService.getEstimatedRevenue(salon);
+                BigDecimal result = analyticsService.getEstimatedRevenue(salon);
 
-        assertEquals(BigDecimal.ZERO, result);
-    }
+                assertEquals(BigDecimal.ZERO, result);
+        }
 
 }

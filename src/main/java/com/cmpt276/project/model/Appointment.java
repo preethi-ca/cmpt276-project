@@ -49,6 +49,24 @@ public class Appointment {
         this.bookedPrice = bookedPrice;
     }
 
+    public Appointment(
+            String serviceName,
+            String serviceId,
+            String salonId,
+            LocalDate appointmentDate,
+            String appointmentTime,
+            Account customer) {
+
+        this(
+                serviceName,
+                serviceId,
+                salonId,
+                appointmentDate,
+                appointmentTime,
+                customer,
+                null);
+    }
+
     public int getId() {
         return id;
     }
