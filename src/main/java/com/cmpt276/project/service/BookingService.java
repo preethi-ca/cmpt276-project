@@ -18,20 +18,22 @@ import java.util.List;
 import com.cmpt276.project.owner.model.OpeningDay;
 
 @Service
-public class BookingService{
+public class BookingService {
     private final AppointmentRepository appointmentRepository;
     private final AccountRepository accountRepository;
     private final OwnerService ownerService;
 
-    public BookingService(AppointmentRepository appointmentRepository, AccountRepository accountRepository,OwnerService ownerService) {
+    public BookingService(AppointmentRepository appointmentRepository, AccountRepository accountRepository,
+            OwnerService ownerService) {
         this.appointmentRepository = appointmentRepository;
         this.accountRepository = accountRepository;
         this.ownerService = ownerService;
     }
 
-    //Book a new appointment
+    // Book a new appointment
     @Transactional
-    public Appointment bookAppointment(String serviceId, String salonSlug, String appointmentDate, String appointmentTime, String customerEmail) {
+    public Appointment bookAppointment(String serviceId, String salonSlug, String appointmentDate,
+            String appointmentTime, String customerEmail) {
         Optional<Account> customerOpt = accountRepository.findByEmail(customerEmail);
         if (!customerOpt.isPresent()) {
             throw new IllegalArgumentException("Customer account not found");
@@ -40,7 +42,7 @@ public class BookingService{
 
         Salon salon = ownerService.findPublicSalonBySlug(salonSlug);
         SalonService selectedService = null;
-        for (SalonService service:salon.getServices()) {
+        for (SalonService service : salon.getServices()) {
             if (service.getId().equals(serviceId)) {
                 selectedService = service;
                 break;
@@ -50,28 +52,37 @@ public class BookingService{
             throw new IllegalArgumentException("Service not found in this salon");
         }
         LocalDate date = LocalDate.parse(appointmentDate);
-        if (date.isBefore(LocalDate.now())) { 
+        if (date.isBefore(LocalDate.now())) {
             throw new IllegalArgumentException("Sorry, this date has already passed.");
         }
         List<String> availableTimes = getAvailableTimes(salonSlug, date);
         if (!availableTimes.contains(appointmentTime)) {
             throw new IllegalArgumentException("Sorry, this appointment time is no longer available");
         }
-        Appointment appointment = new Appointment(selectedService.getName(),selectedService.getId(), salon.getId(), date, appointmentTime, customer);
+        Appointment appointment = new Appointment(
+                selectedService.getName(),
+                selectedService.getId(),
+                salon.getId(),
+                date,
+                appointmentTime,
+                customer,
+                selectedService.getPrice());
 
         return appointmentRepository.save(appointment);
     }
 
-    //Update an appointment's date and time without changing its service (edit page)
+    // Update an appointment's date and time without changing its service (edit
+    // page)
     @Transactional
-    public Appointment updateAppointment(int appointmentId, String appointmentDate, String appointmentTime, String customerEmail) {
+    public Appointment updateAppointment(int appointmentId, String appointmentDate, String appointmentTime,
+            String customerEmail) {
         Optional<Account> customerOpt = accountRepository.findByEmail(customerEmail);
         if (!customerOpt.isPresent()) {
             throw new IllegalArgumentException("Customer account not found");
         }
         Account customer = customerOpt.get();
 
-        Optional<Appointment> appointmentOpt =appointmentRepository.findByIdAndCustomer(appointmentId, customer);
+        Optional<Appointment> appointmentOpt = appointmentRepository.findByIdAndCustomer(appointmentId, customer);
         if (!appointmentOpt.isPresent()) {
             throw new IllegalArgumentException("Appointment not found");
         }
@@ -91,12 +102,12 @@ public class BookingService{
         return appointmentRepository.save(appointment);
     }
 
-    //For regular bookings
+    // For regular bookings
     public List<String> getAvailableTimes(String salonSlug, LocalDate date) {
         return getAvailableTimes(salonSlug, date, null);
     }
 
-    //Check available times while editing an appointment
+    // Check available times while editing an appointment
     public List<String> getAvailableTimes(String salonSlug, LocalDate date, Integer excludedAppointmentId) {
         Salon salon = ownerService.findPublicSalonBySlug(salonSlug);
         int selectedDay = date.getDayOfWeek().getValue();
@@ -112,17 +123,19 @@ public class BookingService{
         }
         LocalTime openingTime = LocalTime.parse(selectedHours.getStartTime());
         LocalTime closingTime = LocalTime.parse(selectedHours.getEndTime());
-        List<Appointment> existingAppointments =appointmentRepository.findBySalonIdAndAppointmentDate(salon.getId(), date);
+        List<Appointment> existingAppointments = appointmentRepository.findBySalonIdAndAppointmentDate(salon.getId(),
+                date);
         List<String> availableTimes = new ArrayList<>();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm");
         // Minute arithmetic avoids wrapping past midnight for late closing times.
         int closingMinute = closingTime.getHour() * 60 + closingTime.getMinute();
-        for (int minute = openingTime.getHour() * 60 + openingTime.getMinute();
-                minute + 60 <= closingMinute; minute += 60) {
+        for (int minute = openingTime.getHour() * 60 + openingTime.getMinute(); minute
+                + 60 <= closingMinute; minute += 60) {
             LocalTime currentTime = LocalTime.of(minute / 60, minute % 60);
             boolean alreadyBooked = false;
-            for (Appointment appointment: existingAppointments) {
-                //do not count the current appointment being edited as booked, so its current time slot is still available
+            for (Appointment appointment : existingAppointments) {
+                // do not count the current appointment being edited as booked, so its current
+                // time slot is still available
                 if (excludedAppointmentId != null && appointment.getId() == excludedAppointmentId) {
                     continue;
                 }
@@ -138,7 +151,7 @@ public class BookingService{
         return availableTimes;
     }
 
-    //Cancel an appointment
+    // Cancel an appointment
     @Transactional
     public void cancelAppointment(int appointmentId, String customerEmail) {
         Optional<Account> customerOpt = accountRepository.findByEmail(customerEmail);

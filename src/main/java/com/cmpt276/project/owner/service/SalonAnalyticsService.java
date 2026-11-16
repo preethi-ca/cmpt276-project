@@ -80,15 +80,12 @@ public class SalonAnalyticsService {
         BigDecimal totalRevenue = BigDecimal.ZERO;
 
         for (Appointment appointment : appointments) {
-            for (SalonService service : salon.getServices()) {
-                if (service.getId().equals(appointment.getServiceId())) {
-                    totalRevenue = totalRevenue.add(service.getPrice());
-                    break;
-                }
+            if (appointment.getBookedPrice() != null) {
+                totalRevenue = totalRevenue.add(appointment.getBookedPrice());
             }
         }
-        return totalRevenue;
 
+        return totalRevenue;
     }
 
 }
