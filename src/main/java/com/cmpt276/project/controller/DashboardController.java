@@ -2,34 +2,44 @@ package com.cmpt276.project.controller;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.server.ResponseStatusException;
+
 import com.cmpt276.project.model.Account;
 import com.cmpt276.project.owner.controller.PublicSalon;
 import com.cmpt276.project.owner.service.OwnerService;
 import com.cmpt276.project.repository.AccountRepository;
 import com.cmpt276.project.repository.GoogleCalendarConnectionRepository;
+import com.cmpt276.project.service.AccountService;
 import com.cmpt276.project.service.GoogleCalendarSettings;
-import java.util.Optional;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 @Controller
 public class DashboardController {
+
     private final OwnerService ownerService;
+    private final AccountService accountService;
     private final AccountRepository accountRepository;
     private final GoogleCalendarConnectionRepository connectionRepository;
     private final GoogleCalendarSettings calendarSettings;
 
-    public DashboardController(OwnerService ownerService, AccountRepository accountRepository,
-            GoogleCalendarConnectionRepository connectionRepository, GoogleCalendarSettings calendarSettings) {
+    public DashboardController(
+            OwnerService ownerService,
+            AccountService accountService,
+            AccountRepository accountRepository,
+            GoogleCalendarConnectionRepository connectionRepository,
+            GoogleCalendarSettings calendarSettings) {
         this.ownerService = ownerService;
+        this.accountService = accountService;
         this.accountRepository = accountRepository;
         this.connectionRepository = connectionRepository;
         this.calendarSettings = calendarSettings;
@@ -37,66 +47,113 @@ public class DashboardController {
 
     @GetMapping("/dashboard")
     public String redirectDashboard(Authentication authentication) {
-        if (authentication.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_SALONOWNER"))) {
+        if (authentication.getAuthorities().contains(
+                new SimpleGrantedAuthority("ROLE_SALONOWNER"))) {
             return "redirect:/owner";
-        }
-        else {
+        } else {
             return "redirect:/customer/dashboard";
         }
     }
 
     @GetMapping("/customer/dashboard")
-    public String customerDashboard(Authentication authentication, Model model) {
-        // only tell the page yes or no, never pass the saved token
-        boolean calendarConnected = false;
-        Optional<Account> customerOpt = accountRepository.findByEmail(authentication.getName());
-        if (customerOpt.isPresent()) {
-            calendarConnected = connectionRepository.findByCustomer(customerOpt.get()).isPresent();
+    public String customerDashboard(
+            Authentication authentication,
+            Model model) {
+
+        // Display the logged-in customer's name
+        if (authentication != null) {
+            Account account = accountService.findByEmail(
+                    authentication.getName());
+            model.addAttribute("customerName", account.getName());
         }
+
+        // Check Google Calendar connection status
+        boolean calendarConnected = false;
+
+        if (authentication != null) {
+            Optional<Account> customerOpt =
+                    accountRepository.findByEmail(authentication.getName());
+
+            if (customerOpt.isPresent()) {
+                calendarConnected = connectionRepository
+                        .findByCustomer(customerOpt.get())
+                        .isPresent();
+            }
+        }
+
         model.addAttribute("calendarReady", calendarSettings.isReady());
         model.addAttribute("calendarConnected", calendarConnected);
 
-        // Expose public salon fields to the customer template without the owner's account identity.
-        var salons = ownerService.findPublicSalons().stream().map(PublicSalon::new).toList();
+        // Expose public salon fields without owner account identity
+        var salons = ownerService.findPublicSalons()
+                .stream()
+                .map(PublicSalon::new)
+                .toList();
+
         Map<String, String> salonLabels = new HashMap<>();
         Map<String, Integer> labelCounts = new HashMap<>();
+
         for (PublicSalon salon : salons) {
             String label = salon.getName();
-            if (salon.getAddress() != null && !salon.getAddress().isEmpty()) {
+
+            if (salon.getAddress() != null
+                    && !salon.getAddress().isEmpty()) {
                 label += " — " + salon.getAddress();
             }
-            if (salon.getCity() != null && !salon.getCity().isEmpty()) {
+
+            if (salon.getCity() != null
+                    && !salon.getCity().isEmpty()) {
                 label += " (" + salon.getCity() + ")";
             }
+
             salonLabels.put(salon.getSlug(), label);
             labelCounts.merge(label, 1, Integer::sum);
         }
-        salonLabels.replaceAll((slug, label) -> labelCounts.get(label) > 1
-                ? label + " [" + slug + "]" : label);
+
+        salonLabels.replaceAll((slug, label) ->
+                labelCounts.get(label) > 1
+                        ? label + " [" + slug + "]"
+                        : label);
+
         model.addAttribute("salons", salons);
         model.addAttribute("salonLabels", salonLabels);
+
         return "customer/customer-dashboard";
     }
 
     @GetMapping("/customer/salons/visit")
-    public String visitSalon(@RequestParam(defaultValue = "") String slug, Authentication authentication, Model model) {
+    public String visitSalon(
+            @RequestParam(defaultValue = "") String slug,
+            Authentication authentication,
+            Model model) {
+
         if (slug.isBlank()) {
-            model.addAttribute("salonError", "Choose a salon to visit.");
+            model.addAttribute(
+                    "salonError",
+                    "Choose a salon to visit.");
         } else {
             try {
                 var salon = ownerService.findPublicSalonBySlug(slug);
                 return "redirect:/salons/" + salon.getSlug();
+
             } catch (ResponseStatusException exception) {
                 if (!exception.getStatusCode().equals(HttpStatus.NOT_FOUND)) {
                     throw exception;
                 }
-                model.addAttribute("salonError", "This salon is no longer available. Choose another salon.");
+
+                model.addAttribute(
+                        "salonError",
+                        "This salon is no longer available. Choose another salon.");
             }
         }
+
         return customerDashboard(authentication, model);
     }
 
-    /** Guest-readable salon data for booking integration; excludes the owner's account identity. */
+    /**
+     * Guest-readable salon data for booking integration;
+     * excludes the owner's account identity.
+     */
     @GetMapping("/api/salons/{id}")
     @ResponseBody
     public PublicSalon publicSalon(@PathVariable String id) {

@@ -1,0 +1,205 @@
+
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Settings - BookEasy</title>
+
+    <link rel="stylesheet" th:href="@{/css/account-settings.css}">
+</head>
+
+<body>
+<div class="settings-container">
+
+    <h1>Account Settings</h1>
+    <p class="subtitle">
+        Manage your personal information and account security.
+    </p>
+
+    <div th:if="${message}"
+         class="alert alert-success"
+         th:text="${message}">
+    </div>
+
+    <div th:if="${error}"
+         class="alert alert-error"
+         th:text="${error}">
+    </div>
+
+    <div class="settings-card">
+
+        <h2 class="section-title">Personal Information</h2>
+
+        <!-- ACCOUNT DETAILS FORM -->
+        <form id="accountSettingsForm"
+              th:action="@{/account-settings}"
+              method="post">
+
+            <div class="field">
+                <label for="name">Full Name</label>
+                <input
+                    type="text"
+                    class="form-control"
+                    id="name"
+                    name="name"
+                    th:value="${account.name}"
+                    maxlength="100"
+                    required>
+            </div>
+
+            <div class="field">
+                <label>Email Address</label>
+                <div class="readonly-value"
+                     th:text="${account.email}">
+                </div>
+                <div class="help-text">
+                    Email changes are not available yet.
+                </div>
+            </div>
+
+            <div class="field">
+                <label for="phoneNumber">Phone Number</label>
+                <input
+                    type="tel"
+                    class="form-control"
+                    id="phoneNumber"
+                    name="phoneNumber"
+                    th:value="${account.phoneNumber}"
+                    placeholder="604-555-1234">
+            </div>
+
+            <div class="field">
+                <label for="notificationPreference">
+                    Notification Preference
+                </label>
+
+                <select
+                    class="form-control"
+                    id="notificationPreference"
+                    name="notificationPreference">
+
+                    <option value="EMAIL"
+                        th:selected="${account.notificationPreference != null and account.notificationPreference.name() == 'EMAIL'}">
+                        Email
+                    </option>
+
+                    <option value="SMS"
+                        th:selected="${account.notificationPreference != null and account.notificationPreference.name() == 'SMS'}">
+                        SMS
+                    </option>
+
+                    <option value="BOTH"
+                        th:selected="${account.notificationPreference != null and account.notificationPreference.name() == 'BOTH'}">
+                        Email and SMS
+                    </option>
+                </select>
+
+                <div class="help-text">
+                    SMS notifications require a phone number.
+                </div>
+            </div>
+
+            <div class="field">
+                <label>Account Type</label>
+                <div class="readonly-value"
+                     th:text="${account.roleType}">
+                </div>
+            </div>
+
+        </form>
+
+        <!-- PASSWORD ROW -->
+        <div class="field">
+            <label>Password</label>
+
+            <div class="password-row">
+                <span class="password-dots">••••••••</span>
+
+                <button
+                    type="button"
+                    class="btn-outline"
+                    id="togglePassword"
+                    aria-expanded="false"
+                    aria-controls="passwordFields">
+                    Change Password
+                </button>
+            </div>
+        </div>
+
+        <!-- EXPANDABLE PASSWORD FORM -->
+        <div id="passwordFields"
+             class="password-fields"
+             hidden>
+
+            <form th:action="@{/change-password}"
+                  method="post">
+
+                <div class="field">
+                    <label for="currentPassword">
+                        Current Password
+                    </label>
+                    <input
+                        type="password"
+                        class="form-control"
+                        id="currentPassword"
+                        name="currentPassword"
+                        autocomplete="current-password"
+                        required>
+                </div>
+
+                <div class="field">
+                    <label for="newPassword">
+                        New Password
+                    </label>
+                    <input
+                        type="password"
+                        class="form-control"
+                        id="newPassword"
+                        name="newPassword"
+                        minlength="8"
+                        maxlength="64"
+                        autocomplete="new-password"
+                        required>
+                </div>
+
+                <div class="field">
+                    <label for="confirmPassword">
+                        Confirm New Password
+                    </label>
+                    <input
+                        type="password"
+                        class="form-control"
+                        id="confirmPassword"
+                        name="confirmPassword"
+                        autocomplete="new-password"
+                        required>
+                </div>
+
+                <button type="submit" class="btn-primary">
+                    Update Password
+                </button>
+
+            </form>
+        </div>
+
+        <!-- SAVE ACCOUNT DETAILS -->
+        <button
+            type="submit"
+            form="accountSettingsForm"
+            class="btn-primary"
+            style="margin-top: 24px;">
+            Save Changes
+        </button>
+
+    </div>
+
+    <a th:href="@{/dashboard}" class="back-link">
+        ← Back to Dashboard
+    </a>
+
+</div>
+
+<script th:src="@{/js/account-settings.js}" defer></script>
+</body>
+</html>
