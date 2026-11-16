@@ -11,9 +11,12 @@
 <body>
 <header class="topbar" th:fragment="header">
   <a th:href="@{/}">BookEasy</a>
-  <form th:if="${signedIn == true}" th:action="@{/logout}" method="post" novalidate data-submit-guard>
-    <button type="submit">Sign out</button>
-  </form>
+  <div th:if="${signedIn == true}" style="display: flex; align-items: center; gap: 16px">
+    <a th:href="@{/account-settings}">Account Settings</a>
+    <form th:action="@{/logout}" method="post" novalidate data-submit-guard>
+      <button type="submit">Sign out</button>
+    </form>
+  </div>
 </header>
 <div class="demo-banner" th:fragment="demo">Local demo · Accounts and salon data reset when the app restarts.</div>
 <div th:fragment="field(label, name, type, hint)" class="field">

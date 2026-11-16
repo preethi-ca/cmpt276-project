@@ -107,6 +107,79 @@ public class AccountService {
         return true;
     }
 
+    public boolean changePassword(String email, String currentPassword, String newPassword) {
+        String normalizedEmail = normalizeEmail(email);
+
+        Account account = accountRepository.findByEmail(normalizedEmail)
+                .orElseThrow(() -> new IllegalArgumentException("Account not found"));
+
+        // verify the current password
+        if (currentPassword == null || !passwordEncoder.matches(currentPassword, account.getPasswordHash())) {
+            return false;
+        }
+
+        // validate the new password
+        if (newPassword == null || newPassword.length() < 8 || newPassword.length() > 64
+                || newPassword.getBytes(StandardCharsets.UTF_8).length > 72) {
+            throw new IllegalArgumentException("Password must be 8 to 64 characters and at most 72 UTF-8 bytes.");
+        }
+
+        // hash and save the new password
+        account.setPasswordHash(passwordEncoder.encode(newPassword));
+        accountRepository.save(account);
+
+        return true;
+    }
+
+    public void updateAccountSettings(String email, String name, String phoneNumber, String notificationPreference) {
+        Account account = accountRepository.findByEmail(normalizeEmail(email)).orElseThrow(() -> new IllegalArgumentException("Account not found"));
+
+        // validate name
+        if (name == null || name.trim().isBlank() || name.trim().length() > 100) {
+            throw new IllegalArgumentException("Name must be 1 to 100 characters.");
+        }
+
+        // normalize and validate phone number
+        String cleanedPhone = phoneNumber == null ? "" : phoneNumber.trim();
+        String digits = cleanedPhone.replaceAll("[^0-9]", "");
+
+        if (!cleanedPhone.isBlank()
+                && (!cleanedPhone.matches("[+0-9() .-]+")
+                        || !(digits.length() == 10
+                                || (digits.length() == 11 && digits.startsWith("1"))))) {
+            throw new IllegalArgumentException("Enter a valid 10-digit phone number.");
+        }
+
+        // validate notification preference
+        if (!"EMAIL".equals(notificationPreference)
+                && !"SMS".equals(notificationPreference)
+                && !"BOTH".equals(notificationPreference)) {
+            throw new IllegalArgumentException(
+                    "Choose Email, SMS, or Both.");
+        }
+
+        // SMS notifications require a phone number
+        if (("SMS".equals(notificationPreference)
+                || "BOTH".equals(notificationPreference))
+                && cleanedPhone.isBlank()) {
+            throw new IllegalArgumentException(
+                    "A phone number is required for SMS notifications.");
+        }
+
+        // update account
+        account.setName(name.trim());
+        account.setPhoneNumber(cleanedPhone.isBlank() ? null : cleanedPhone);
+        account.setNotificationPreference(
+                NotificationPreference.valueOf(notificationPreference));
+
+        accountRepository.save(account);
+    }
+
+    public Account findByEmail(String email) {
+        return accountRepository.findByEmail(normalizeEmail(email))
+                .orElseThrow(() -> new IllegalArgumentException("Account not found"));
+    }
+
     private String normalizeEmail(String email) {
         return email.trim().toLowerCase(Locale.ROOT);
     }

@@ -1,3 +1,4 @@
+
 package com.cmpt276.project.config;
 
 import jakarta.servlet.DispatcherType;
@@ -10,49 +11,65 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Configuration
 public class SecurityConfig {
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth
-                        // Error rendering must preserve the original 403/404 instead of redirecting to
-                        // login.
+                        // Preserve original 403/404 errors instead of redirecting to login
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
-                        // public pages
-                        .requestMatchers("/", "/register", "/login", "/css/**", "/js/**", "/images/**",
-                                "/error", "/owner-assets/**", "/api/salons/**", "/demo/salons/**",
-                                "/salons/**")
-                        .permitAll()
 
-                        // Allow guests to browse and select appointment dates/times
+                        // Public pages
+                        .requestMatchers(
+                                "/", "/about", "/privacy", "/terms",
+                                "/register", "/login",
+                                "/css/**", "/js/**", "/images/**",
+                                "/error", "/owner-assets/**",
+                                "/api/salons/**", "/demo/salons/**",
+                                "/salons/**"
+                        ).permitAll()
+
+                        // Allow guests to browse services and select dates/times
                         .requestMatchers(
                                 "/customer/booking",
-                                "/customer/booking/time")
-                        .permitAll()
+                                "/customer/booking/time"
+                        ).permitAll()
 
-                        // Role-based pages
-                        .requestMatchers("/customer", "/customer/**").hasRole("CUSTOMER")
-                        .requestMatchers("/owner", "/owner/**").hasRole("SALONOWNER")
+                        // Customer-only pages
+                        .requestMatchers("/customer", "/customer/**")
+                        .hasRole("CUSTOMER")
 
-                        // all other pages require login
+                        // Google Calendar integration
+                        .requestMatchers("/calendar/google/**")
+                        .hasRole("CUSTOMER")
+
+                        // Salon owner pages
+                        .requestMatchers("/owner", "/owner/**")
+                        .hasRole("SALONOWNER")
+
+                        // All other pages require login
                         .anyRequest().authenticated())
 
-                // Keep owner-page protections in the shared chain, including anonymous error
-                // pages.
-                .headers(headers -> headers.contentSecurityPolicy(csp -> csp.policyDirectives(
-                        "default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self' data:; "
-                                + "object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'")))
+                // Content Security Policy
+                .headers(headers -> headers.contentSecurityPolicy(csp ->
+                        csp.policyDirectives(
+                                "default-src 'self'; style-src 'self'; script-src 'self'; " +
+                                "img-src 'self' data:; object-src 'none'; " +
+                                "base-uri 'self'; frame-ancestors 'none'; form-action 'self'"
+                        )))
 
-                // login configuration
+                // Login configuration
                 .formLogin(form -> form
                         .loginPage("/login")
                         .defaultSuccessUrl("/dashboard", false)
                         .permitAll())
 
-                // logout configuration
+                // Logout configuration
                 .logout(logout -> logout
                         .logoutUrl("/logout")
                         .logoutSuccessUrl("/login?logout")
                         .permitAll());
+
         return http.build();
     }
 

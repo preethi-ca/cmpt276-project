@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:,">
+    <title>Privacy policy | BookEasy</title>
+    <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div class="container"><div class="col-lg-8 mx-auto px-3 py-4">
+    <nav class="d-flex flex-wrap gap-3 border-bottom pb-3 mb-4" aria-label="BookEasy">
+        <a th:href="@{/about}">About BookEasy</a>
+        <a th:href="@{/login}">Sign in</a>
+        <a th:href="@{/register}">Create account</a>
+        <a th:href="@{/terms}">Terms of use</a>
+    </nav>
+    <main>
+        <h1 class="mb-4">Privacy policy</h1>
+        <p>BookEasy is an SFU course project for salon bookings. We store your account and booking
+            details to manage appointments. Salon owners can see bookings at their salon. A cookie keeps you
+            signed in. Render hosts the app. When email confirmations are on, Brevo receives your email address
+            and booking details. When text confirmations are on, Twilio receives your phone number and booking
+            details.</p>
+        <p>Google Calendar is optional. If you connect it, BookEasy adds each booking to your primary
+            calendar, updates the event when you edit the booking and removes it when you cancel. Google
+            receives the service, salon name and address, and appointment time. BookEasy does not read your
+            other events. We store your Google refresh token, the time you connected and each event ID so we
+            can keep your bookings in sync.</p>
+        <p>We do not sell Google data, use it for advertising or share it with anyone else. BookEasy's use
+            and transfer of information received from Google APIs follows the
+            <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>,
+            including the Limited Use requirements.</p>
+        <p>Disconnect Google Calendar on your dashboard to delete the saved token and ask Google to remove
+            BookEasy's access. Events already in your calendar stay there but stop updating. You can also
+            remove access in your <a href="https://myaccount.google.com/connections">Google account</a>.</p>
+        <p>Account and booking records, including event IDs, stay until they are deleted or the demo data
+            is reset. For questions or to ask us to delete your data, email
+            <a href="mailto:anitavaibhav59@gmail.com">anitavaibhav59@gmail.com</a>.</p>
+    </main>
+    <footer class="border-top mt-5 pt-3"><a th:href="@{/about}">About BookEasy</a> · <a th:href="@{/login}">Sign in</a></footer>
+</div></div>
+</body>
+</html>
