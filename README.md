@@ -67,11 +67,16 @@ Key work completed included:
 This project requires the following to be dowlnloaded and setup Java JDK, Git, PostgreSQL, A code editor (Visual Studio Code)
 
 #### Clone the repository using:
-```git clone https://github.com/preethi-ca/cmpt276-project.git```
-```cd cmpt276-project```
+```sh
+git clone https://github.com/preethi-ca/cmpt276-project.git
+cd cmpt276-project
+```
 
 To start the application use:./mvnw spring-boot:run
-Open the application in your browser: http://localhost:8080
+Open the application in your browser:  
+```sh
+http://localhost:8080
+```
 
 ## Deployment
 BookEasy is deployed using Render
