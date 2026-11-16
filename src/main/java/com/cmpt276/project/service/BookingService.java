@@ -153,7 +153,7 @@ public class BookingService {
 
     // Cancel an appointment
     @Transactional
-    public void cancelAppointment(int appointmentId, String customerEmail) {
+    public Appointment cancelAppointment(int appointmentId, String customerEmail) {
         Optional<Account> customerOpt = accountRepository.findByEmail(customerEmail);
         if (!customerOpt.isPresent()) {
             throw new IllegalArgumentException("Customer account not found");
@@ -166,6 +166,8 @@ public class BookingService {
         }
 
         // Delete the appointment from the database
-        appointmentRepository.delete(appointmentOpt.get());
+        Appointment appointment = appointmentOpt.get();
+        appointmentRepository.delete(appointment);
+        return appointment;
     }
 }

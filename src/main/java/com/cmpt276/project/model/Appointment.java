@@ -2,6 +2,7 @@ package com.cmpt276.project.model;
 
 import java.time.LocalDate;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -27,6 +28,10 @@ public class Appointment {
     @ManyToOne
     @JoinColumn(name = "customer_id", nullable = false)
     private Account customer;
+
+    // id of the matching Google Calendar event, null until synced
+    @Column(length = 1024)
+    private String googleEventId;
 
     public Appointment() {
     }
@@ -105,5 +110,13 @@ public class Appointment {
 
     public BigDecimal getBookedPrice() {
         return bookedPrice;
+    }
+  
+    public String getGoogleEventId() {
+        return googleEventId;
+    }
+
+    public void setGoogleEventId(String googleEventId) {
+        this.googleEventId = googleEventId;
     }
 }
