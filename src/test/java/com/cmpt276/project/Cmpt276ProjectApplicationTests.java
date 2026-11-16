@@ -474,7 +474,9 @@ class Cmpt276ProjectApplicationTests {
     }
 
     private List<PublicSalon> customerSalons() throws Exception {
-        var result = mvc.perform(get("/customer/dashboard").with(user(dashboardCustomer.getEmail()).roles("CUSTOMER")))
+        var result = mvc.perform(get("/customer/dashboard")
+                .with(user(dashboardCustomer.getEmail()).roles("CUSTOMER"))
+                .with(csrf()))
                 .andExpect(status().isOk()).andExpect(view().name("customer/customer-dashboard"))
                 .andExpect(model().attributeExists("salons")).andReturn();
         var salons = (List<?>) result.getModelAndView().getModel().get("salons");

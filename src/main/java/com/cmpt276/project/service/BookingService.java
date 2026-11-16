@@ -137,4 +137,24 @@ public class BookingService{
         }
         return availableTimes;
     }
+
+    //Cancel an appointment
+    @Transactional
+    public Appointment cancelAppointment(int appointmentId, String customerEmail) {
+        Optional<Account> customerOpt = accountRepository.findByEmail(customerEmail);
+        if (!customerOpt.isPresent()) {
+            throw new IllegalArgumentException("Customer account not found");
+        }
+        Account customer = customerOpt.get();
+        Optional<Appointment> appointmentOpt = appointmentRepository.findByIdAndCustomer(appointmentId, customer);
+
+        if (!appointmentOpt.isPresent()) {
+            throw new IllegalArgumentException("Appointment not found");
+        }
+
+        // Delete the appointment from the database
+        Appointment appointment = appointmentOpt.get();
+        appointmentRepository.delete(appointment);
+        return appointment;
+    }
 }

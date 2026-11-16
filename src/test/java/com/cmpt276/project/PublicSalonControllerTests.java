@@ -209,9 +209,9 @@ void sameNameSalonsAtTheSameLocationHaveDistinctEscapedLabels() throws Exception
         var failure = new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
         when(ownerService.findPublicSalonBySlug("broken")).thenThrow(failure);
         assertSame(failure, assertThrows(ResponseStatusException.class,
-            () -> new DashboardController(ownerService, accountService)
-                    .visitSalon("broken", new ExtendedModelMap(), null)));
-        }
+                () -> new DashboardController(ownerService, accountService, null, null, null)
+                        .visitSalon("broken", null, new ExtendedModelMap())));
+    }
 
     @Test
     void salonVisitRequiresCustomerRole() throws Exception {
