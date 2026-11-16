@@ -14,6 +14,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import org.junit.jupiter.api.Test;
@@ -191,6 +192,51 @@ class BookingServiceTests {
 
         salon.setOpeningHours(List.of(openingDay));
         return salon;
+    }
+
+
+// Tests for cancelling appointments
+    //Test that a customer can  cancel their own appointment
+    @Test
+    void shouldCancelOwnAppointment() {
+        Account customer = new Account(
+                "Alex Lee",
+                "alex@example.com",
+                "password",
+                RoleType.CUSTOMER
+        );
+        Appointment appointment = mock(Appointment.class);
+
+        when(accountRepository.findByEmail("alex@example.com"))
+                .thenReturn(Optional.of(customer));
+        when(appointmentRepository.findByIdAndCustomer(42, customer))
+                .thenReturn(Optional.of(appointment));
+
+        bookingService.cancelAppointment(42, "alex@example.com");
+
+        // Check that the appointment was deleted
+        verify(appointmentRepository).delete(appointment);
+    }
+
+
+    //Test that a customer cannot cancel another customer's appointment
+    @Test
+    void shouldRejectCancellingAnotherCustomersAppointment() {
+        Account customer = new Account(
+                "Alex Lee",
+                "alex@example.com",
+                "password",
+                RoleType.CUSTOMER
+        );
+        when(accountRepository.findByEmail("alex@example.com"))
+                .thenReturn(Optional.of(customer));
+        when(appointmentRepository.findByIdAndCustomer(42, customer))
+                .thenReturn(Optional.empty());
+        assertThrows(IllegalArgumentException.class, () ->
+                bookingService.cancelAppointment(42, "alex@example.com")
+        );
+        // Check that no appointment was deleted
+        verify(appointmentRepository, never()).delete(any(Appointment.class));
     }
 }
 

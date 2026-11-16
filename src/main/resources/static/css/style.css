@@ -238,6 +238,7 @@ body {
 .btn-success:hover {
     background-color: #243c2d;
     border-color: #243c2d;
+}
 /* Customer Dashboard */
 
 .customer-dashboard {
@@ -287,3 +288,110 @@ a, button, select { cursor: pointer; }
 button:disabled { cursor: default; opacity: .65; }
 .password-toggle:hover { background: #f5f0eb; }
 :focus-visible { outline: 2px solid #594535; outline-offset: 3px; }
+
+
+
+
+/*Customer booking progress bar */
+.booking-progress {
+    margin-bottom: 35px;
+    padding: 15px 0;
+}
+
+.booking-progress__list {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.booking-progress__step {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+/*Line connecting the progress points*/
+.booking-progress__step::after {
+    content: "";
+    position: absolute;
+    top: 17px;
+    left: 50%;
+    width: 100%;
+    height: 3px;
+    background-color: #deded8;
+    z-index: 0;
+}
+
+/*Line connecting the progress points when compleated*/
+.booking-progress__step.is-complete::after {
+    background-color: #294b3b;
+}
+
+.booking-progress__step:last-child::after {
+    display: none;
+}
+
+/*Number circles for progress point*/
+.booking-progress__number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 35px;
+    height: 35px;
+    border: 2px solid #deded8;
+    border-radius: 100%;
+    background-color: #ffffff;
+    color: #777777;
+    font-weight: 500;
+    z-index: 1;
+}
+
+/* Current step */
+.booking-progress__step.is-active .booking-progress__number {
+    background-color: #669882;
+    border-color: #294b3b;
+    color: #ffffff;
+}
+
+/* Completed steps */
+.booking-progress__step.is-complete .booking-progress__number {
+    background-color: #669882;
+    border-color: #294b3b;
+    color: #ffffff;
+}
+
+.booking-progress__label {
+    color: #777777;
+    font-size: 14px;
+}
+
+.booking-progress__step.is-active .booking-progress__label {
+    color: #294b3b;
+    font-weight: 800;
+    text-decoration: underline;
+}
+
+.booking-progress__step.is-complete .booking-progress__label {
+    color: #294b3b;
+}
+
+/* mobile adjustments */
+@media (max-width: 576px) {
+    .booking-progress__label {
+        font-size: 10px;
+    }
+
+    .booking-progress__number {
+        width: 30px;
+        height: 30px;
+        font-size: 12px;
+    }
+
+    .booking-progress__step::after {
+        top: 14px;
+    }
+}
