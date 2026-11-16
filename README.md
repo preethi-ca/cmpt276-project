@@ -5,7 +5,7 @@ Project: Hair Salon Appointment Booking and Management System
 ## Project Overview 
 BookEasy is a web-based appointment booking and management system designed for beauty salons and their customers. It provides customers with a convenient way to book appointments while helping salon owners keep their schedules organized. 
 
-Each salon will have a dedicated page where customers can browse services and prices, check availability, and book appointments.
+Each salon has a dedicated page where customers can browse services and prices, check availability, and start a booking. Customers can select a service, date, and time before logging in to review and confirm their appointment.
 
 Live application: https://cmpt276-project-icc0.onrender.com
 The application can also be run locally at http://localhost:8080 after completing the installation steps below.
@@ -22,24 +22,46 @@ Key work completed included:
 6. **Styling:** CSS and integrated Bootstrap to improve the appearance and consistency of the pages.
 7. **Notification:** Send email confirmation messages to customers after successfully booking an appointment.
 
+## Iteration 2
+
+Our main focus for Iteration 2 was improving the customer booking flow, expanding account and appointment management, and adding analytics to the salon owner dashboard.
+
+Key work completed included:
+
+1. **Guest booking flow:** Customers can select a service, date, and time as guests. Their selections are kept when they log in to review and confirm the booking.
+2. **Appointment management:** Customers can reschedule appointments. Booking and rescheduling check the full 60-minute slot for overlaps, including after a salon changes its opening hours.
+3. **Account settings:** Customers and salon owners can update their name, phone number, and notification preferences, and change their password.
+4. **Booking confirmations:** Customers can choose to receive booking confirmations by email, SMS, or both.
+5. **Google Calendar integration:** Customers can connect Google Calendar to keep their calendar events in sync when they book, reschedule, or cancel an appointment.
+6. **Salon analytics:** Salon owners can view their total number of appointments, most popular service, busiest appointment time, and estimated revenue.
+
 ## Application Features
+
 ### Authentication Features
 - Customer and salon owner registration.
 - Login and logout functionality.
 - Account access based on user roles.
+- Customers and salon owners can update their name, phone number, and notification preferences from their dashboard.
+- Users can change their password by entering their current password and a new password.
 
 ### Customer Features
-- Browse public salon pages.
-- Book and cancel appointments.
-- View current appointments.
+- Browse public salon pages or select a salon from the customer dashboard.
+- Choose a service, date, and time as a guest, then log in to review and confirm the booking.
+- View appointment details, change the date and time of an existing appointment, or cancel it.
+- Book or reschedule into an available 60-minute slot. Back-to-back appointments are allowed.
+- Connect Google Calendar from the dashboard when calendar sync is enabled.
 
 ### Salon Features
 - Manage salon information and profiles.
-- Add and manage salon services and prices.
-- Manage appointment availability.
+- Add, edit, and delete salon services and manage their prices.
+- Set opening hours and appointment availability.
+- View a paginated list of today's and upcoming appointments, with counts for today, this week, and appointments after today.
+- View salon analytics, including the total number of appointments, the most popular service, the busiest appointment time, and estimated revenue.
 
 ### Notification Features
-- Send email confirmation messages to customers after successfully booking an appointment.
+- Customers can choose email, SMS, or both for booking confirmations. SMS requires a phone number.
+- After a booking is saved, BookEasy attempts delivery through the customer's selected channels when those channels are enabled. A delivery failure does not cancel the appointment.
+- For customers who connect Google Calendar, booking creates a calendar event, rescheduling updates it, and cancelling removes it.
 
 ## Installation and Setup
 This project requires the following to be dowlnloaded and setup Java JDK, Git, PostgreSQL, A code editor (Visual Studio Code)
@@ -53,22 +75,35 @@ Open the application in your browser: http://localhost:8080
 
 ## Deployment
 BookEasy is deployed using Render
-Live Application: https://cmpt276-project-icc0.onrender.com
+Live Application: https://cmpt276-project-icc0.onrender.com  
+The Docker build uses Java 17 and packages the application with tests skipped. Run the test suite separately using the commands below.
 
 ## Testing
 The project uses Maven to run automated tests.
-To run the tests, use:./mvnw test
-- Controller tests cover areas: authentication, appointment management, booking functionality, public salon pages
+On macOS or Linux:
 
+```sh
+./mvnw test
+```
+
+On Windows PowerShell:
+
+```powershell
+.\mvnw.cmd test
+```
+- Controller tests cover areas: authentication, appointment management, booking functionality, public salon pages, guest booking, and appointment management.
+- Service tests cover account and password management, booking rules, and salon analytics.
+- Integration tests cover email and SMS confirmations, Google Calendar connections, and calendar updates when appointments change.
+  
 ## How to Book an Appointment
 Customers can book an appointment through the BookEasy website by following these steps:
 1. **Open the Application:** Visit the BookEasy live application: https://cmpt276-project-icc0.onrender.com
 2. **Create an Account or Log In:** Register as a customer or log in to an existing customer account.
 3. **Browse Salons:** View the available salon pages and select the salon you want to visit. (Example [if salon name is Sally Salon]: /salons/sally-salon)
-4. **Select an Appointment:** Choose your preferred service, date, and available time slot.
+4. **Select an Appointment:** Choose your preferred service, date, and available time slot. You can make these selections as a guest.
 5. **Confirm Booking:** Submit your appointment request to complete the booking.
-6. **Email Confirmation:** After successfully booking, you will receive an email confirmation with your appointment details.
-7. **Manage Appointments:** Visit your customer dashboard to view or cancel your appointments.
+6. **Check Your Confirmation:** The confirmation page shows the booking result. Depending on your preferences and the channels enabled, BookEasy may also send an email, a text message, or both. If you have connected Google Calendar, BookEasy also attempts to add the appointment to your calendar.
+7. **Manage Appointments:** Open **My Appointments** to view appointment details, change the date and time, or cancel an appointment.
 
 ## System Architecture
 BookEasy follows the MVC architecture using Spring Boot
@@ -76,19 +111,20 @@ BookEasy follows the MVC architecture using Spring Boot
 - **View:** Provides the user interface through HTML, CSS, JavaScript, Bootstrap, and Thymeleaf templates.
 - **Controller:** Handles user requests and connects the frontend with the backend
 - **Database:** PostgreSQL stores application information like customer accounts, salon details, and appointments.
-- **Email Notifications:** The application sends email confirmation messages to customers after successful bookings.
+- **Booking Notifications:** BookEasy uses Brevo for email confirmations and Twilio for SMS confirmations. Delivery is attempted after the booking is saved.
+- **Google Calendar:** Customers can authorize BookEasy to create, update, and remove calendar events for their bookings. If calendar sync fails, the appointment change remains saved in BookEasy.
 
-## Known Issues/Limitations and Future Improvements for Iteration 2 and 3
-- **Search and Discoverability:** Customers may have difficulty finding salons if they do not already know the salon's name or that it exists. More advanced search, filtering, and salon discovery features are needed.
-- **User Flow:** Some parts of the application could have more intuitive navigation. The steps customers follow to browse salons, select services, and complete bookings could be simplified.
-- **Appointment Editing:** Customers currently cannot edit existing appointments.
-- **Appointment Organization:** Upcoming and past appointments could be displayed separately to make appointment management easier.
-- **Booking Restrictions:** The system should prevent customers from booking appointments for dates that have already passed.
-- **Account Management:** Customers and salon owners could have additional account management options, such as changing passwords and adding phone numbers.
-- **Notifications:** phone number confirmations and appointment reminders could be added.
-- **Google Calendar Integration:** Integrating the Google Calendar API could allow customers to add their appointments to their personal calendars.
-- **User Interface:** Further improvements could be made to the overall appearance and user experience.
+## Iteration 3 Next Steps
 
+The following improvements are planned for Iteration 3:
+
+- **Salon Pages:** Add images to public salon pages to make them more visually appealing and help customers learn more about each salon.
+- **Customer Ratings and Reviews:** Allow customers to rate salons and leave reviews based on their experiences, helping other customers decide which salon to visit.
+- **Service Browsing:** Let customers sort salon services by price, highest rating, or alphabetical order.
+- **Customer Account and Booking Management:** Allow customers to save favourite salons, revisit recently viewed salons, view their past appointment history, and quickly rebook a previous service.
+- **Appointment Availability:** When customers book for the current day, show only time slots that start after the current time. For example, at 2:00 PM, only slots starting after 2:00 PM should be available.
+- **Notifications:** Further notification improvements are planned. Details are still to be decided.
+- **Salon Analytics:** Add date range filters, booking and revenue trends, and more detailed statistics to help owners understand their salon's performance over time.
 
 ## Project Repository
 GitHub Repository: https://github.com/preethi-ca/cmpt276-project
