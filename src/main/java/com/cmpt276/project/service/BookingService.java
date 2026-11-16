@@ -139,7 +139,9 @@ public class BookingService {
                 if (excludedAppointmentId != null && appointment.getId() == excludedAppointmentId) {
                     continue;
                 }
-                if (appointment.getAppointmentTime().equals(currentTime.format(formatter))) {
+                LocalTime bookedTime = LocalTime.parse(appointment.getAppointmentTime());
+                int bookedMinute = bookedTime.getHour() * 60 + bookedTime.getMinute();
+                if (minute < bookedMinute + 60 && bookedMinute < minute + 60) {
                     alreadyBooked = true;
                     break;
                 }
