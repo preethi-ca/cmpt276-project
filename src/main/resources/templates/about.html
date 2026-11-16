@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:,">
+    <title>About BookEasy</title>
+    <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div class="container"><div class="col-lg-8 mx-auto px-3 py-4">
+    <nav class="d-flex flex-wrap gap-3 border-bottom pb-3 mb-4" aria-label="BookEasy">
+        <a th:href="@{/about}">BookEasy</a>
+        <a th:href="@{/login}">Sign in</a>
+        <a th:href="@{/register}">Create account</a>
+        <a th:href="@{/privacy}">Privacy policy</a>
+        <a th:href="@{/terms}">Terms of use</a>
+    </nav>
+    <main>
+        <h1 class="mb-4">Your next salon visit, simply booked.</h1>
+        <p>BookEasy helps customers book salon services and manage their appointments. Salon owners
+            can manage their salon, services, availability and bookings.</p>
+        <p>BookEasy is a CMPT 276 course project at Simon Fraser University, built for a small course
+            demo with students, teaching assistants and the professor.</p>
+        <a class="btn btn-success my-3" th:href="@{/register}">Create a BookEasy account</a>
+
+        <h2 class="h4 mt-4">Keep your booking in Google Calendar</h2>
+        <p>Customers can connect Google Calendar from their dashboard. BookEasy then adds each booking
+            to their primary Google Calendar, updates the event when they edit the booking and removes it
+            when they cancel.</p>
+        <p>Connecting is optional and goes through Google's own permission screen. You can disconnect any
+            time from your dashboard. The <a th:href="@{/privacy}">privacy policy</a> explains what data is
+            used and how to remove access.</p>
+    </main>
+    <footer class="border-top mt-5 pt-3"><a th:href="@{/privacy}">Privacy policy</a> · <a th:href="@{/terms}">Terms of use</a> · <a th:href="@{/login}">Sign in</a></footer>
+</div></div>
+</body>
+</html>

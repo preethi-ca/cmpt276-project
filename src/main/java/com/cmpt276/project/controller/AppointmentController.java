@@ -15,12 +15,14 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.cmpt276.project.model.Account;
 import com.cmpt276.project.model.Appointment;
+import com.cmpt276.project.model.GoogleCalendarResult;
 import com.cmpt276.project.owner.model.Salon;
 import com.cmpt276.project.owner.model.SalonService;
 import com.cmpt276.project.owner.service.OwnerService;
 import com.cmpt276.project.repository.AccountRepository;
 import com.cmpt276.project.repository.AppointmentRepository;
 import com.cmpt276.project.service.BookingService;
+import com.cmpt276.project.service.GoogleCalendarSync;
 import java.time.LocalDate;
 import org.springframework.web.bind.annotation.ResponseBody;
 
@@ -30,11 +32,13 @@ public class AppointmentController {
     private final AccountRepository accountRepository;
     private final OwnerService ownerService;
     private final BookingService bookingService;
-    public AppointmentController(AppointmentRepository appointmentRepository,AccountRepository accountRepository, OwnerService ownerService, BookingService bookingService){
+    private final GoogleCalendarSync calendarSync;
+    public AppointmentController(AppointmentRepository appointmentRepository,AccountRepository accountRepository, OwnerService ownerService, BookingService bookingService, GoogleCalendarSync calendarSync){
         this.appointmentRepository = appointmentRepository;
         this.accountRepository = accountRepository;
         this.ownerService = ownerService;
         this.bookingService = bookingService;
+        this.calendarSync = calendarSync;
     }
 
     //show all appointments the customer has
@@ -146,24 +150,33 @@ public class AppointmentController {
     public String cancelAppointment(@RequestParam("id") int appointmentId, Authentication authentication, RedirectAttributes redirectAttributes) {
 
         //cancel the appointment belonging to the logged-in customer
-        bookingService.cancelAppointment(appointmentId, authentication.getName());
+        Appointment appointment = bookingService.cancelAppointment(appointmentId, authentication.getName());
+
+        // Google Calendar runs after the appointment is deleted, a failure only changes the message
+        GoogleCalendarResult calendarResult = calendarSync.removeBooking(appointment);
 
         //Show a success message
         redirectAttributes.addFlashAttribute("message", "Your appointment has been cancelled");
+        redirectAttributes.addFlashAttribute("calendarMessage", calendarSync.removeFeedback(calendarResult));
         return "redirect:/customer/appointments";
     }
 
     //Handles editing an existing appointment (date and time)
     @PostMapping("/customer/appointments/edit")
     public String updateAppointment(@RequestParam int id, @RequestParam String appointmentDate, @RequestParam String appointmentTime, Authentication authentication, RedirectAttributes redirectAttributes) {
+        Appointment appointment;
         try {
-            bookingService.updateAppointment(id, appointmentDate, appointmentTime, authentication.getName());
-            redirectAttributes.addFlashAttribute("message", "Your appointment has been successfully updated.");
-            return "redirect:/customer/appointments/details?id=" + id;
+            appointment = bookingService.updateAppointment(id, appointmentDate, appointmentTime, authentication.getName());
         } catch (IllegalArgumentException e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
             return "redirect:/customer/appointments/edit?id=" + id;
         }
+        redirectAttributes.addFlashAttribute("message", "Your appointment has been successfully updated.");
+
+        // Google Calendar runs after the change is saved, a failure only changes the message
+        GoogleCalendarResult calendarResult = calendarSync.updateBooking(appointment);
+        redirectAttributes.addFlashAttribute("calendarMessage", calendarSync.updateFeedback(calendarResult));
+        return "redirect:/customer/appointments/details?id=" + id;
     }
 
 }

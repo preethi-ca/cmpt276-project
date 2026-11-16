@@ -3,6 +3,7 @@ package com.cmpt276.project.controller;
 import com.cmpt276.project.model.Appointment;
 import com.cmpt276.project.model.BookingConfirmationMessage;
 import com.cmpt276.project.model.BookingEmailResult;
+import com.cmpt276.project.model.GoogleCalendarResult;
 import com.cmpt276.project.model.BookingSmsMessage;
 import com.cmpt276.project.model.BookingSmsResult;
 import com.cmpt276.project.model.NotificationPreference;
@@ -19,6 +20,7 @@ import org.springframework.security.core.Authentication;
 import com.cmpt276.project.service.BookingService;
 import com.cmpt276.project.service.BookingConfirmationBuilder;
 import com.cmpt276.project.service.BrevoEmailSender;
+import com.cmpt276.project.service.GoogleCalendarSync;
 import com.cmpt276.project.service.BookingSmsBuilder;
 import com.cmpt276.project.service.TwilioSmsSender;
 import java.time.LocalDate;
@@ -30,15 +32,17 @@ public class BookingController {
     private final BookingService bookingService;
     private final OwnerService ownerService;
     private final BrevoEmailSender emailSender;
+    private final GoogleCalendarSync calendarSync;
     private final BookingConfirmationBuilder confirmationBuilder = new BookingConfirmationBuilder();
     private final TwilioSmsSender smsSender;
     private final BookingSmsBuilder smsBuilder = new BookingSmsBuilder();
 
-    public BookingController(BookingService bookingService, OwnerService ownerService, BrevoEmailSender emailSender, TwilioSmsSender smsSender) {
+    public BookingController(BookingService bookingService, OwnerService ownerService, BrevoEmailSender emailSender, TwilioSmsSender smsSender, GoogleCalendarSync calendarSync) {
         this.bookingService = bookingService;
         this.ownerService = ownerService;
         this.emailSender = emailSender;
         this.smsSender = smsSender;
+        this.calendarSync = calendarSync;
     }
 
     // Show the date selection page
@@ -180,6 +184,9 @@ public class BookingController {
             model.addAttribute("smsResult", smsResult);
             model.addAttribute("smsMessage", smsFeedback(smsResult));
         }
+        // Google Calendar runs after the booking is saved, a failure only changes the message
+        GoogleCalendarResult calendarResult = calendarSync.addBooking(appointment);
+        model.addAttribute("calendarMessage", calendarSync.feedback(calendarResult));
         return "customer/booking-confirmation";
     }
 

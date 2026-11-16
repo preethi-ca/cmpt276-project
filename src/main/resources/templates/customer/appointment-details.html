@@ -12,8 +12,13 @@
     <body>
         <main class="container py-5">
             <!-- Display a confirmation after the appointment is successfully updated -->
-            <div th:if="${message}" class="alert alert-success" role="alert" th:text="${message}"></div>
-            
+            <div th:if="${message}" class="alert alert-success" role="alert"
+                th:text="${message}">
+            </div>
+            <div th:if="${calendarMessage}" class="alert alert-info" role="status"
+                th:text="${calendarMessage}">
+            </div>
+          
         <h1>Appointment Details</h1>
 
         <!--Customer Information-->

@@ -17,12 +17,13 @@ public class SecurityConfig {
                 // Error rendering must preserve the original 403/404 instead of redirecting to login.
                 .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                 // public pages
-                .requestMatchers("/", "/register", "/login", "/css/**", "/js/**", "/images/**",
+                .requestMatchers("/", "/about", "/privacy", "/terms", "/register", "/login", "/css/**", "/js/**", "/images/**",
                     "/error", "/owner-assets/**", "/api/salons/**", "/demo/salons/**",
                     "/salons/**").permitAll()
 
                 // role-based pages
                 .requestMatchers("/customer", "/customer/**").hasRole("CUSTOMER")
+                .requestMatchers("/calendar/google/**").hasRole("CUSTOMER")
                 .requestMatchers("/owner", "/owner/**").hasRole("SALONOWNER")
 
                 // all other pages require login
