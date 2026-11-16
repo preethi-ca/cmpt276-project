@@ -11,14 +11,21 @@ import java.time.LocalDate;
 
 public interface AppointmentRepository extends JpaRepository<Appointment, Integer> {
     List<Appointment> findByCustomer(Account customer);
+
     Optional<Appointment> findByIdAndCustomer(int id, Account customer);
+
     List<Appointment> findBySalonIdAndAppointmentDate(String salonId, LocalDate appointmentDate);
+
+    List<Appointment> findBySalonId(String salonId);
 
     @EntityGraph(attributePaths = "customer")
     List<Appointment> findBySalonIdAndAppointmentDateGreaterThanEqualOrderByAppointmentDateAscAppointmentTimeAscIdAsc(
             String salonId, LocalDate date, Pageable pageable);
 
     long countBySalonIdAndAppointmentDate(String salonId, LocalDate date);
+
     long countBySalonIdAndAppointmentDateAfter(String salonId, LocalDate date);
-    long countBySalonIdAndAppointmentDateBetween(String salonId, LocalDate start, LocalDate end);
+
+    long countBySalonIdAndAppointmentDateBetween(
+            String salonId, LocalDate start, LocalDate end);
 }
