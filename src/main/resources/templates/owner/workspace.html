@@ -50,6 +50,29 @@
           <li><a th:href="@{/owner/hours}">Opening hours</a> — <span th:text="${salon.hoursConfigured ? 'Saved' : 'Not set'}"></span></li>
           <li><a th:href="@{/owner/appointments}">View appointments</a></li>
         </ul>
+        <div class="analytics-grid">
+          <div class="analytics-card">
+            <span class="analytics-label">Total Appointments</span>
+            <strong th:text="${totalAppointments}">0</strong>
+          </div>
+
+          <div class="analytics-card">
+            <span class="analytics-label">Most Popular Service</span>
+            <strong th:text="${mostPopularService}">No appointments</strong>
+          </div>
+
+          <div class="analytics-card">
+            <span class="analytics-label">Busiest Time</span>
+            <strong th:text="${busiestTime}">No appointments</strong>
+          </div>
+
+          <div class="analytics-card">
+            <span class="analytics-label">Estimated Revenue</span>
+            <strong
+              >$<span th:text="${estimatedRevenue}">0.00</span></strong
+            >
+          </div>
+        </div>
       </section>
 
       <section th:if="${section == 'appointments'}" class="appointments-layout" aria-label="Appointment overview">
@@ -138,326 +161,7 @@
 
           <nav class="pagination" aria-label="Service pages" th:if="${totalPages > 1}"><a th:if="${currentPage > 1}" th:href="@{/owner/services(page=${currentPage - 1})}">Previous</a><span th:text="'Page ' + ${currentPage} + ' of ' + ${totalPages}"></span><a th:if="${currentPage < totalPages}" th:href="@{/owner/services(page=${currentPage + 1})}">Next</a></nav>
         </div>
-      </aside>
-      <div class="workspace-shell">
-        <header class="workspace-header">
-          <p class="breadcrumb">
-            <span th:text="${salon != null ? salon.name : 'Your salon'}"></span
-            ><span aria-hidden="true"> / </span><span th:text="${title}"></span>
-          </p>
-          <div class="owner-account">
-            <span>Salon Owner</span>
-            <!--/* th:action 自动加入 CSRF token；不硬编码原型中的示例账号姓名。 */-->
-            <form
-              th:action="@{/logout}"
-              method="post"
-              novalidate
-              data-submit-guard
-            >
-              <button type="submit" class="text-button">Sign out</button>
-            </form>
-          </div>
-        </header>
-        <main id="main" class="workspace">
-          <div class="page-heading">
-            <h1 th:text="${title}"></h1>
-            <a
-              th:if="${section == 'services'}"
-              class="button primary"
-              th:href="@{/owner/services(view='add')}"
-              ><span aria-hidden="true">＋ </span>Add Service</a
-            >
-            <button
-              th:if="${section == 'profile'}"
-              type="submit"
-              form="salon-form"
-              class="button primary"
-            >
-              Save Changes
-            </button>
-            <button
-              th:if="${section == 'hours'}"
-              type="submit"
-              form="hours-form"
-              class="button primary"
-            >
-              Save Availability
-            </button>
-          </div>
-          <div
-            th:if="${success}"
-            class="notice success"
-            role="status"
-            th:text="${success}"
-          ></div>
-
-          <section
-            th:if="${section == 'dashboard'}"
-            class="panel"
-            aria-label="Salon overview"
-          >
-            <h2 th:text="${salon.name}"></h2>
-            <p>Appointment duration: 60 minutes.</p>
-            <ul class="overview-links">
-              <li><a th:href="@{/owner/profile}">Edit salon profile</a></li>
-              <li>
-                <a th:href="@{/owner/services}">Manage services</a> —
-                <span th:text="${salon.services.size()} + ' services'"></span>
-              </li>
-              <li>
-                <a th:href="@{/owner/hours}">Opening hours</a> —
-                <span
-                  th:text="${salon.hoursConfigured ? 'Saved' : 'Not set'}"
-                ></span>
-              </li>
-            </ul>
-            <div class="analytics-grid">
-              <div class="analytics-card">
-                <span class="analytics-label">Total Appointments</span>
-                <strong th:text="${totalAppointments}">0</strong>
-              </div>
-
-              <div class="analytics-card">
-                <span class="analytics-label">Most Popular Service</span>
-                <strong th:text="${mostPopularService}">No appointments</strong>
-              </div>
-
-              <div class="analytics-card">
-                <span class="analytics-label">Busiest Time</span>
-                <strong th:text="${busiestTime}">No appointments</strong>
-              </div>
-
-              <div class="analytics-card">
-                <span class="analytics-label">Estimated Revenue</span>
-                <strong
-                  >$<span th:text="${estimatedRevenue}">0.00</span></strong
-                >
-              </div>
-            </div>
-          </section>
-
-          <section
-            th:if="${section == 'appointments'}"
-            class="appointments-layout"
-            aria-label="Appointment overview"
-          >
-            <p class="section-description">
-              Your salon's appointments, at a glance.
-            </p>
-            <dl class="appointment-stats" aria-label="Appointment counts">
-              <div class="panel appointment-stat">
-                <dt>Today's appointments</dt>
-                <dd class="appointment-count">
-                  <span aria-hidden="true">—</span
-                  ><span class="sr-only">Not available</span>
-                </dd>
-                <dd class="appointment-stat-note">
-                  Next appointment: not available
-                </dd>
-              </div>
-              <div class="panel appointment-stat">
-                <dt>Upcoming</dt>
-                <dd class="appointment-count">
-                  <span aria-hidden="true">—</span
-                  ><span class="sr-only">Not available</span>
-                </dd>
-                <dd class="appointment-stat-note">Future appointments</dd>
-              </div>
-              <div class="panel appointment-stat">
-                <dt>This week</dt>
-                <dd class="appointment-count">
-                  <span aria-hidden="true">—</span
-                  ><span class="sr-only">Not available</span>
-                </dd>
-                <dd class="appointment-stat-note">Weekly overview</dd>
-              </div>
-            </dl>
-            <section
-              class="panel appointment-schedule"
-              aria-labelledby="appointment-schedule-title"
-            >
-              <div class="section-heading">
-                <div>
-                  <h2 id="appointment-schedule-title">Today's appointments</h2>
-                  <p class="appointment-date">
-                    <time
-                      th:datetime="${appointmentDate}"
-                      th:text="${appointmentDateLabel}"
-                    ></time>
-                  </p>
-                </div>
-                <span class="badge"
-                  >Vancouver time · 60-minute appointments</span
-                >
-              </div>
-              <div class="empty-state appointment-empty">
-                <svg
-                  class="appointment-calendar"
-                  width="48"
-                  height="48"
-                  viewBox="0 0 48 48"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  aria-hidden="true"
-                  focusable="false"
-                >
-                  <rect x="7" y="10" width="34" height="32" rx="3" />
-                  <path d="M15 6v9M33 6v9M7 21h34M17 29h14M17 35h8" />
-                </svg>
-                <h3>No appointments to display</h3>
-                <p>
-                  Today's appointments will appear here once this view is
-                  connected to your bookings.
-                </p>
-                <a class="button" th:href="@{/owner/hours}"
-                  >View availability</a
-                >
-              </div>
-            </section>
-          </section>
-
-          <section
-            th:if="${section == 'setup' or section == 'profile'}"
-            class="profile-layout"
-          >
-            <form
-              id="salon-form"
-              class="panel profile-form"
-              method="post"
-              novalidate
-              data-dirty-guard
-              th:action="${section == 'setup'} ? @{/owner/setup} : @{/owner/profile}"
-              th:object="${salonForm}"
-            >
-              <h2>Salon Information</h2>
-              <p class="muted">The details customers see on your salon page.</p>
-              <div th:replace="~{owner/fragments :: summary}"></div>
-              <div
-                th:replace="~{owner/fragments :: field('Salon name *', 'name', 'text', 'Required · up to 80 characters')}"
-              ></div>
-              <div
-                th:replace="~{owner/fragments :: field(${section == 'setup' ? 'Salon address' : 'Street address'}, 'address', 'text', 'Optional · up to 200 characters')}"
-              ></div>
-              <!--/* Shared fields preserve entered values and accessible validation errors. */-->
-              <div class="form-grid">
-                <div
-                  th:replace="~{owner/fragments :: field('City', 'city', 'text', 'Optional · up to 80 characters')}"
-                ></div>
-                <div
-                  th:replace="~{owner/fragments :: field('Province', 'province', 'text', 'Optional · up to 80 characters')}"
-                ></div>
-                <div
-                  th:replace="~{owner/fragments :: field('Phone number', 'phone', 'tel', 'Optional · 7–15 digits · for example, +1 (604) 555-0123')}"
-                ></div>
-                <div
-                  th:replace="~{owner/fragments :: field('Email', 'email', 'email', 'Optional · public salon contact email; does not change your sign-in email')}"
-                ></div>
-              </div>
-              <div class="field">
-                <label for="description">About your salon</label
-                ><textarea
-                  id="description"
-                  th:field="*{description}"
-                  rows="4"
-                  maxlength="500"
-                  class="resize-none"
-                  th:attr="aria-invalid=${#fields.hasErrors('description')}"
-                  aria-describedby="description-hint description-error"
-                ></textarea
-                ><small id="description-hint"
-                  >Optional · up to 500 characters</small
-                >
-                <p
-                  id="description-error"
-                  class="field-error"
-                  th:errors="*{description}"
-                ></p>
-              </div>
-              <div class="actions">
-                <button
-                  th:if="${section == 'setup'}"
-                  class="button primary"
-                  type="submit"
-                >
-                  Create salon</button
-                ><a
-                  th:if="${section == 'profile'}"
-                  th:href="@{/owner/dashboard}"
-                  >Back to dashboard</a
-                >
-              </div>
-            </form>
-          </section>
-
-          <section
-            th:if="${section == 'services'}"
-            class="services-layout"
-            aria-label="Service menu"
-          >
-            <div class="service-list">
-              <div th:if="${salon.services.isEmpty()}" class="empty-state">
-                <h2>No services yet.</h2>
-                <p>
-                  Choose Add Service to create your first service and price.
-                </p>
-              </div>
-              <div th:unless="${salon.services.isEmpty()}" class="table-scroll">
-                <table class="service-table">
-                  <caption class="sr-only">
-                    Salon services and prices in Canadian dollars
-                  </caption>
-                  <thead>
-                    <tr>
-                      <th scope="col">Service</th>
-                      <th scope="col">Price (CAD)</th>
-                      <th scope="col">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr th:each="item : ${servicePage}">
-                      <td class="service-name" th:text="${item.name}"></td>
-                      <td class="price" th:text="'$' + ${item.price}"></td>
-                      <td class="service-actions">
-                        <a
-                          class="button"
-                          th:href="@{/owner/services/{id}/edit(id=${item.id})}"
-                          >Edit</a
-                        >
-                        <form
-                          th:action="@{/owner/services/{id}/delete(id=${item.id})}"
-                          method="post"
-                          data-delete-service
-                          th:attr="data-service-name=${item.name}"
-                        >
-                          <button type="submit">Delete</button>
-                        </form>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              <nav
-                class="pagination"
-                aria-label="Service pages"
-                th:if="${totalPages > 1}"
-              >
-                <a
-                  th:if="${currentPage > 1}"
-                  th:href="@{/owner/services(page=${currentPage - 1})}"
-                  >Previous</a
-                ><span
-                  th:text="'Page ' + ${currentPage} + ' of ' + ${totalPages}"
-                ></span
-                ><a
-                  th:if="${currentPage < totalPages}"
-                  th:href="@{/owner/services(page=${currentPage + 1})}"
-                  >Next</a
-                >
-              </nav>
-            </div>
-          </section>
+      </section>
 
           <section
             th:if="${section == 'add-service' or section == 'edit-service'}"
