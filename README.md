@@ -124,7 +124,6 @@ BookEasy follows the MVC architecture using Spring Boot
 The following improvements are planned for Iteration 3:
 
 - **Salon Pages:** Add images to public salon pages to make them more visually appealing and help customers learn more about each salon.
-- **Customer Ratings and Reviews:** Allow customers to rate salons and leave reviews based on their experiences, helping other customers decide which salon to visit.
 - **Service Browsing:** Let customers sort salon services by price, highest rating, or alphabetical order.
 - **Customer Account and Booking Management:** Allow customers to save favourite salons, revisit recently viewed salons, view their past appointment history, and quickly rebook a previous service.
 - **Appointment Availability:** When customers book for the current day, show only time slots that start after the current time. For example, at 2:00 PM, only slots starting after 2:00 PM should be available.
