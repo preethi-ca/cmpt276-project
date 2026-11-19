@@ -395,3 +395,91 @@ button:disabled { cursor: default; opacity: .65; }
         top: 14px;
     }
 }
+
+/* Login and Registration - BookEasy green theme */
+
+.auth-left {
+    background-color: #f1f3ec;
+}
+
+.brand h1 {
+    color: #294b3b;
+}
+
+.brand p {
+    color: #59635b;
+}
+
+.auth-form h2 {
+    color: #252b28;
+}
+
+.auth-form .primary-button {
+    background-color: #294b3b;
+    color: white;
+}
+
+.auth-form .primary-button:hover {
+    background-color: #243c2d;
+}
+
+.auth-form .secondary-button {
+    color: #294b3b;
+    border-color: #294b3b;
+}
+
+.auth-form .secondary-button:hover {
+    background-color: #f1f3ec;
+}
+
+.auth-form .form-group input:focus,
+.auth-form .form-group select:focus {
+    border-color: #294b3b;
+    box-shadow: 0 0 0 3px rgba(41, 75, 59, 0.15);
+}
+
+.auth-form .password-toggle {
+    color: #294b3b;
+    border-color: #294b3b;
+}
+
+.auth-form .password-toggle:hover {
+    background-color: #f1f3ec;
+}
+
+.auth-form :focus-visible {
+    outline-color: #294b3b;
+}
+
+
+/* Match registration dropdowns to text inputs */
+
+.auth-form .form-group select {
+    width: 100%;
+    min-height: 48px;
+    padding: 12px 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: white;
+    color: #333;
+    font-family: Arial, sans-serif;
+    font-size: 15px;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23294b3b' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m3 6 5 5 5-5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 15px center;
+    padding-right: 40px;
+}
+
+/* Consistent outlined green buttons */
+.btn-outline-success {
+    color: #294b3b;
+    border-color: #294b3b;
+}
+
+.btn-outline-success:hover {
+    background-color: #294b3b;
+    border-color: #294b3b;
+    color: white;
+}
