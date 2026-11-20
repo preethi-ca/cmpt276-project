@@ -127,6 +127,12 @@ document.addEventListener("DOMContentLoaded", function () {
             filteredServices.sort((a, b) => Number(a.dataset.price) - Number(b.dataset.price));
         } else if (selectedSort === "price-high") {
             filteredServices.sort((a, b) => Number(b.dataset.price) - Number(a.dataset.price));
+        } else if (selectedSort === "alphabetical") {
+            filteredServices.sort((a, b) => {
+                const nameA = a.querySelector("h3").textContent.trim();
+                const nameB = b.querySelector("h3").textContent.trim();
+                return nameA.localeCompare(nameB);
+            });
         }
 
         //Only display the services that match the filters

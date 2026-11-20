@@ -59,4 +59,20 @@ public class SalonFilter {
 
         return null;
     }
+
+    //Validate the selected sorting option
+    public String validateSort(String sort) {
+
+        if (sort == null || sort.isBlank()) {
+            return "Please select a sorting option";
+        }
+
+        if (!sort.equals("default")
+                && !sort.equals("price-low")
+                && !sort.equals("price-high")
+                && !sort.equals("alphabetical")) {
+            return "Invalid sorting option";
+        }
+        return null;
+    }
 }
