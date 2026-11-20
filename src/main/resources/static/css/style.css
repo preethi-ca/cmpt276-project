@@ -395,3 +395,65 @@ button:disabled { cursor: default; opacity: .65; }
         top: 14px;
     }
 }
+
+
+
+/*Public salon service filters */
+
+.service-browser {
+    display: grid;
+    grid-template-columns: 250px minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+}
+
+.service-filters {
+    background-color: #fafaf5;
+    border: 1px solid #deded8;
+    border-radius: 12px;
+    padding: 20px;
+}
+
+.service-filters h3 {
+    color: #000000;
+    margin-bottom: 20px;
+    font-weight: bold
+}
+
+.filter-group {
+    margin-bottom: 20px;
+}
+
+.filter-group label {
+    font-size: 14px;
+}
+
+.service-filters .form-control:focus,
+.service-filters .form-select:focus {
+    border-color: #d31111;
+}
+
+.filter-error {
+    color: #a12121;
+    background-color: #ffebee;
+    border-radius: 6px;
+    padding: 10px;
+    margin-bottom: 12px;
+    font-size: 14px;
+}
+
+.service-results {
+    min-width: 0;
+}
+
+/*Mobile adjustments*/
+
+@media (max-width: 768px) {
+    .service-browser {
+        grid-template-columns: 1fr;
+    }
+
+    .service-filters {
+        width: 100%;
+    }
+}
