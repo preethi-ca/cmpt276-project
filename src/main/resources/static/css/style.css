@@ -430,7 +430,7 @@ button:disabled { cursor: default; opacity: .65; }
 
 .service-filters .form-control:focus,
 .service-filters .form-select:focus {
-    border-color: #d31111;
+    border-color: #069f2f;
 }
 
 .filter-error {
