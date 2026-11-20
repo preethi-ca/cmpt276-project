@@ -20,19 +20,51 @@ document.addEventListener("DOMContentLoaded", function () {
 
     //Show the initial number of available services
     serviceResultCount.textContent = "Showing " + originalOrder.length + " of " + originalOrder.length + " services";
-    
+
     //apply the selected filters when the button is clicked
-    applyFiltersButton.addEventListener("click", function () {
+    applyFiltersButton.addEventListener("click", async function () {
         const selectedSort = document.querySelector('input[name="serviceSort"]:checked').value;
         const selectedPriceRange = document.querySelector('input[name="priceRange"]:checked').value;
 
         //Get the custom minimum and maximum prices
-        const minimumPrice = minimumPriceInput.value === "" ? null : Number(minimumPriceInput.value);
-        const maximumPrice = maximumPriceInput.value === "" ? null : Number(maximumPriceInput.value);
-
+        const minimumPriceText = minimumPriceInput.value.trim();
+        const maximumPriceText = maximumPriceInput.value.trim();
         //clear any previous error message
         filterError.textContent = "";
         filterError.hidden = true;
+
+        //make sure input is numbers and has max 2 decimal places
+        const validPriceFormat = /^\d{1,5}(\.\d{1,2})?$/;
+
+        //check the format for min price
+        if (minimumPriceText !== "" && !validPriceFormat.test(minimumPriceText)) {
+            filterError.textContent =
+                "Minimum price must be a positive number with no more than 2 decimal places and cannot exceed $99,999.99";
+            filterError.hidden = false;
+            return;
+        }
+
+        //check the format for max price
+        if (maximumPriceText !== "" && !validPriceFormat.test(maximumPriceText)) {
+            filterError.textContent =
+                "Maximum price must be a positive number with no more than 2 decimal places and cannot exceed $99,999.99";
+            filterError.hidden = false;
+            return;
+        }
+
+        //Convert valid inputs into numbers
+        const minimumPrice = minimumPriceText === "" ? null : Number(minimumPriceText);
+        const maximumPrice = maximumPriceText === "" ? null : Number(maximumPriceText);
+
+        // Check that prices do not exceed the maximum allowed amount
+        if (
+            (minimumPrice !== null && minimumPrice > 99999.99) ||
+            (maximumPrice !== null && maximumPrice > 99999.99)
+        ) {
+            filterError.textContent = "Prices cannot be greater than $99,999.99";
+            filterError.hidden = false;
+            return;
+        }
 
         //Check if the custom price range is valid
         if (
@@ -41,6 +73,24 @@ document.addEventListener("DOMContentLoaded", function () {
             (minimumPrice !== null && maximumPrice !== null && minimumPrice > maximumPrice)
         ) {
             filterError.textContent = "Please enter a valid price range";
+            filterError.hidden = false;
+            return;
+        }
+
+        //Send prices to the Java backend for validation
+        try {
+            const parameters = new URLSearchParams({minimumPrice: minimumPriceText,maximumPrice: maximumPriceText });
+            const response = await fetch(window.location.pathname + "/validate-filters?" + parameters);
+            const result = await response.json();
+
+            if (!response.ok) {
+                filterError.textContent = result.message;
+                filterError.hidden = false;
+                return;
+            }
+
+        } catch (error) {
+            filterError.textContent = "Unable to validate prices. Please try again.";
             filterError.hidden = false;
             return;
         }

@@ -75,7 +75,7 @@
 
                     <!-- Ways to sort services -->
                     <div class="filter-group">
-                        <p class="form-label fw-semibold">Sort By </label>
+                        <p class="form-label fw-semibold">Sort By </p>
                         
                         <!--radio buttons for sorting options-->
                         <div class="form-check">
@@ -115,7 +115,7 @@
 
                     <!-- Price range filters -->
                     <div class="filter-group">
-                        <p class="form-label fw-semibold">Price Range</label>
+                        <p class="form-label fw-semibold">Price Range</p>
 
                         <!--radio buttons for price sorting options-->
                         <div class="form-check">
@@ -185,11 +185,12 @@
                             Minimum Price (CAD)
                         </label>
                         <input
-                            type="number"
+                            type="text"
                             id="minimumPrice"
                             class="form-control mb-3"
+                            inputmode="decimal"
                             min="0"
-                            step="1"
+                            max = "99999.99"
                             placeholder="Minimum $0"
                         />
 
@@ -197,11 +198,12 @@
                             Maximum Price (CAD)
                         </label>
                         <input
-                            type="number"
+                            type="text"
                             id="maximumPrice"
                             class="form-control"
+                            inputmode= "decimal"
                             min="0"
-                            step="1"
+                            max = "99999.99"
                             placeholder="Maximum $99,999.99"
                         />
                     </div>
