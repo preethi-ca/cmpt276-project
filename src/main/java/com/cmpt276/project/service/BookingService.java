@@ -16,6 +16,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.Clock;
 
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -30,6 +31,7 @@ public class BookingService {
 
     //use vancouver time for bookings
     private static final ZoneId SALON_TIME_ZONE = ZoneId.of("America/Vancouver");
+    Clock clock = Clock.system(SALON_TIME_ZONE);
 
     public BookingService(AppointmentRepository appointmentRepository, AccountRepository accountRepository,
             OwnerService ownerService) {
@@ -60,7 +62,7 @@ public class BookingService {
             throw new IllegalArgumentException("Service not found in this salon");
         }
 
-        ZonedDateTime now = ZonedDateTime.now(SALON_TIME_ZONE);
+        ZonedDateTime now = ZonedDateTime.now(clock);
         //Prevents customers from booking a date that has passed
         LocalDate date = LocalDate.parse(appointmentDate);
         if (date.isBefore(now.toLocalDate())) {
@@ -105,7 +107,7 @@ public class BookingService {
         Appointment appointment = appointmentOpt.get();
 
         // Check that the new date is valid and the selected time is available
-        ZonedDateTime now = ZonedDateTime.now(SALON_TIME_ZONE);
+        ZonedDateTime now = ZonedDateTime.now(clock);
         LocalDate date = LocalDate.parse(appointmentDate);
         if (date.isBefore(now.toLocalDate())) {
             throw new IllegalArgumentException("Sorry, this date has already passed.");
@@ -150,7 +152,7 @@ public class BookingService {
                 date);
         List<String> availableTimes = new ArrayList<>();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm");
-        ZonedDateTime now = ZonedDateTime.now(SALON_TIME_ZONE);
+        ZonedDateTime now = ZonedDateTime.now(clock);
         // Minute arithmetic avoids wrapping past midnight for late closing times.
         int closingMinute = closingTime.getHour() * 60 + closingTime.getMinute();
         for (int minute = openingTime.getHour() * 60 + openingTime.getMinute(); minute
