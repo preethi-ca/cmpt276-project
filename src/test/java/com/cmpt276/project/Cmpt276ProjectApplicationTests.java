@@ -7,7 +7,6 @@ import com.cmpt276.project.model.RoleType;
 import com.cmpt276.project.owner.controller.OwnerController.HoursForm;
 import com.cmpt276.project.owner.controller.OwnerController.SalonForm;
 import com.cmpt276.project.owner.controller.OwnerController.ServiceForm;
-import com.cmpt276.project.owner.controller.PublicSalon;
 import com.cmpt276.project.owner.model.Salon;
 import com.cmpt276.project.owner.service.OwnerService;
 import com.cmpt276.project.owner.store.JpaSalonStore;
@@ -116,42 +115,20 @@ class Cmpt276ProjectApplicationTests {
     }
 
     @Test
-    void customerDashboardListsPersistedSalonsAndReflectsOwnerUpdates() throws Exception {
-        // Unique names isolate these assertions from salons saved by other tests in this context.
-        String suffix = UUID.randomUUID().toString();
-        SalonForm zuluForm = profile();
-        zuluForm.setName("Zulu " + suffix);
-        assertTrue(owners.saveProfile(ownerId, zuluForm, false, errors(zuluForm, "salonForm")));
-        Salon zulu = store.findByOwnerId(ownerId);
-        Salon alpha = createAdditionalSalon("alpha " + suffix, "100 First Street");
-        Salon secondAlpha = createAdditionalSalon("Alpha " + suffix, "200 Second Street");
-        List<String> ids = List.of(alpha.getId(), secondAlpha.getId(), zulu.getId());
+    void customerCanOpenEachSalonByItsOwnUrl() throws Exception {
+        Salon first = store.findByOwnerId(ownerId);
+        Salon second = createAdditionalSalon(first.getName(), "200 Second Street");
+        var customer = user(dashboardCustomer.getEmail()).roles("CUSTOMER");
 
-        var listed = customerSalons().stream().filter(item -> ids.contains(item.getId())).toList();
-        assertEquals(ids, listed.stream().map(PublicSalon::getId).toList());
-        assertEquals(List.of(alpha.getSlug(), secondAlpha.getSlug(), zulu.getSlug()),
-                listed.stream().map(PublicSalon::getSlug).toList());
-        assertEquals(List.of("100 First Street", "200 Second Street", "123 Main Street"),
-                listed.stream().map(PublicSalon::getAddress).toList());
-        for (PublicSalon item : listed) {
-            // Exercise selection against persisted data before loading the destination page.
-            mvc.perform(get("/customer/salons/visit").param("slug", item.getSlug())
-                            .with(user("customer").roles("CUSTOMER")))
-                    .andExpect(redirectedUrl("/salons/" + item.getSlug()));
-            mvc.perform(get("/salons/" + item.getSlug()))
+        // Even salons with identical names have distinct public URLs.
+        for (Salon salon : List.of(first, second)) {
+            mvc.perform(get("/salons/" + salon.getSlug()).with(customer))
                     .andExpect(status().isOk())
-                    .andExpect(content().string(containsString(item.getAddress())));
+                    .andExpect(content().string(containsString(salon.getAddress())));
         }
-
-        mvc.perform(post("/owner/profile").with(user(owner.getEmail()).roles("SALONOWNER")).with(csrf())
-                .param("name", "Aardvark " + suffix).param("address", "Changed Address"))
-                .andExpect(redirectedUrl("/owner/profile"));
-        var refreshed = customerSalons().stream().filter(item -> ids.contains(item.getId())).toList();
-        assertEquals(List.of(zulu.getId(), alpha.getId(), secondAlpha.getId()),
-                refreshed.stream().map(PublicSalon::getId).toList());
-        assertEquals("Aardvark " + suffix, refreshed.get(0).getName());
-        assertEquals("Changed Address", refreshed.get(0).getAddress());
-        assertEquals(zulu.getSlug(), refreshed.get(0).getSlug());
+        mvc.perform(get("/customer/dashboard").with(customer))
+                .andExpect(status().isOk())
+                .andExpect(content().string(not(containsString(first.getName()))));
     }
 
     @Test
@@ -471,16 +448,6 @@ class Cmpt276ProjectApplicationTests {
         }
         mvc.perform(get("/owner/appointments").param("page", "2").with(user(owner.getEmail()).roles("SALONOWNER")))
                 .andExpect(status().isOk()).andExpect(model().attribute("currentPage", 1));
-    }
-
-    private List<PublicSalon> customerSalons() throws Exception {
-        var result = mvc.perform(get("/customer/dashboard")
-                .with(user(dashboardCustomer.getEmail()).roles("CUSTOMER"))
-                .with(csrf()))
-                .andExpect(status().isOk()).andExpect(view().name("customer/customer-dashboard"))
-                .andExpect(model().attributeExists("salons")).andReturn();
-        var salons = (List<?>) result.getModelAndView().getModel().get("salons");
-        return salons.stream().map(item -> assertInstanceOf(PublicSalon.class, item)).toList();
     }
 
     private SalonForm profile() {
