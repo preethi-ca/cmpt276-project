@@ -14,6 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 
@@ -90,7 +91,8 @@ class BookingControllerTests {
         Salon salon = mock(Salon.class);
         SalonService service = mock(SalonService.class);
         OpeningDay monday = mock(OpeningDay.class);
-        String appointmentDate = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.MONDAY)).toString();
+        String appointmentDate = LocalDate.now(ZoneId.of("America/Vancouver"))
+                .with(TemporalAdjusters.next(DayOfWeek.MONDAY)).toString();
 
         when(ownerService.findPublicSalonBySlug("magiccuts-salon"))
                 .thenReturn(salon);
@@ -134,7 +136,8 @@ class BookingControllerTests {
         Salon salon = mock(Salon.class);
         SalonService service = mock(SalonService.class);
         OpeningDay monday = mock(OpeningDay.class);
-        String appointmentDate = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.MONDAY)).toString();
+        String appointmentDate = LocalDate.now(ZoneId.of("America/Vancouver"))
+                .with(TemporalAdjusters.next(DayOfWeek.MONDAY)).toString();
 
         when(ownerService.findPublicSalonBySlug("magiccuts-salon"))
                 .thenReturn(salon);
@@ -181,7 +184,8 @@ class BookingControllerTests {
 
         Salon salon = mock(Salon.class);
         SalonService service = mock(SalonService.class);
-        String appointmentDate = LocalDate.now().plusDays(2).toString();
+        String appointmentDate = LocalDate.now(ZoneId.of("America/Vancouver"))
+                .plusDays(2).toString();
 
         when(ownerService.findPublicSalonBySlug("magiccuts-salon"))
                 .thenReturn(salon);
@@ -197,6 +201,9 @@ class BookingControllerTests {
 
         when(service.getName())
                 .thenReturn("Haircut");
+
+        when(bookingService.getAvailableTimes("magiccuts-salon", LocalDate.parse(appointmentDate)))
+                .thenReturn(List.of("10:00"));
 
         mockMvc.perform(get("/customer/booking/confirmation")
                 .with(user("customer@test.com").roles("CUSTOMER"))
@@ -238,7 +245,8 @@ class BookingControllerTests {
                 .thenReturn("Haircut");
         /*Tests that the controller correctly handles a successful booking by simulating the booking service returning an appointment
         and checking that the customer is redirected to the booking confirmation page with the correct details */
-        String appointmentDate = LocalDate.now().plusDays(2).toString();
+        String appointmentDate = LocalDate.now(ZoneId.of("America/Vancouver"))
+                .plusDays(2).toString();
         Appointment appointment = mock(Appointment.class);
         when(appointment.getServiceId()).thenReturn("service1");
         when(appointment.getServiceName()).thenReturn("Haircut");
@@ -276,7 +284,8 @@ class BookingControllerTests {
 
         Salon salon = mock(Salon.class);
         SalonService service = mock(SalonService.class);
-        String appointmentDate = LocalDate.now().plusDays(2).toString();
+        String appointmentDate = LocalDate.now(ZoneId.of("America/Vancouver"))
+                .plusDays(2).toString();
 
         when(ownerService.findPublicSalonBySlug("magiccuts-salon"))
                 .thenReturn(salon);
@@ -327,7 +336,8 @@ class BookingControllerTests {
 
         Salon salon = mock(Salon.class);
         SalonService service = mock(SalonService.class);
-        String pastDate = LocalDate.now().minusDays(1).toString();
+        String pastDate = LocalDate.now(ZoneId.of("America/Vancouver"))
+                .minusDays(1).toString();
 
         when(ownerService.findPublicSalonBySlug("magiccuts-salon"))
                 .thenReturn(salon);
@@ -399,7 +409,7 @@ class BookingControllerTests {
                 SalonService service = mock(SalonService.class);
                 OpeningDay monday = mock(OpeningDay.class);
 
-                String appointmentDate = LocalDate.now()
+                String appointmentDate = LocalDate.now(ZoneId.of("America/Vancouver"))
                                 .with(TemporalAdjusters.next(DayOfWeek.MONDAY))
                                 .toString();
 
@@ -442,7 +452,8 @@ class BookingControllerTests {
 
         @Test
         void guestMustLoginBeforeReviewingBooking() throws Exception {
-                String appointmentDate = LocalDate.now().plusDays(2).toString();
+                String appointmentDate = LocalDate.now(ZoneId.of("America/Vancouver"))
+                        .plusDays(2).toString();
 
                 mockMvc.perform(get("/customer/booking/confirmation")
                                 .param("service", "service1")
@@ -455,7 +466,8 @@ class BookingControllerTests {
 
         @Test
         void guestBookingDetailsAreSavedBeforeLogin() throws Exception {
-                String appointmentDate = LocalDate.now().plusDays(2).toString();
+                String appointmentDate = LocalDate.now(ZoneId.of("America/Vancouver"))
+                        .plusDays(2).toString();
 
                 var result = mockMvc.perform(get(
                                 "/customer/booking/confirmation?service={service}&salon={salon}&appointmentDate={date}&appointmentTime={time}",
