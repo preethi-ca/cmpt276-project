@@ -18,6 +18,11 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Intege
 
     List<Appointment> findBySalonId(String salonId);
 
+    List<Appointment> findBySalonIdAndAppointmentDateBetween(
+        String salonId,
+        LocalDate startDate,
+        LocalDate endDate);
+
     @EntityGraph(attributePaths = "customer")
     List<Appointment> findBySalonIdAndAppointmentDateGreaterThanEqualOrderByAppointmentDateAscAppointmentTimeAscIdAsc(
             String salonId, LocalDate date, Pageable pageable);

@@ -226,4 +226,96 @@ public class SalonAnalyticsServiceTests {
                 assertEquals(3, result);
         }
 
+        @Test
+        void shouldReturnMostPopularServiceForDateRange() {
+                LocalDate startDate = LocalDate.of(2026, 11, 1);
+                LocalDate endDate = LocalDate.of(2026, 11, 30);
+
+                Appointment haircut1 = new Appointment(
+                                "Haircut",
+                                "service1",
+                                "salon1",
+                                LocalDate.of(2026, 11, 5),
+                                "10:00",
+                                null,
+                                BigDecimal.ZERO);
+
+                Appointment haircut2 = new Appointment(
+                                "Haircut",
+                                "service1",
+                                "salon1",
+                                LocalDate.of(2026, 11, 10),
+                                "11:00",
+                                null,
+                                BigDecimal.ZERO);
+
+                Appointment color = new Appointment(
+                                "Color",
+                                "service2",
+                                "salon1",
+                                LocalDate.of(2026, 11, 15),
+                                "12:00",
+                                null,
+                                BigDecimal.ZERO);
+
+                when(appointmentRepository.findBySalonIdAndAppointmentDateBetween(
+                                "salon1",
+                                startDate,
+                                endDate))
+                                .thenReturn(List.of(haircut1, haircut2, color));
+
+                String result = analyticsService.getMostPopularService(
+                                "salon1",
+                                startDate,
+                                endDate);
+
+                assertEquals("Haircut", result);
+        }
+
+        @Test
+        void shouldReturnBusiestTimeForDateRange() {
+                LocalDate startDate = LocalDate.of(2026, 11, 1);
+                LocalDate endDate = LocalDate.of(2026, 11, 30);
+
+                Appointment morning1 = new Appointment(
+                                "Haircut",
+                                "service1",
+                                "salon1",
+                                LocalDate.of(2026, 11, 5),
+                                "10:00",
+                                null,
+                                BigDecimal.ZERO);
+
+                Appointment morning2 = new Appointment(
+                                "Color",
+                                "service2",
+                                "salon1",
+                                LocalDate.of(2026, 11, 10),
+                                "10:00",
+                                null,
+                                BigDecimal.ZERO);
+
+                Appointment afternoon = new Appointment(
+                                "Haircut",
+                                "service1",
+                                "salon1",
+                                LocalDate.of(2026, 11, 15),
+                                "14:00",
+                                null,
+                                BigDecimal.ZERO);
+
+                when(appointmentRepository.findBySalonIdAndAppointmentDateBetween(
+                                "salon1",
+                                startDate,
+                                endDate))
+                                .thenReturn(List.of(morning1, morning2, afternoon));
+
+                String result = analyticsService.getBusiestTime(
+                                "salon1",
+                                startDate,
+                                endDate);
+
+                assertEquals("10:00", result);
+        }
+
 }

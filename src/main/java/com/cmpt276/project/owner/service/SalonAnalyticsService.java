@@ -64,6 +64,39 @@ public class SalonAnalyticsService {
 
     }
 
+    public String getMostPopularService(
+            String salonId,
+            LocalDate startDate,
+            LocalDate endDate) {
+
+        List<Appointment> appointments = appointmentRepository.findBySalonIdAndAppointmentDateBetween(
+                salonId,
+                startDate,
+                endDate);
+
+        Map<String, Integer> serviceCounts = new HashMap<>();
+
+        for (Appointment appointment : appointments) {
+            String serviceName = appointment.getServiceName();
+
+            serviceCounts.put(
+                    serviceName,
+                    serviceCounts.getOrDefault(serviceName, 0) + 1);
+        }
+
+        String mostPopularService = "No appointments";
+        int highestCount = 0;
+
+        for (Map.Entry<String, Integer> entry : serviceCounts.entrySet()) {
+            if (entry.getValue() > highestCount) {
+                highestCount = entry.getValue();
+                mostPopularService = entry.getKey();
+            }
+        }
+
+        return mostPopularService;
+    }
+
     public String getBusiestTime(String salonId) {
         List<Appointment> appointments = appointmentRepository.findBySalonId(salonId);
         Map<String, Integer> timeCounts = new HashMap<>();
@@ -87,6 +120,39 @@ public class SalonAnalyticsService {
         }
         return busiestTime;
 
+    }
+
+    public String getBusiestTime(
+            String salonId,
+            LocalDate startDate,
+            LocalDate endDate) {
+
+        List<Appointment> appointments = appointmentRepository.findBySalonIdAndAppointmentDateBetween(
+                salonId,
+                startDate,
+                endDate);
+
+        Map<String, Integer> timeCounts = new HashMap<>();
+
+        for (Appointment appointment : appointments) {
+            String appointmentTime = appointment.getAppointmentTime();
+
+            timeCounts.put(
+                    appointmentTime,
+                    timeCounts.getOrDefault(appointmentTime, 0) + 1);
+        }
+
+        String busiestTime = "No appointments";
+        int highestCount = 0;
+
+        for (Map.Entry<String, Integer> entry : timeCounts.entrySet()) {
+            if (entry.getValue() > highestCount) {
+                highestCount = entry.getValue();
+                busiestTime = entry.getKey();
+            }
+        }
+
+        return busiestTime;
     }
 
     public String getBusiestDay(String salonId) {
