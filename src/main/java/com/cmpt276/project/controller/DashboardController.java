@@ -60,6 +60,9 @@ public class DashboardController {
             Account account = accountService.findByEmail(
                     authentication.getName());
             model.addAttribute("customerName", account.getName());
+            var recentIds = accountRepository.recentSalonIds(authentication.getName());
+            model.addAttribute("recentSalons", ownerService.findRecentlyVisitedSalons(recentIds)
+                    .stream().map(PublicSalon::new).toList());
         }
 
         // Check Google Calendar connection status

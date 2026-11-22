@@ -126,9 +126,21 @@ class Cmpt276ProjectApplicationTests {
                     .andExpect(status().isOk())
                     .andExpect(content().string(containsString(salon.getAddress())));
         }
-        mvc.perform(get("/customer/dashboard").with(customer))
-                .andExpect(status().isOk())
-                .andExpect(content().string(not(containsString(first.getName()))));
+
+        mvc.perform(get("/salons/" + first.getSlug()).with(customer)).andExpect(status().isOk());
+        String html = mvc.perform(get("/customer/dashboard").with(customer))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        String firstLink = "href=\"/salons/" + first.getSlug() + "\"";
+        String secondLink = "href=\"/salons/" + second.getSlug() + "\"";
+        assertTrue(html.contains(firstLink));
+        assertTrue(html.indexOf(firstLink) < html.indexOf(secondLink));
+        assertEquals(html.indexOf(firstLink), html.lastIndexOf(firstLink));
+
+        var other = accounts.save(new Account("Other", UUID.randomUUID() + "@example.com",
+                "unused-test-hash", RoleType.CUSTOMER));
+        mvc.perform(get("/customer/dashboard").with(user(other.getEmail()).roles("CUSTOMER")))
+                .andExpect(content().string(containsString("Salons you visit using their links will appear here.")))
+                .andExpect(content().string(not(containsString(firstLink))));
     }
 
     @Test
