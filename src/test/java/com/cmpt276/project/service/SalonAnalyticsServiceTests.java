@@ -318,4 +318,50 @@ public class SalonAnalyticsServiceTests {
                 assertEquals("10:00", result);
         }
 
+        @Test
+        void shouldReturnBusiestDayForDateRange() {
+                LocalDate startDate = LocalDate.of(2026, 11, 1);
+                LocalDate endDate = LocalDate.of(2026, 11, 30);
+
+                Appointment monday = new Appointment(
+                                "Haircut",
+                                "service1",
+                                "salon1",
+                                LocalDate.of(2026, 11, 2),
+                                "10:00",
+                                null,
+                                BigDecimal.ZERO);
+
+                Appointment saturday1 = new Appointment(
+                                "Haircut",
+                                "service1",
+                                "salon1",
+                                LocalDate.of(2026, 11, 7),
+                                "10:00",
+                                null,
+                                BigDecimal.ZERO);
+
+                Appointment saturday2 = new Appointment(
+                                "Color",
+                                "service2",
+                                "salon1",
+                                LocalDate.of(2026, 11, 14),
+                                "14:00",
+                                null,
+                                BigDecimal.ZERO);
+
+                when(appointmentRepository.findBySalonIdAndAppointmentDateBetween(
+                                "salon1",
+                                startDate,
+                                endDate))
+                                .thenReturn(List.of(monday, saturday1, saturday2));
+
+                String result = analyticsService.getBusiestDay(
+                                "salon1",
+                                startDate,
+                                endDate);
+
+                assertEquals("Saturday", result);
+        }
+
 }

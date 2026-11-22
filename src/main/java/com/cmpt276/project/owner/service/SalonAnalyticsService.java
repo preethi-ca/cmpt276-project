@@ -186,6 +186,45 @@ public class SalonAnalyticsService {
         return busiestDay.getDisplayName(TextStyle.FULL, Locale.ENGLISH);
     }
 
+    public String getBusiestDay(
+            String salonId,
+            LocalDate startDate,
+            LocalDate endDate) {
+
+        List<Appointment> appointments = appointmentRepository.findBySalonIdAndAppointmentDateBetween(
+                salonId,
+                startDate,
+                endDate);
+
+        Map<DayOfWeek, Integer> dayCounts = new HashMap<>();
+
+        for (Appointment appointment : appointments) {
+            if (appointment.getAppointmentDate() != null) {
+                DayOfWeek day = appointment.getAppointmentDate().getDayOfWeek();
+
+                dayCounts.put(
+                        day,
+                        dayCounts.getOrDefault(day, 0) + 1);
+            }
+        }
+
+        DayOfWeek busiestDay = null;
+        int highestCount = 0;
+
+        for (Map.Entry<DayOfWeek, Integer> entry : dayCounts.entrySet()) {
+            if (entry.getValue() > highestCount) {
+                highestCount = entry.getValue();
+                busiestDay = entry.getKey();
+            }
+        }
+
+        if (busiestDay == null) {
+            return "No appointments";
+        }
+
+        return busiestDay.getDisplayName(TextStyle.FULL, Locale.ENGLISH);
+    }
+
     public BigDecimal getEstimatedRevenue(Salon salon) {
         List<Appointment> appointments = appointmentRepository.findBySalonId(salon.getId());
 
