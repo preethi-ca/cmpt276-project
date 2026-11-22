@@ -206,4 +206,24 @@ public class SalonAnalyticsServiceTests {
                 assertEquals("No appointments", result);
         }
 
+        @Test
+        void shouldReturnTotalAppointmentsForDateRange() {
+                LocalDate startDate = LocalDate.of(2026, 11, 1);
+                LocalDate endDate = LocalDate.of(2026, 11, 30);
+
+                when(appointmentRepository
+                                .countBySalonIdAndAppointmentDateBetween(
+                                                "salon1",
+                                                startDate,
+                                                endDate))
+                                .thenReturn(3L);
+
+                int result = analyticsService.getTotalAppointments(
+                                "salon1",
+                                startDate,
+                                endDate);
+
+                assertEquals(3, result);
+        }
+
 }

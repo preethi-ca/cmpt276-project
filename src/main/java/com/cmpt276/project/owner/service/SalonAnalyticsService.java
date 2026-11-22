@@ -11,6 +11,7 @@ import java.util.List;
 import java.time.DayOfWeek;
 import java.time.format.TextStyle;
 import java.util.Locale;
+import java.time.LocalDate;
 
 @Service
 public class SalonAnalyticsService {
@@ -24,6 +25,18 @@ public class SalonAnalyticsService {
     public int getTotalAppointments(String salonId) {
         List<Appointment> appointments = appointmentRepository.findBySalonId(salonId);
         return appointments.size();
+    }
+
+    public int getTotalAppointments(
+            String salonId,
+            LocalDate startDate,
+            LocalDate endDate) {
+
+        return (int) appointmentRepository
+                .countBySalonIdAndAppointmentDateBetween(
+                        salonId,
+                        startDate,
+                        endDate);
     }
 
     public String getMostPopularService(String salonId) {
