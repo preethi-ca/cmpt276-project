@@ -115,6 +115,20 @@ class Cmpt276ProjectApplicationTests {
     }
 
     @Test
+    void recentSalonListShowsTheFirstThreeInVisitOrder() {
+        var memory = new MemorySalonStore();
+        var salons = new ArrayList<Salon>();
+        for (int i = 0; i < 4; i++) {
+            Salon salon = memorySalon("salon-" + i, "Salon " + i);
+            memory.save(salon);
+            salons.add(salon);
+        }
+        var orderedIds = salons.stream().map(Salon::getId).toList();
+        assertEquals(salons.subList(0, 3),
+                new OwnerService(memory).findRecentlyVisitedSalons(orderedIds));
+    }
+
+    @Test
     void customerCanOpenEachSalonByItsOwnUrl() throws Exception {
         Salon first = store.findByOwnerId(ownerId);
         Salon second = createAdditionalSalon(first.getName(), "200 Second Street");

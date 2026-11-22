@@ -46,6 +46,7 @@ class PublicSalonControllerTests {
                 .andExpect(status().isOk())
                 .andExpect(model().attribute("customerName", "Test Customer"))
                 .andExpect(model().attributeDoesNotExist("salons", "salonLabels"))
+                .andExpect(content().string(containsString("<details class=\"card-body\">")))
                 .andExpect(content().string(not(containsString("id=\"salon\""))))
                 .andExpect(content().string(not(containsString("/customer/salons/visit"))));
         verify(ownerService, never()).findPublicSalons();

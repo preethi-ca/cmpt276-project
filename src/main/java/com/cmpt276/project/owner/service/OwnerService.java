@@ -44,7 +44,12 @@ public class OwnerService {
     }
 
     public List<Salon> findRecentlyVisitedSalons(List<String> orderedIds) {
-        return orderedIds.stream().map(store::findById).filter(Objects::nonNull).toList();
+        // Unavailable salons do not count toward the dashboard limit.
+        return orderedIds.stream()
+                .map(store::findById)
+                .filter(Objects::nonNull)
+                .limit(3)
+                .toList();
     }
 
     public Salon findPublicSalon(String id) {

@@ -69,18 +69,18 @@
       </section>
 
       <section class="card shadow-sm mb-4" aria-labelledby="recent-salons">
-        <div class="card-body">
-          <h3 id="recent-salons" class="card-title h5">Recently Visited Salons</h3>
-          <p th:if="${#lists.isEmpty(recentSalons)}" class="text-muted mb-0">
+        <details class="card-body">
+          <summary><h3 id="recent-salons" class="d-inline h5">Recently Visited Salons</h3></summary>
+          <p th:if="${#lists.isEmpty(recentSalons)}" class="text-muted mt-2 mb-0">
             Salons you visit using their links will appear here.
           </p>
-          <ul th:unless="${#lists.isEmpty(recentSalons)}" class="list-group list-group-flush">
+          <ul th:unless="${#lists.isEmpty(recentSalons)}" class="list-group list-group-flush mt-2">
             <li th:each="salon : ${recentSalons}" class="list-group-item px-0">
               <a th:href="@{/salons/{slug}(slug=${salon.slug})}" th:text="${salon.name}"></a>
               <span class="d-block small text-muted" th:text="${salon.address}"></span>
             </li>
           </ul>
-        </div>
+        </details>
       </section>
 
       <div class="d-flex align-items-center gap-3">
