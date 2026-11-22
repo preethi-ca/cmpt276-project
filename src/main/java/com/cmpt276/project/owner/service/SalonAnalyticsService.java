@@ -7,8 +7,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.math.BigDecimal;
 import com.cmpt276.project.owner.model.Salon;
-import com.cmpt276.project.owner.model.SalonService;
 import java.util.List;
+import java.time.DayOfWeek;
+import java.time.format.TextStyle;
+import java.util.Locale;
 
 @Service
 public class SalonAnalyticsService {
@@ -72,6 +74,37 @@ public class SalonAnalyticsService {
         }
         return busiestTime;
 
+    }
+
+    public String getBusiestDay(String salonId) {
+        List<Appointment> appointments = appointmentRepository.findBySalonId(salonId);
+        Map<DayOfWeek, Integer> dayCounts = new HashMap<>();
+
+        for (Appointment appointment : appointments) {
+            if (appointment.getAppointmentDate() != null) {
+                DayOfWeek day = appointment.getAppointmentDate().getDayOfWeek();
+
+                dayCounts.put(
+                        day,
+                        dayCounts.getOrDefault(day, 0) + 1);
+            }
+        }
+
+        DayOfWeek busiestDay = null;
+        int highestCount = 0;
+
+        for (Map.Entry<DayOfWeek, Integer> entry : dayCounts.entrySet()) {
+            if (entry.getValue() > highestCount) {
+                highestCount = entry.getValue();
+                busiestDay = entry.getKey();
+            }
+        }
+
+        if (busiestDay == null) {
+            return "No appointments";
+        }
+
+        return busiestDay.getDisplayName(TextStyle.FULL, Locale.ENGLISH);
     }
 
     public BigDecimal getEstimatedRevenue(Salon salon) {

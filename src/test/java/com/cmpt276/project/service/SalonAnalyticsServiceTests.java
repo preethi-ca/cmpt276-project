@@ -19,6 +19,7 @@ import static org.mockito.Mockito.when;
 import com.cmpt276.project.owner.model.Salon;
 import com.cmpt276.project.owner.model.SalonService;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 @ExtendWith(MockitoExtension.class)
 public class SalonAnalyticsServiceTests {
@@ -156,6 +157,53 @@ public class SalonAnalyticsServiceTests {
                 BigDecimal result = analyticsService.getEstimatedRevenue(salon);
 
                 assertEquals(BigDecimal.ZERO, result);
+        }
+
+        @Test
+        void shouldReturnBusiestDay() {
+                Appointment monday = new Appointment(
+                                "Haircut",
+                                "service1",
+                                "salon1",
+                                LocalDate.of(2026, 11, 23),
+                                "10:00",
+                                null,
+                                BigDecimal.ZERO);
+
+                Appointment saturday1 = new Appointment(
+                                "Haircut",
+                                "service1",
+                                "salon1",
+                                LocalDate.of(2026, 11, 28),
+                                "10:00",
+                                null,
+                                BigDecimal.ZERO);
+
+                Appointment saturday2 = new Appointment(
+                                "Color",
+                                "service2",
+                                "salon1",
+                                LocalDate.of(2026, 11, 28),
+                                "14:00",
+                                null,
+                                BigDecimal.ZERO);
+
+                when(appointmentRepository.findBySalonId("salon1"))
+                                .thenReturn(List.of(monday, saturday1, saturday2));
+
+                String result = analyticsService.getBusiestDay("salon1");
+
+                assertEquals("Saturday", result);
+        }
+
+        @Test
+        void shouldReturnNoAppointmentsWhenNoDaysBooked() {
+                when(appointmentRepository.findBySalonId("salon1"))
+                                .thenReturn(List.of());
+
+                String result = analyticsService.getBusiestDay("salon1");
+
+                assertEquals("No appointments", result);
         }
 
 }
