@@ -88,6 +88,7 @@ class BookingServiceTests {
         );
         Appointment appointment = mock(Appointment.class);
         when(appointment.getId()).thenReturn(42);
+        when(appointment.getDurationMinutes()).thenReturn(120);
         when(appointment.getSalonId()).thenReturn("salon1");
 
         Salon salon = createTestSalon(date);
@@ -97,8 +98,6 @@ class BookingServiceTests {
         when(appointmentRepository.findByIdAndCustomer(42, customer))
                 .thenReturn(Optional.of(appointment));
         when(ownerService.findPublicSalon("salon1")).thenReturn(salon);
-        when(ownerService.findPublicSalonBySlug("magiccuts-salon"))
-                .thenReturn(salon);
         when(appointmentRepository.findBySalonIdAndAppointmentDate("salon1", date))
                 .thenReturn(List.of(appointment));
         when(appointmentRepository.save(appointment)).thenReturn(appointment);
@@ -124,10 +123,12 @@ class BookingServiceTests {
 
         Appointment appointment = mock(Appointment.class);
         when(appointment.getId()).thenReturn(42);
+        when(appointment.getDurationMinutes()).thenReturn(120);
         when(appointment.getSalonId()).thenReturn("salon1");
 
         Appointment bookedAppointment = mock(Appointment.class);
         when(bookedAppointment.getId()).thenReturn(99);
+        when(bookedAppointment.getDurationMinutes()).thenReturn(30);
         when(bookedAppointment.getAppointmentTime()).thenReturn("11:00");
 
         Salon salon = createTestSalon(date);
@@ -137,8 +138,6 @@ class BookingServiceTests {
         when(appointmentRepository.findByIdAndCustomer(42, customer))
                 .thenReturn(Optional.of(appointment));
         when(ownerService.findPublicSalon("salon1")).thenReturn(salon);
-        when(ownerService.findPublicSalonBySlug("magiccuts-salon"))
-                .thenReturn(salon);
         when(appointmentRepository.findBySalonIdAndAppointmentDate("salon1", date))
                 .thenReturn(List.of(bookedAppointment));
 

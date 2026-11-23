@@ -157,9 +157,8 @@ class BookingControllerTests {
         when(salon.getOpeningHours())
                 .thenReturn(List.of(monday));
 
-        when(bookingService.getAvailableTimes(
-                "magiccuts-salon",
-                LocalDate.parse(appointmentDate)))
+        when(service.getDurationMinutes()).thenReturn(90);
+        when(bookingService.getAvailableTimes(salon, LocalDate.parse(appointmentDate), 90, null))
                 .thenReturn(List.of("09:00", "10:00"));
 
         mockMvc.perform(get("/customer/booking/time")
@@ -290,9 +289,8 @@ class BookingControllerTests {
         when(service.getName())
                 .thenReturn("Haircut");
 
-        when(bookingService.getAvailableTimes(
-                "magiccuts-salon",
-                LocalDate.parse(appointmentDate)))
+        when(service.getDurationMinutes()).thenReturn(90);
+        when(bookingService.getAvailableTimes(salon, LocalDate.parse(appointmentDate), 90, null))
                 .thenReturn(List.of("09:00", "10:00"));
 
         doThrow(new IllegalArgumentException("Appointment time is no longer available"))
@@ -424,9 +422,8 @@ class BookingControllerTests {
                 when(salon.getOpeningHours())
                                 .thenReturn(List.of(monday));
 
-                when(bookingService.getAvailableTimes(
-                                "magiccuts-salon",
-                                LocalDate.parse(appointmentDate)))
+                when(service.getDurationMinutes()).thenReturn(90);
+                when(bookingService.getAvailableTimes(salon, LocalDate.parse(appointmentDate), 90, null))
                                 .thenReturn(List.of("09:00", "10:00"));
 
                 mockMvc.perform(get("/customer/booking/time")

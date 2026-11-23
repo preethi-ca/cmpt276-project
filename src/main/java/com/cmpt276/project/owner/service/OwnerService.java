@@ -140,6 +140,9 @@ public class OwnerService {
     private boolean saveService(String ownerId, String id, ServiceForm form, Errors errors) {
         Salon salon = requireSalon(ownerId);
         SalonService target = id == null ? new SalonService() : findService(ownerId, id);
+        if (!SalonService.DURATION_OPTIONS.contains(form.getDurationMinutes())) {
+            errors.rejectValue("durationMinutes", "duration", "Choose 30, 60, 90 or 120 minutes.");
+        }
         validateText(form.getDescription(), "description", 500, false, errors);
         validateText(form.getName(), "name", 80, true, errors);
         BigDecimal price = null;
@@ -164,6 +167,7 @@ public class OwnerService {
         // Validate before mutation and preserve identity on edits.
         target.setName(form.getName().trim());
         target.setPrice(price);
+        target.setDurationMinutes(form.getDurationMinutes());
         target.setDescription(clean(form.getDescription()));
         if (id == null) {
             target.setId(UUID.randomUUID().toString());
@@ -199,8 +203,8 @@ public class OwnerService {
                 if (start != null && end != null) {
                     int startMinutes = start.getHour() * 60 + start.getMinute();
                     int endMinutes = end.getHour() * 60 + end.getMinute();
-                    if (endMinutes - startMinutes < 60) {
-                        errors.rejectValue(endField, "range", "Closing time must be at least one hour after opening.");
+                    if (endMinutes - startMinutes < 30) {
+                        errors.rejectValue(endField, "range", "Closing time must be at least 30 minutes after opening.");
                     }
                     day.setStartTime(start.toString());
                     day.setEndTime(end.toString());

@@ -71,7 +71,7 @@
           <h2 class="h4 mb-3">Choose a Service</h2>
 
           <p class="text-muted">
-            All appointments are one hour. Prices shown in CAD.
+            Prices shown in CAD.
           </p>
 
           <div class="row g-3">
@@ -82,7 +82,7 @@
 
                   <p class="fw-bold" th:text="'$' + ${item.price}">$30</p>
 
-                  <p class="text-muted">One-hour appointment</p>
+                  <p class="text-muted" th:text="|${item.durationMinutes} minutes|"></p>
 
                   <a
                     class="btn btn-success"

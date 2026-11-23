@@ -23,6 +23,7 @@ public class Appointment {
     private LocalDate appointmentDate;
     private String appointmentTime;
     private BigDecimal bookedPrice;
+    private Integer durationMinutes;
 
     // connects the appointment to the customer who booked it
     @ManyToOne
@@ -44,6 +45,18 @@ public class Appointment {
             String appointmentTime,
             Account customer,
             BigDecimal bookedPrice) {
+        this(serviceName, serviceId, salonId, appointmentDate, appointmentTime, customer, bookedPrice, 60);
+    }
+
+    public Appointment(
+            String serviceName,
+            String serviceId,
+            String salonId,
+            LocalDate appointmentDate,
+            String appointmentTime,
+            Account customer,
+            BigDecimal bookedPrice,
+            int durationMinutes) {
 
         this.serviceName = serviceName;
         this.serviceId = serviceId;
@@ -52,6 +65,7 @@ public class Appointment {
         this.appointmentTime = appointmentTime;
         this.customer = customer;
         this.bookedPrice = bookedPrice;
+        this.durationMinutes = durationMinutes;
     }
 
     public Appointment(
@@ -110,6 +124,10 @@ public class Appointment {
 
     public BigDecimal getBookedPrice() {
         return bookedPrice;
+    }
+
+    public int getDurationMinutes() {
+        return durationMinutes == null ? 60 : durationMinutes;
     }
   
     public String getGoogleEventId() {

@@ -113,8 +113,9 @@ public class AppointmentController {
         //load the salon and available time slots, excluding the current appointment
         Salon salon = ownerService.findPublicSalon(appointment.getSalonId());
         List<String> availableTimes = bookingService.getAvailableTimes(
-                salon.getSlug(),
+                salon,
                 appointment.getAppointmentDate(),
+                appointment.getDurationMinutes(),
                 appointment.getId()
         );
 
@@ -142,7 +143,7 @@ public class AppointmentController {
         Appointment appointment = appointmentOpt.get();
         Salon salon = ownerService.findPublicSalon(appointment.getSalonId());
         LocalDate selectedDate = LocalDate.parse(date);
-        return bookingService.getAvailableTimes(salon.getSlug(), selectedDate, appointment.getId());
+        return bookingService.getAvailableTimes(salon, selectedDate, appointment.getDurationMinutes(), appointment.getId());
     }
 
     //Cancel appointment

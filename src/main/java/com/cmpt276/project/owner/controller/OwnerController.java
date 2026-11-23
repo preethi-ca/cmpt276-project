@@ -3,6 +3,7 @@ package com.cmpt276.project.owner.controller;
 import com.cmpt276.project.owner.auth.CurrentOwner;
 import com.cmpt276.project.owner.model.OpeningDay;
 import com.cmpt276.project.owner.model.Salon;
+import com.cmpt276.project.owner.model.SalonService;
 import com.cmpt276.project.owner.service.OwnerService;
 
 import java.math.BigDecimal;
@@ -224,6 +225,7 @@ public class OwnerController {
         ServiceForm form = new ServiceForm();
         form.setName(item.getName());
         form.setPrice(item.getPrice().toPlainString());
+        form.setDurationMinutes(item.getDurationMinutes());
         form.setDescription(item.getDescription());
         model.addAttribute("serviceForm", form);
         model.addAttribute("serviceId", id);
@@ -367,6 +369,10 @@ public class OwnerController {
         private String name = "";
         private String price = "";
         private String description = "";
+        private int durationMinutes = 60;
+        public int getDurationMinutes() { return durationMinutes; }
+        public void setDurationMinutes(int durationMinutes) { this.durationMinutes = durationMinutes; }
+        public List<Integer> getDurationOptions() { return SalonService.DURATION_OPTIONS; }
 
         public String getDescription() {
             return description;

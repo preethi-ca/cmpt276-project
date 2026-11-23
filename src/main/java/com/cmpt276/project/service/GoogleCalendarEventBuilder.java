@@ -38,8 +38,7 @@ public class GoogleCalendarEventBuilder {
 
         LocalTime time = parseTime(appointment.getAppointmentTime());
         LocalDateTime start = appointment.getAppointmentDate().atTime(time);
-        // appointments are always one hour, plusHours rolls a late slot into the next day
-        LocalDateTime end = start.plusHours(1);
+        LocalDateTime end = start.plusMinutes(appointment.getDurationMinutes());
 
         String summary = appointment.getServiceName() + " at " + salon.getName();
         return new GoogleCalendarEvent(summary, addressLine(salon), DESCRIPTION, start, end, TIME_ZONE);

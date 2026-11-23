@@ -308,7 +308,7 @@ class Cmpt276ProjectApplicationTests {
     @Test
     void invalidRepeatScheduleRetainsPreviousWeekAndShowsErrors() throws Exception {
         saveHours("09:00", "17:00");
-        for (String[] range : new String[][]{{"10:00", "10:59"}, {"17:00", "09:00"}, {"25:00", "17:00"}, {"", "17:00"}}) {
+        for (String[] range : new String[][]{{"10:00", "10:29"}, {"17:00", "09:00"}, {"25:00", "17:00"}, {"", "17:00"}}) {
             mvc.perform(post("/owner/hours").with(user(owner.getEmail()).roles("SALONOWNER")).with(csrf())
                     .param("days[0].open", "true").param("days[0].startTime", range[0])
                     .param("days[0].endTime", range[1]))
@@ -327,30 +327,51 @@ class Cmpt276ProjectApplicationTests {
     }
 
     @Test
+    void ownerCanChooseOnlySupportedServiceDurations() throws Exception {
+        var signedInOwner = user(owner.getEmail()).roles("SALONOWNER");
+        mvc.perform(post("/owner/services").with(signedInOwner).with(csrf())
+                        .param("name", "Colour").param("price", "90").param("durationMinutes", "45"))
+                .andExpect(model().attributeHasFieldErrors("serviceForm", "durationMinutes"));
+        mvc.perform(post("/owner/services").with(signedInOwner).with(csrf())
+                        .param("name", "Colour").param("price", "90").param("durationMinutes", "90"))
+                .andExpect(redirectedUrl("/owner/services?page=1"));
+        var saved = store.findByOwnerId(ownerId).getServices().get(0);
+        assertEquals(90, saved.getDurationMinutes());
+        mvc.perform(get("/owner/services/" + saved.getId() + "/edit").with(signedInOwner))
+                .andExpect(content().string(containsString("90 minutes")));
+    }
+
+    @Test
     void scheduleChangesKeepBookingsAndExcludeOverlapsOnShiftedGrid() {
         ServiceForm service = new ServiceForm();
         service.setName("Cut");
         service.setPrice("30");
+        service.setDurationMinutes(120);
         assertTrue(owners.addService(ownerId, service, errors(service, "serviceForm")));
         saveHours("09:00", "12:00");
         Salon salon = store.findByOwnerId(ownerId);
+        String serviceId = salon.getServices().get(0).getId();
         Account customer = accounts.save(new Account("Customer", UUID.randomUUID() + "@example.com",
                 "unused-test-hash", RoleType.CUSTOMER));
-        LocalDate monday = LocalDate.now()
-                .with(TemporalAdjusters.next(DayOfWeek.MONDAY));
-        Appointment booked = bookings.bookAppointment(salon.getServices().get(0).getId(),
-                salon.getSlug(), monday.toString(), "10:00", customer.getEmail());
+        LocalDate monday = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.MONDAY));
+        Appointment booked = bookings.bookAppointment(serviceId, salon.getSlug(), monday.toString(),
+                "10:00", customer.getEmail());
+        service.setDurationMinutes(30);
+        assertTrue(owners.updateService(ownerId, serviceId, service, errors(service, "serviceForm")));
         saveHours("09:30", "13:30");
-        List<String> shiftedTimes = bookings.getAvailableTimes(salon.getSlug(), monday);
-        assertTrue(shiftedTimes.containsAll(List.of("11:30", "12:30")));
-        assertFalse(shiftedTimes.contains("10:00"));
-        assertEquals("10:00", appointments.findById(booked.getId()).orElseThrow().getAppointmentTime());
+        Salon updated = store.findByOwnerId(ownerId);
+        int duration = updated.getServices().get(0).getDurationMinutes();
+        assertEquals(30, duration);
+        assertEquals(List.of("09:30", "12:00", "12:30", "13:00"),
+                bookings.getAvailableTimes(updated, monday, duration, null));
+        assertEquals(120, appointments.findById(booked.getId()).orElseThrow().getDurationMinutes());
+        assertThrows(IllegalArgumentException.class, () ->
+                bookings.updateAppointment(booked.getId(), monday.toString(), "12:00", customer.getEmail()));
+
         HoursForm closed = new HoursForm();
         assertTrue(owners.setOpeningHours(ownerId, closed, errors(closed, "hoursForm")));
-        assertTrue(bookings.getAvailableTimes(salon.getSlug(), monday).isEmpty());
+        assertTrue(bookings.getAvailableTimes(store.findByOwnerId(ownerId), monday, duration, null).isEmpty());
         assertTrue(appointments.findById(booked.getId()).isPresent());
-        saveHours("11:00", "12:00");
-        assertEquals(List.of("11:00"), bookings.getAvailableTimes(salon.getSlug(), monday));
     }
 
     @Test
@@ -358,7 +379,7 @@ class Cmpt276ProjectApplicationTests {
         saveHours("22:00", "23:59");
         Salon salon = store.findByOwnerId(ownerId);
         assertTimeoutPreemptively(Duration.ofSeconds(2), () ->
-                assertEquals(List.of("22:00"), bookings.getAvailableTimes(salon.getSlug(), LocalDate.of(2026, 11, 9))));
+                assertEquals(List.of("22:00", "22:30"), bookings.getAvailableTimes(salon, LocalDate.of(2026, 11, 9), 60, null)));
     }
 
     private Salon memorySalon(String slug, String name) {

@@ -55,7 +55,8 @@ public class BookingService {
         if (date.isBefore(LocalDate.now())) {
             throw new IllegalArgumentException("Sorry, this date has already passed.");
         }
-        List<String> availableTimes = getAvailableTimes(salonSlug, date);
+        int durationMinutes = selectedService.getDurationMinutes();
+        List<String> availableTimes = getAvailableTimes(salon, date, durationMinutes, null);
         if (!availableTimes.contains(appointmentTime)) {
             throw new IllegalArgumentException("Sorry, this appointment time is no longer available");
         }
@@ -66,7 +67,8 @@ public class BookingService {
                 date,
                 appointmentTime,
                 customer,
-                selectedService.getPrice());
+                selectedService.getPrice(),
+                durationMinutes);
 
         return appointmentRepository.save(appointment);
     }
@@ -93,7 +95,7 @@ public class BookingService {
             throw new IllegalArgumentException("Sorry, this date has already passed.");
         }
         Salon salon = ownerService.findPublicSalon(appointment.getSalonId());
-        List<String> availableTimes = getAvailableTimes(salon.getSlug(), date, appointment.getId());
+        List<String> availableTimes = getAvailableTimes(salon, date, appointment.getDurationMinutes(), appointment.getId());
         if (!availableTimes.contains(appointmentTime)) {
             throw new IllegalArgumentException("Sorry, this appointment time is no longer available.");
         }
@@ -102,14 +104,7 @@ public class BookingService {
         return appointmentRepository.save(appointment);
     }
 
-    // For regular bookings
-    public List<String> getAvailableTimes(String salonSlug, LocalDate date) {
-        return getAvailableTimes(salonSlug, date, null);
-    }
-
-    // Check available times while editing an appointment
-    public List<String> getAvailableTimes(String salonSlug, LocalDate date, Integer excludedAppointmentId) {
-        Salon salon = ownerService.findPublicSalonBySlug(salonSlug);
+    public List<String> getAvailableTimes(Salon salon, LocalDate date, int durationMinutes, Integer excludedAppointmentId) {
         int selectedDay = date.getDayOfWeek().getValue();
         OpeningDay selectedHours = null;
         for (OpeningDay day : salon.getOpeningHours()) {
@@ -127,10 +122,9 @@ public class BookingService {
                 date);
         List<String> availableTimes = new ArrayList<>();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm");
-        // Minute arithmetic avoids wrapping past midnight for late closing times.
         int closingMinute = closingTime.getHour() * 60 + closingTime.getMinute();
         for (int minute = openingTime.getHour() * 60 + openingTime.getMinute(); minute
-                + 60 <= closingMinute; minute += 60) {
+                + durationMinutes <= closingMinute; minute += 30) {
             LocalTime currentTime = LocalTime.of(minute / 60, minute % 60);
             boolean alreadyBooked = false;
             for (Appointment appointment : existingAppointments) {
@@ -141,7 +135,7 @@ public class BookingService {
                 }
                 LocalTime bookedTime = LocalTime.parse(appointment.getAppointmentTime());
                 int bookedMinute = bookedTime.getHour() * 60 + bookedTime.getMinute();
-                if (minute < bookedMinute + 60 && bookedMinute < minute + 60) {
+                if (minute < bookedMinute + appointment.getDurationMinutes() && bookedMinute < minute + durationMinutes) {
                     alreadyBooked = true;
                     break;
                 }

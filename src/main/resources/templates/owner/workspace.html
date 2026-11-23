@@ -43,7 +43,6 @@
 
       <section th:if="${section == 'dashboard'}" class="panel" aria-label="Salon overview">
         <h2 th:text="${salon.name}"></h2>
-        <p>Appointment duration: 60 minutes.</p>
         <ul class="overview-links">
           <li><a th:href="@{/owner/profile}">Edit salon profile</a></li>
           <li><a th:href="@{/owner/services}">Manage services</a> — <span th:text="${salon.services.size()} + ' services'"></span></li>
@@ -97,7 +96,7 @@
         <section class="panel appointment-schedule" aria-labelledby="appointment-schedule-title">
           <div class="section-heading">
             <div><h2 id="appointment-schedule-title">Today and upcoming appointments</h2><p class="appointment-date">Today: <time th:datetime="${appointmentDate}" th:text="${appointmentDateLabel}"></time></p></div>
-            <span class="badge">Vancouver time · 60-minute appointments</span>
+            <span class="badge">Vancouver time</span>
           </div>
           <div th:if="${appointments.isEmpty()}" class="empty-state appointment-empty">
             <svg class="appointment-calendar" width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" focusable="false"><rect x="7" y="10" width="34" height="32" rx="3"/><path d="M15 6v9M33 6v9M7 21h34M17 29h14M17 35h8"/></svg>
@@ -150,10 +149,11 @@
           <div th:if="${salon.services.isEmpty()}" class="empty-state"><h2>No services yet.</h2><p>Choose Add Service to create your first service and price.</p></div>
           <div th:unless="${salon.services.isEmpty()}" class="table-scroll">
             <table class="service-table">
-              <caption class="sr-only">Salon services and prices in Canadian dollars</caption>
+              <caption class="sr-only">Salon services, prices in Canadian dollars and durations</caption>
               <thead><tr><th scope="col">Service</th><th scope="col">Price (CAD)</th><th scope="col">Actions</th></tr></thead>
               <tbody><tr th:each="item : ${servicePage}">
-                <td class="service-name" th:text="${item.name}"></td><td class="price" th:text="'$' + ${item.price}"></td>
+                <td class="service-name"><span th:text="${item.name}"></span><br><small class="muted" th:text="|${item.durationMinutes} minutes|"></small></td>
+                <td class="price" th:text="'$' + ${item.price}"></td>
                 <td class="service-actions"><a class="button" th:href="@{/owner/services/{id}/edit(id=${item.id})}">Edit</a><form th:action="@{/owner/services/{id}/delete(id=${item.id})}" method="post" data-delete-service th:attr="data-service-name=${item.name}"><button type="submit">Delete</button></form></td>
               </tr></tbody>
             </table>
@@ -206,6 +206,14 @@
                   class="field-error"
                   th:errors="*{price}"
                 ></p>
+              </div>
+              <div class="field">
+                <label for="durationMinutes">Appointment duration *</label>
+                <select id="durationMinutes" th:field="*{durationMinutes}"
+                        th:attr="aria-invalid=${#fields.hasErrors('durationMinutes')}" aria-describedby="duration-error">
+                  <option th:each="minutes : ${serviceForm.durationOptions}" th:value="${minutes}" th:text="|${minutes} minutes|"></option>
+                </select>
+                <p id="duration-error" class="field-error" th:errors="*{durationMinutes}"></p>
               </div>
               <div class="field">
                 <label for="description">Description</label

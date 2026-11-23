@@ -102,7 +102,8 @@ public class BookingController {
         model.addAttribute("appointmentDate", appointmentDate);
         model.addAttribute("serviceName", selectedService.getName());
     
-        List<String> availableTimes = bookingService.getAvailableTimes(salon, date);
+        model.addAttribute("bookedService", selectedService);
+        List<String> availableTimes = bookingService.getAvailableTimes(selectedSalon, date, selectedService.getDurationMinutes(), null);
         model.addAttribute("availableTimes", availableTimes);
         return "customer/select-time";
     }
@@ -145,7 +146,7 @@ public class BookingController {
                 model.addAttribute("days", days);
                 return "customer/select-date"; // CHANGED
             }
-            List<String> availableTimes = bookingService.getAvailableTimes(salon, date);
+            List<String> availableTimes = bookingService.getAvailableTimes(selectedSalon, date, selectedService.getDurationMinutes(), null);
             model.addAttribute("error", error.getMessage());
             model.addAttribute("service", service);
             model.addAttribute("salon", salon);
