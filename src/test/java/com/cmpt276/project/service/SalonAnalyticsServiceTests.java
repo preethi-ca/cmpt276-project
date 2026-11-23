@@ -503,4 +503,118 @@ public class SalonAnalyticsServiceTests {
                 assertEquals(1, result.get("Week 46"));
         }
 
+        @Test
+        void shouldReturnRevenueTrendsForDateRange() {
+                LocalDate startDate = LocalDate.of(2026, 11, 1);
+                LocalDate endDate = LocalDate.of(2026, 11, 4);
+
+                Appointment appointment1 = new Appointment(
+                                "Haircut",
+                                "service1",
+                                "salon1",
+                                LocalDate.of(2026, 11, 1),
+                                "10:00",
+                                null,
+                                new BigDecimal("25.00"));
+
+                Appointment appointment2 = new Appointment(
+                                "Color",
+                                "service2",
+                                "salon1",
+                                LocalDate.of(2026, 11, 1),
+                                "14:00",
+                                null,
+                                new BigDecimal("40.00"));
+
+                Appointment appointment3 = new Appointment(
+                                "Haircut",
+                                "service1",
+                                "salon1",
+                                LocalDate.of(2026, 11, 3),
+                                "11:00",
+                                null,
+                                new BigDecimal("30.00"));
+
+                when(appointmentRepository.findBySalonIdAndAppointmentDateBetween(
+                                "salon1",
+                                startDate,
+                                endDate))
+                                .thenReturn(List.of(
+                                                appointment1,
+                                                appointment2,
+                                                appointment3));
+
+                Map<LocalDate, BigDecimal> result = analyticsService.getRevenueTrends(
+                                "salon1",
+                                startDate,
+                                endDate);
+
+                assertEquals(new BigDecimal("65.00"),
+                                result.get(LocalDate.of(2026, 11, 1)));
+
+                assertEquals(BigDecimal.ZERO,
+                                result.get(LocalDate.of(2026, 11, 2)));
+
+                assertEquals(new BigDecimal("30.00"),
+                                result.get(LocalDate.of(2026, 11, 3)));
+
+                assertEquals(BigDecimal.ZERO,
+                                result.get(LocalDate.of(2026, 11, 4)));
+        }
+
+        @Test
+        void shouldReturnWeeklyRevenueTrendsForDateRange() {
+                LocalDate startDate = LocalDate.of(2026, 11, 1);
+                LocalDate endDate = LocalDate.of(2026, 11, 14);
+
+                Appointment appointment1 = new Appointment(
+                                "Haircut",
+                                "service1",
+                                "salon1",
+                                LocalDate.of(2026, 11, 2),
+                                "10:00",
+                                null,
+                                new BigDecimal("25.00"));
+
+                Appointment appointment2 = new Appointment(
+                                "Color",
+                                "service2",
+                                "salon1",
+                                LocalDate.of(2026, 11, 5),
+                                "14:00",
+                                null,
+                                new BigDecimal("40.00"));
+
+                Appointment appointment3 = new Appointment(
+                                "Haircut",
+                                "service1",
+                                "salon1",
+                                LocalDate.of(2026, 11, 10),
+                                "11:00",
+                                null,
+                                new BigDecimal("30.00"));
+
+                when(appointmentRepository.findBySalonIdAndAppointmentDateBetween(
+                                "salon1",
+                                startDate,
+                                endDate))
+                                .thenReturn(List.of(
+                                                appointment1,
+                                                appointment2,
+                                                appointment3));
+
+                Map<String, BigDecimal> result = analyticsService.getWeeklyRevenueTrends(
+                                "salon1",
+                                startDate,
+                                endDate);
+
+                assertEquals(
+                                new BigDecimal("65.00"),
+                                result.get("Week 45"));
+
+                assertEquals(
+                                new BigDecimal("30.00"),
+                                result.get("Week 46"));
+        }
+
 }

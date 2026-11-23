@@ -202,6 +202,45 @@
                 </div>
               </div>
             </section>
+            <section
+              class="analytics-trends"
+              aria-labelledby="revenue-trends-title"
+            >
+              <h3 id="revenue-trends-title">Revenue Trends</h3>
+
+              <div th:if="${revenueTrends.isEmpty()}" class="empty-state">
+                <p>No revenue data for this date range.</p>
+              </div>
+
+              <div
+                th:unless="${revenueTrends.isEmpty()}"
+                class="booking-trend-list"
+              >
+                <div
+                  class="booking-trend-row"
+                  th:each="entry : ${revenueTrends}"
+                >
+                  <span class="booking-trend-date" th:text="${entry.key}">
+                    2026-11-01
+                  </span>
+
+                  <div class="booking-trend-bar-track">
+                    <div
+                      class="booking-trend-bar"
+                      th:if="${entry.value.compareTo(T(java.math.BigDecimal).ZERO) > 0}"
+                      th:style="'width: ' + (${entry.value.doubleValue()} / 100) + '%'"
+                    ></div>
+                  </div>
+
+                  <strong
+                    class="booking-trend-count"
+                    th:text="'$' + ${entry.value}"
+                  >
+                    $0.00
+                  </strong>
+                </div>
+              </div>
+            </section>
           </section>
 
           <section

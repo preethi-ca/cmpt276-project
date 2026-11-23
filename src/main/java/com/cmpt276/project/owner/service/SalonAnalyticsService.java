@@ -259,6 +259,84 @@ public class SalonAnalyticsService {
         return bookingTrends;
     }
 
+    public Map<LocalDate, BigDecimal> getRevenueTrends(
+            String salonId,
+            LocalDate startDate,
+            LocalDate endDate) {
+
+        List<Appointment> appointments = appointmentRepository.findBySalonIdAndAppointmentDateBetween(
+                salonId,
+                startDate,
+                endDate);
+
+        Map<LocalDate, BigDecimal> revenueTrends = new LinkedHashMap<>();
+
+        LocalDate currentDate = startDate;
+
+        while (!currentDate.isAfter(endDate)) {
+            revenueTrends.put(currentDate, BigDecimal.ZERO);
+            currentDate = currentDate.plusDays(1);
+        }
+
+        for (Appointment appointment : appointments) {
+            LocalDate appointmentDate = appointment.getAppointmentDate();
+
+            if (appointmentDate != null && appointment.getBookedPrice() != null) {
+                revenueTrends.put(
+                        appointmentDate,
+                        revenueTrends.getOrDefault(
+                                appointmentDate,
+                                BigDecimal.ZERO)
+                                .add(appointment.getBookedPrice()));
+            }
+        }
+
+        return revenueTrends;
+    }
+
+    public Map<String, BigDecimal> getWeeklyRevenueTrends(
+            String salonId,
+            LocalDate startDate,
+            LocalDate endDate) {
+
+        List<Appointment> appointments = appointmentRepository.findBySalonIdAndAppointmentDateBetween(
+                salonId,
+                startDate,
+                endDate);
+
+        Map<String, BigDecimal> weeklyRevenue = new LinkedHashMap<>();
+
+        LocalDate currentDate = startDate;
+
+        while (!currentDate.isAfter(endDate)) {
+            String weekLabel = "Week " +
+                    currentDate.get(WeekFields.ISO.weekOfWeekBasedYear());
+
+            weeklyRevenue.putIfAbsent(weekLabel, BigDecimal.ZERO);
+
+            currentDate = currentDate.plusDays(1);
+        }
+
+        for (Appointment appointment : appointments) {
+            if (appointment.getAppointmentDate() != null
+                    && appointment.getBookedPrice() != null) {
+
+                String weekLabel = "Week " +
+                        appointment.getAppointmentDate()
+                                .get(WeekFields.ISO.weekOfWeekBasedYear());
+
+                weeklyRevenue.put(
+                        weekLabel,
+                        weeklyRevenue.getOrDefault(
+                                weekLabel,
+                                BigDecimal.ZERO)
+                                .add(appointment.getBookedPrice()));
+            }
+        }
+
+        return weeklyRevenue;
+    }
+
     public Map<String, Integer> getWeeklyBookingTrends(
             String salonId,
             LocalDate startDate,

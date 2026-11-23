@@ -165,16 +165,30 @@ public class OwnerController {
                     endDate);
         }
 
+        Map<?, BigDecimal> revenueTrends;
+
+        if (range == 7) {
+            revenueTrends = analyticsService.getRevenueTrends(
+                    salon.getId(),
+                    startDate,
+                    endDate);
+        } else {
+            revenueTrends = analyticsService.getWeeklyRevenueTrends(
+                    salon.getId(),
+                    startDate,
+                    endDate);
+        }
+
         model.addAttribute("totalAppointments", totalAppointments);
         model.addAttribute("mostPopularService", mostPopularService);
         model.addAttribute("busiestTime", busiestTime);
         model.addAttribute("busiestDay", busiestDay);
         model.addAttribute("estimatedRevenue", estimatedRevenue);
-
         model.addAttribute("selectedRange", range);
         model.addAttribute("startDate", startDate);
         model.addAttribute("endDate", endDate);
         model.addAttribute("bookingTrends", bookingTrends);
+        model.addAttribute("revenueTrends", revenueTrends);
 
         return page(model, "dashboard", "Dashboard");
     }
