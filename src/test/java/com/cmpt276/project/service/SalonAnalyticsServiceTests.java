@@ -364,4 +364,44 @@ public class SalonAnalyticsServiceTests {
                 assertEquals("Saturday", result);
         }
 
+        @Test
+        void shouldReturnEstimatedRevenueForDateRange() {
+                LocalDate startDate = LocalDate.of(2026, 11, 1);
+                LocalDate endDate = LocalDate.of(2026, 11, 30);
+
+                Salon salon = new Salon();
+                salon.setId("salon1");
+
+                Appointment appointment1 = new Appointment(
+                                "Haircut",
+                                "service1",
+                                "salon1",
+                                LocalDate.of(2026, 11, 5),
+                                "10:00",
+                                null,
+                                new BigDecimal("25.00"));
+
+                Appointment appointment2 = new Appointment(
+                                "Color",
+                                "service2",
+                                "salon1",
+                                LocalDate.of(2026, 11, 10),
+                                "14:00",
+                                null,
+                                new BigDecimal("40.00"));
+
+                when(appointmentRepository.findBySalonIdAndAppointmentDateBetween(
+                                "salon1",
+                                startDate,
+                                endDate))
+                                .thenReturn(List.of(appointment1, appointment2));
+
+                BigDecimal result = analyticsService.getEstimatedRevenue(
+                                salon,
+                                startDate,
+                                endDate);
+
+                assertEquals(new BigDecimal("65.00"), result);
+        }
+
 }

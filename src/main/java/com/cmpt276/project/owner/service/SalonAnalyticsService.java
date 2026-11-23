@@ -239,4 +239,25 @@ public class SalonAnalyticsService {
         return totalRevenue;
     }
 
+    public BigDecimal getEstimatedRevenue(
+            Salon salon,
+            LocalDate startDate,
+            LocalDate endDate) {
+
+        List<Appointment> appointments = appointmentRepository.findBySalonIdAndAppointmentDateBetween(
+                salon.getId(),
+                startDate,
+                endDate);
+
+        BigDecimal totalRevenue = BigDecimal.ZERO;
+
+        for (Appointment appointment : appointments) {
+            if (appointment.getBookedPrice() != null) {
+                totalRevenue = totalRevenue.add(appointment.getBookedPrice());
+            }
+        }
+
+        return totalRevenue;
+    }
+
 }

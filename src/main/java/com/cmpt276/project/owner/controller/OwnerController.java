@@ -112,7 +112,9 @@ public class OwnerController {
     }
 
     @GetMapping("/dashboard")
-    public String dashboard(Model model) {
+    public String dashboard(
+            @RequestParam(defaultValue = "30") int range,
+            Model model) {
 
         Salon salon = (Salon) model.getAttribute("salon");
 
@@ -120,18 +122,43 @@ public class OwnerController {
             return "redirect:/owner/setup";
         }
 
-        int totalAppointments = analyticsService.getTotalAppointments(salon.getId());
+        LocalDate endDate = LocalDate.now();
+        LocalDate startDate = endDate.minusDays(range - 1);
 
-        String mostPopularService = analyticsService.getMostPopularService(salon.getId());
+        int totalAppointments = analyticsService.getTotalAppointments(
+                salon.getId(),
+                startDate,
+                endDate);
 
-        String busiestTime = analyticsService.getBusiestTime(salon.getId());
+        String mostPopularService = analyticsService.getMostPopularService(
+                salon.getId(),
+                startDate,
+                endDate);
 
-        BigDecimal estimatedRevenue = analyticsService.getEstimatedRevenue(salon);
+        String busiestTime = analyticsService.getBusiestTime(
+                salon.getId(),
+                startDate,
+                endDate);
+
+        String busiestDay = analyticsService.getBusiestDay(
+                salon.getId(),
+                startDate,
+                endDate);
+
+        BigDecimal estimatedRevenue = analyticsService.getEstimatedRevenue(
+                salon,
+                startDate,
+                endDate);
 
         model.addAttribute("totalAppointments", totalAppointments);
         model.addAttribute("mostPopularService", mostPopularService);
         model.addAttribute("busiestTime", busiestTime);
+        model.addAttribute("busiestDay", busiestDay);
         model.addAttribute("estimatedRevenue", estimatedRevenue);
+
+        model.addAttribute("selectedRange", range);
+        model.addAttribute("startDate", startDate);
+        model.addAttribute("endDate", endDate);
 
         return page(model, "dashboard", "Dashboard");
     }
