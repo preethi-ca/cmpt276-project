@@ -179,6 +179,16 @@ public class OwnerController {
                     endDate);
         }
 
+        String busiestDayInsight = analyticsService.getBusiestDayInsight(
+                salon.getId(),
+                startDate,
+                endDate);
+
+        String popularServiceInsight = analyticsService.getPopularServiceInsight(
+                salon.getId(),
+                startDate,
+                endDate);
+
         model.addAttribute("totalAppointments", totalAppointments);
         model.addAttribute("mostPopularService", mostPopularService);
         model.addAttribute("busiestTime", busiestTime);
@@ -189,6 +199,8 @@ public class OwnerController {
         model.addAttribute("endDate", endDate);
         model.addAttribute("bookingTrends", bookingTrends);
         model.addAttribute("revenueTrends", revenueTrends);
+        model.addAttribute("busiestDayInsight", busiestDayInsight);
+        model.addAttribute("popularServiceInsight", popularServiceInsight);
 
         return page(model, "dashboard", "Dashboard");
     }

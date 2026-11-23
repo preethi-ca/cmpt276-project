@@ -241,6 +241,26 @@
                 </div>
               </div>
             </section>
+            <section
+              class="analytics-trends"
+              aria-labelledby="smart-insights-title"
+            >
+              <h3 id="smart-insights-title">Smart Salon Insights</h3>
+
+              <div class="analytics-card">
+                <span class="analytics-label">Booking Pattern</span>
+                <p th:text="${busiestDayInsight}">
+                  Not enough booking data for an insight yet.
+                </p>
+              </div>
+
+              <div class="analytics-card">
+                <span class="analytics-label">Service Opportunity</span>
+                <p th:text="${popularServiceInsight}">
+                  Not enough booking data for an insight yet.
+                </p>
+              </div>
+            </section>
           </section>
 
           <section

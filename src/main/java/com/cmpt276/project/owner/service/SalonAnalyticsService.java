@@ -411,4 +411,109 @@ public class SalonAnalyticsService {
         return totalRevenue;
     }
 
+    public String getBusiestDayInsight(
+            String salonId,
+            LocalDate startDate,
+            LocalDate endDate) {
+
+        List<Appointment> appointments = appointmentRepository.findBySalonIdAndAppointmentDateBetween(
+                salonId,
+                startDate,
+                endDate);
+
+        if (appointments.isEmpty()) {
+            return "Not enough booking data for an insight yet.";
+        }
+
+        Map<DayOfWeek, Integer> dayCounts = new HashMap<>();
+
+        for (Appointment appointment : appointments) {
+            if (appointment.getAppointmentDate() != null) {
+                DayOfWeek day = appointment.getAppointmentDate().getDayOfWeek();
+
+                dayCounts.put(
+                        day,
+                        dayCounts.getOrDefault(day, 0) + 1);
+            }
+        }
+
+        DayOfWeek busiestDay = null;
+        int highestCount = 0;
+
+        for (Map.Entry<DayOfWeek, Integer> entry : dayCounts.entrySet()) {
+            if (entry.getValue() > highestCount) {
+                busiestDay = entry.getKey();
+                highestCount = entry.getValue();
+            }
+        }
+
+        if (busiestDay == null) {
+            return "Not enough booking data for an insight yet.";
+        }
+
+        double percentage = (highestCount * 100.0) / appointments.size();
+
+        if (percentage < 40.0) {
+            return "Bookings are fairly evenly distributed across the week.";
+        }
+
+        String dayName = busiestDay.getDisplayName(
+                TextStyle.FULL,
+                Locale.ENGLISH);
+
+        return dayName + " accounts for "
+                + Math.round(percentage)
+                + "% of appointments. Consider adding more availability on "
+                + dayName + ".";
+    }
+
+    public String getPopularServiceInsight(
+            String salonId,
+            LocalDate startDate,
+            LocalDate endDate) {
+
+        List<Appointment> appointments = appointmentRepository.findBySalonIdAndAppointmentDateBetween(
+                salonId,
+                startDate,
+                endDate);
+
+        if (appointments.isEmpty()) {
+            return "Not enough booking data for an insight yet.";
+        }
+
+        Map<String, Integer> serviceCounts = new HashMap<>();
+
+        for (Appointment appointment : appointments) {
+            String serviceName = appointment.getServiceName();
+
+            serviceCounts.put(
+                    serviceName,
+                    serviceCounts.getOrDefault(serviceName, 0) + 1);
+        }
+
+        String topService = null;
+        int highestCount = 0;
+
+        for (Map.Entry<String, Integer> entry : serviceCounts.entrySet()) {
+            if (entry.getValue() > highestCount) {
+                topService = entry.getKey();
+                highestCount = entry.getValue();
+            }
+        }
+
+        if (topService == null) {
+            return "Not enough booking data for an insight yet.";
+        }
+
+        double percentage = (highestCount * 100.0) / appointments.size();
+
+        if (percentage < 40.0) {
+            return "Bookings are spread across multiple services.";
+        }
+
+        return topService + " makes up "
+                + Math.round(percentage)
+                + "% of appointments. Consider highlighting this service in promotions.";
+    }
+
 }

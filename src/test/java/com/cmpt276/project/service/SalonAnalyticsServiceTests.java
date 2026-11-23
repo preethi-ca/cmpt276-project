@@ -617,4 +617,131 @@ public class SalonAnalyticsServiceTests {
                                 result.get("Week 46"));
         }
 
+        @Test
+        void shouldReturnBusiestDayInsightWhenOneDayDominates() {
+                LocalDate startDate = LocalDate.of(2026, 11, 1);
+                LocalDate endDate = LocalDate.of(2026, 11, 30);
+
+                Appointment saturday1 = new Appointment(
+                                "Haircut",
+                                "service1",
+                                "salon1",
+                                LocalDate.of(2026, 11, 7),
+                                "10:00",
+                                null,
+                                BigDecimal.ZERO);
+
+                Appointment saturday2 = new Appointment(
+                                "Color",
+                                "service2",
+                                "salon1",
+                                LocalDate.of(2026, 11, 14),
+                                "14:00",
+                                null,
+                                BigDecimal.ZERO);
+
+                Appointment saturday3 = new Appointment(
+                                "Haircut",
+                                "service1",
+                                "salon1",
+                                LocalDate.of(2026, 11, 21),
+                                "11:00",
+                                null,
+                                BigDecimal.ZERO);
+
+                Appointment monday = new Appointment(
+                                "Color",
+                                "service2",
+                                "salon1",
+                                LocalDate.of(2026, 11, 2),
+                                "09:00",
+                                null,
+                                BigDecimal.ZERO);
+
+                when(appointmentRepository.findBySalonIdAndAppointmentDateBetween(
+                                "salon1",
+                                startDate,
+                                endDate))
+                                .thenReturn(List.of(
+                                                saturday1,
+                                                saturday2,
+                                                saturday3,
+                                                monday));
+
+                String result = analyticsService.getBusiestDayInsight(
+                                "salon1",
+                                startDate,
+                                endDate);
+
+                assertEquals(
+                                "Saturday accounts for 75% of appointments. Consider adding more availability on Saturday.",
+                                result);
+        }
+
+        @Test
+        void shouldReturnNoInsightWhenThereAreNoAppointments() {
+                LocalDate startDate = LocalDate.of(2026, 11, 1);
+                LocalDate endDate = LocalDate.of(2026, 11, 30);
+
+                when(appointmentRepository.findBySalonIdAndAppointmentDateBetween(
+                                "salon1",
+                                startDate,
+                                endDate))
+                                .thenReturn(List.of());
+
+                String result = analyticsService.getBusiestDayInsight(
+                                "salon1",
+                                startDate,
+                                endDate);
+
+                assertEquals(
+                                "Not enough booking data for an insight yet.",
+                                result);
+        }
+
+        @Test
+        void shouldReturnPopularServiceInsightWhenOneServiceDominates() {
+                LocalDate startDate = LocalDate.of(2026, 11, 1);
+                LocalDate endDate = LocalDate.of(2026, 11, 30);
+
+                Appointment haircut1 = new Appointment(
+                                "Haircut", "service1", "salon1",
+                                LocalDate.of(2026, 11, 2),
+                                "10:00", null, BigDecimal.ZERO);
+
+                Appointment haircut2 = new Appointment(
+                                "Haircut", "service1", "salon1",
+                                LocalDate.of(2026, 11, 5),
+                                "11:00", null, BigDecimal.ZERO);
+
+                Appointment haircut3 = new Appointment(
+                                "Haircut", "service1", "salon1",
+                                LocalDate.of(2026, 11, 8),
+                                "12:00", null, BigDecimal.ZERO);
+
+                Appointment color = new Appointment(
+                                "Color", "service2", "salon1",
+                                LocalDate.of(2026, 11, 10),
+                                "14:00", null, BigDecimal.ZERO);
+
+                when(appointmentRepository.findBySalonIdAndAppointmentDateBetween(
+                                "salon1",
+                                startDate,
+                                endDate))
+                                .thenReturn(List.of(
+                                                haircut1,
+                                                haircut2,
+                                                haircut3,
+                                                color));
+
+                String result = analyticsService.getPopularServiceInsight(
+                                "salon1",
+                                startDate,
+                                endDate);
+
+                assertEquals(
+                                "Haircut makes up 75% of appointments. Consider highlighting this service in promotions.",
+                                result);
+        }
+
 }
