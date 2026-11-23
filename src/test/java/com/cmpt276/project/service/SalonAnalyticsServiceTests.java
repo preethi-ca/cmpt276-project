@@ -2,24 +2,20 @@ package com.cmpt276.project.service;
 
 import com.cmpt276.project.owner.service.SalonAnalyticsService;
 import com.cmpt276.project.repository.AppointmentRepository;
-
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
 import com.cmpt276.project.model.Appointment;
 import org.junit.jupiter.api.Test;
-
 import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
-
 import com.cmpt276.project.owner.model.Salon;
 import com.cmpt276.project.owner.model.SalonService;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Map;
 
 @ExtendWith(MockitoExtension.class)
 public class SalonAnalyticsServiceTests {
@@ -402,6 +398,109 @@ public class SalonAnalyticsServiceTests {
                                 endDate);
 
                 assertEquals(new BigDecimal("65.00"), result);
+        }
+
+        @Test
+        void shouldReturnBookingTrendsForDateRange() {
+                LocalDate startDate = LocalDate.of(2026, 11, 1);
+                LocalDate endDate = LocalDate.of(2026, 11, 4);
+
+                Appointment appointment1 = new Appointment(
+                                "Haircut",
+                                "service1",
+                                "salon1",
+                                LocalDate.of(2026, 11, 1),
+                                "10:00",
+                                null,
+                                BigDecimal.ZERO);
+
+                Appointment appointment2 = new Appointment(
+                                "Color",
+                                "service2",
+                                "salon1",
+                                LocalDate.of(2026, 11, 1),
+                                "14:00",
+                                null,
+                                BigDecimal.ZERO);
+
+                Appointment appointment3 = new Appointment(
+                                "Haircut",
+                                "service1",
+                                "salon1",
+                                LocalDate.of(2026, 11, 3),
+                                "11:00",
+                                null,
+                                BigDecimal.ZERO);
+
+                when(appointmentRepository.findBySalonIdAndAppointmentDateBetween(
+                                "salon1",
+                                startDate,
+                                endDate))
+                                .thenReturn(List.of(
+                                                appointment1,
+                                                appointment2,
+                                                appointment3));
+
+                Map<LocalDate, Integer> result = analyticsService.getBookingTrends(
+                                "salon1",
+                                startDate,
+                                endDate);
+
+                assertEquals(4, result.size());
+                assertEquals(2, result.get(LocalDate.of(2026, 11, 1)));
+                assertEquals(0, result.get(LocalDate.of(2026, 11, 2)));
+                assertEquals(1, result.get(LocalDate.of(2026, 11, 3)));
+                assertEquals(0, result.get(LocalDate.of(2026, 11, 4)));
+        }
+
+        @Test
+        void shouldReturnWeeklyBookingTrendsForDateRange() {
+                LocalDate startDate = LocalDate.of(2026, 11, 1);
+                LocalDate endDate = LocalDate.of(2026, 11, 14);
+
+                Appointment appointment1 = new Appointment(
+                                "Haircut",
+                                "service1",
+                                "salon1",
+                                LocalDate.of(2026, 11, 2),
+                                "10:00",
+                                null,
+                                BigDecimal.ZERO);
+
+                Appointment appointment2 = new Appointment(
+                                "Color",
+                                "service2",
+                                "salon1",
+                                LocalDate.of(2026, 11, 5),
+                                "14:00",
+                                null,
+                                BigDecimal.ZERO);
+
+                Appointment appointment3 = new Appointment(
+                                "Haircut",
+                                "service1",
+                                "salon1",
+                                LocalDate.of(2026, 11, 10),
+                                "11:00",
+                                null,
+                                BigDecimal.ZERO);
+
+                when(appointmentRepository.findBySalonIdAndAppointmentDateBetween(
+                                "salon1",
+                                startDate,
+                                endDate))
+                                .thenReturn(List.of(
+                                                appointment1,
+                                                appointment2,
+                                                appointment3));
+
+                Map<String, Integer> result = analyticsService.getWeeklyBookingTrends(
+                                "salon1",
+                                startDate,
+                                endDate);
+
+                assertEquals(2, result.get("Week 45"));
+                assertEquals(1, result.get("Week 46"));
         }
 
 }

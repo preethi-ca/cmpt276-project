@@ -166,6 +166,42 @@
                 >
               </div>
             </div>
+            <section
+              class="analytics-trends"
+              aria-labelledby="booking-trends-title"
+            >
+              <h3 id="booking-trends-title">Booking Trends</h3>
+
+              <div th:if="${bookingTrends.isEmpty()}" class="empty-state">
+                <p>No booking data for this date range.</p>
+              </div>
+
+              <div
+                th:unless="${bookingTrends.isEmpty()}"
+                class="booking-trend-list"
+              >
+                <div
+                  class="booking-trend-row"
+                  th:each="entry : ${bookingTrends}"
+                >
+                  <span class="booking-trend-date" th:text="${entry.key}">
+                    2026-11-01
+                  </span>
+
+                  <div class="booking-trend-bar-track">
+                    <div
+                      class="booking-trend-bar"
+                      th:if="${entry.value > 0}"
+                      th:style="'width: ' + (${entry.value} * 10) + '%'"
+                    ></div>
+                  </div>
+
+                  <strong class="booking-trend-count" th:text="${entry.value}">
+                    0
+                  </strong>
+                </div>
+              </div>
+            </section>
           </section>
 
           <section

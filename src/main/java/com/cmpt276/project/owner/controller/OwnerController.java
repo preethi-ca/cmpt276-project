@@ -30,6 +30,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import com.cmpt276.project.owner.service.SalonAnalyticsService;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/owner")
@@ -150,6 +151,20 @@ public class OwnerController {
                 startDate,
                 endDate);
 
+        Map<?, Integer> bookingTrends;
+
+        if (range == 7) {
+            bookingTrends = analyticsService.getBookingTrends(
+                    salon.getId(),
+                    startDate,
+                    endDate);
+        } else {
+            bookingTrends = analyticsService.getWeeklyBookingTrends(
+                    salon.getId(),
+                    startDate,
+                    endDate);
+        }
+
         model.addAttribute("totalAppointments", totalAppointments);
         model.addAttribute("mostPopularService", mostPopularService);
         model.addAttribute("busiestTime", busiestTime);
@@ -159,6 +174,7 @@ public class OwnerController {
         model.addAttribute("selectedRange", range);
         model.addAttribute("startDate", startDate);
         model.addAttribute("endDate", endDate);
+        model.addAttribute("bookingTrends", bookingTrends);
 
         return page(model, "dashboard", "Dashboard");
     }

@@ -12,6 +12,8 @@ import java.time.DayOfWeek;
 import java.time.format.TextStyle;
 import java.util.Locale;
 import java.time.LocalDate;
+import java.util.LinkedHashMap;
+import java.time.temporal.WeekFields;
 
 @Service
 public class SalonAnalyticsService {
@@ -223,6 +225,77 @@ public class SalonAnalyticsService {
         }
 
         return busiestDay.getDisplayName(TextStyle.FULL, Locale.ENGLISH);
+    }
+
+    public Map<LocalDate, Integer> getBookingTrends(
+            String salonId,
+            LocalDate startDate,
+            LocalDate endDate) {
+
+        List<Appointment> appointments = appointmentRepository.findBySalonIdAndAppointmentDateBetween(
+                salonId,
+                startDate,
+                endDate);
+
+        Map<LocalDate, Integer> bookingTrends = new LinkedHashMap<>();
+
+        LocalDate currentDate = startDate;
+
+        while (!currentDate.isAfter(endDate)) {
+            bookingTrends.put(currentDate, 0);
+            currentDate = currentDate.plusDays(1);
+        }
+
+        for (Appointment appointment : appointments) {
+            LocalDate appointmentDate = appointment.getAppointmentDate();
+
+            if (appointmentDate != null) {
+                bookingTrends.put(
+                        appointmentDate,
+                        bookingTrends.getOrDefault(appointmentDate, 0) + 1);
+            }
+        }
+
+        return bookingTrends;
+    }
+
+    public Map<String, Integer> getWeeklyBookingTrends(
+            String salonId,
+            LocalDate startDate,
+            LocalDate endDate) {
+
+        List<Appointment> appointments = appointmentRepository.findBySalonIdAndAppointmentDateBetween(
+                salonId,
+                startDate,
+                endDate);
+
+        Map<String, Integer> weeklyTrends = new LinkedHashMap<>();
+
+        LocalDate currentDate = startDate;
+
+        while (!currentDate.isAfter(endDate)) {
+            String weekLabel = "Week " +
+                    currentDate.get(WeekFields.ISO.weekOfWeekBasedYear());
+
+            weeklyTrends.putIfAbsent(weekLabel, 0);
+
+            currentDate = currentDate.plusDays(1);
+        }
+
+        for (Appointment appointment : appointments) {
+            if (appointment.getAppointmentDate() != null) {
+
+                String weekLabel = "Week " +
+                        appointment.getAppointmentDate()
+                                .get(WeekFields.ISO.weekOfWeekBasedYear());
+
+                weeklyTrends.put(
+                        weekLabel,
+                        weeklyTrends.getOrDefault(weekLabel, 0) + 1);
+            }
+        }
+
+        return weeklyTrends;
     }
 
     public BigDecimal getEstimatedRevenue(Salon salon) {
