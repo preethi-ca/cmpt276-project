@@ -145,6 +145,7 @@ th, td { border: 1px solid #c8ccc8; padding: 12px; text-align: left; }
 .appointment-table th, .appointment-table td { overflow-wrap: anywhere; vertical-align: top; }
 .appointment-table th:first-child { width: 24%; }
 .appointment-table th:nth-child(2) { width: 14%; }
+.returning-customer { display: inline-block; padding: 2px 6px; border-radius: 4px; background: #e0e7da; color: #233c2d; font-size: 12px; }
 
 /* time sheet */
 .hours-form { margin-top: 24px; }

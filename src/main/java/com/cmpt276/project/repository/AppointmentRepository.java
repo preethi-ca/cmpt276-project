@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.domain.Pageable;
 import java.util.List;
+import java.util.Collection;
 import java.util.Optional;
 import java.time.LocalDate;
 
@@ -21,6 +22,10 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Intege
             String salonId, LocalDate appointmentDate);
 
     List<Appointment> findBySalonId(String salonId);
+
+    @EntityGraph(attributePaths = "customer")
+    List<Appointment> findBySalonIdAndCustomer_IdInAndAppointmentDateLessThanEqual(
+            String salonId, Collection<Integer> customerIds, LocalDate throughDate);
 
     @EntityGraph(attributePaths = "customer")
     List<Appointment> findBySalonIdAndAppointmentDateGreaterThanEqualOrderByAppointmentDateAscAppointmentTimeAscIdAsc(

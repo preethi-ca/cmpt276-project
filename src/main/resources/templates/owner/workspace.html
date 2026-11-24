@@ -116,7 +116,9 @@
               <tbody><tr th:each="appointment : ${appointments}">
                 <td><time th:datetime="${appointment.appointmentDate}" th:text="${appointment.appointmentDate}"></time></td>
                 <td th:text="${appointment.appointmentTime}"></td>
-                <td><span th:text="${appointment.customer.name}"></span><br><span class="muted" th:text="${appointment.customer.email}"></span></td>
+                <td><span th:text="${appointment.customer.name}"></span>
+                  <small class="returning-customer" th:if="${returningAppointmentIds.contains(appointment.id)}">Returning customer</small>
+                  <br><span class="muted" th:text="${appointment.customer.email}"></span></td>
                 <td th:text="${appointment.serviceName}"></td>
               </tr></tbody>
             </table>

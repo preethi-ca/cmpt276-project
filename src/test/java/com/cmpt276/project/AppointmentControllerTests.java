@@ -28,6 +28,8 @@ import java.time.ZoneId;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.mockito.Mockito.mock;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verify;
@@ -106,6 +108,8 @@ class AppointmentControllerTests {
         verify(appointmentRepository).countBySalonIdAndAppointmentDateBetween("owned-salon", monday, monday.plusDays(6));
         verify(appointmentRepository).findBySalonIdAndAppointmentDateGreaterThanEqualOrderByAppointmentDateAscAppointmentTimeAscIdAsc(
                 "owned-salon", today, PageRequest.of(0, 10));
+        verify(appointmentRepository).findBySalonIdAndCustomer_IdInAndAppointmentDateLessThanEqual(
+                eq("owned-salon"), argThat(ids -> ids.size() == 1 && ids.contains(customer.getId())), eq(today));
         verifyNoMoreInteractions(appointmentRepository);
         mockMvc.perform(get("/salons/owner-salon"))
                 .andExpect(status().isOk())

@@ -9,6 +9,7 @@ import com.cmpt276.project.owner.controller.OwnerController.SalonForm;
 import com.cmpt276.project.owner.controller.OwnerController.ServiceForm;
 import com.cmpt276.project.owner.model.Salon;
 import com.cmpt276.project.owner.service.OwnerService;
+import com.cmpt276.project.owner.service.SalonAnalyticsService;
 import com.cmpt276.project.owner.store.JpaSalonStore;
 import com.cmpt276.project.owner.store.MemorySalonStore;
 import com.cmpt276.project.owner.store.SalonStore;
@@ -21,6 +22,7 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -55,6 +57,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class Cmpt276ProjectApplicationTests {
     @Autowired private MockMvc mvc;
     @Autowired private OwnerService owners;
+    @Autowired private SalonAnalyticsService analytics;
     @Autowired private SalonStore store;
     @Autowired private AccountRepository accounts;
     @Autowired private AppointmentRepository appointments;
@@ -471,6 +474,24 @@ class Cmpt276ProjectApplicationTests {
     }
 
     @Test
+    void returningCustomerRequiresAnEarlierCompletedVisitAtThisSalon() {
+        String salonId = store.findByOwnerId(ownerId).getId();
+        String otherSalonId = createAdditionalSalon("Other Salon", "200 Main Street").getId();
+        LocalDate day = LocalDate.of(2026, 11, 23);
+        appointments.save(new Appointment("Cut", "cut", otherSalonId, day.minusDays(1), "09:00", dashboardCustomer));
+        Appointment first = appointments.save(new Appointment("Color", "color", salonId, day,
+                "10:00", dashboardCustomer, null, 120));
+        Appointment second = appointments.save(new Appointment("Cut", "cut", salonId, day.plusDays(1),
+                "09:00", dashboardCustomer, null, 30));
+        var schedule = List.of(first, second);
+
+        assertEquals(Set.of(), analytics.getReturningAppointmentIds(salonId, schedule, day.atTime(11, 59)));
+        assertEquals(Set.of(second.getId()), analytics.getReturningAppointmentIds(salonId, schedule, day.atTime(12, 0)));
+        assertEquals(Set.of(second.getId()), analytics.getReturningAppointmentIds(salonId, schedule,
+                day.plusDays(1).atTime(9, 30)));
+    }
+
+    @Test
     void persistedOwnerAppointmentsAreScopedSortedPagedAndCountedAcrossWeekBoundaries() throws Exception {
         Salon salon = store.findByOwnerId(ownerId);
         Account customer = accounts.save(new Account("Visible Customer", UUID.randomUUID() + "@example.com", "hash", RoleType.CUSTOMER));
@@ -501,6 +522,7 @@ class Cmpt276ProjectApplicationTests {
                 .andExpect(status().isOk()).andExpect(model().attribute("todayAppointmentCount", expectedToday))
                 .andExpect(model().attribute("upcomingAppointmentCount", expected.size() - expectedToday))
                 .andExpect(model().attribute("weekAppointmentCount", expectedWeek))
+                .andExpect(content().string(containsString("Returning customer")))
                 .andExpect(content().string(not(containsString("PRIVATE OTHER BOOKING"))))
                 .andReturn();
         var page = (List<Appointment>) first.getModelAndView().getModel().get("appointments");

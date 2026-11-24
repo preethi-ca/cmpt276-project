@@ -10,6 +10,7 @@ import java.math.BigDecimal;
 import com.cmpt276.project.repository.AppointmentRepository;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
@@ -144,7 +145,8 @@ public class OwnerController {
         if (salon == null) {
             return "redirect:/owner/setup";
         }
-        LocalDate today = LocalDate.now(SALON_TIME_ZONE);
+        LocalDateTime now = LocalDateTime.now(SALON_TIME_ZONE);
+        LocalDate today = now.toLocalDate();
         LocalDate weekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         long todayCount = appointments.countBySalonIdAndAppointmentDate(salon.getId(), today);
         long upcomingCount = appointments.countBySalonIdAndAppointmentDateAfter(salon.getId(), today);
@@ -155,9 +157,11 @@ public class OwnerController {
 
         long totalPages = Math.max(1, (todayCount + upcomingCount + 9) / 10);
         int currentPage = (int) Math.max(1, Math.min(page, totalPages));
-        model.addAttribute("appointments", appointments
+        var schedule = appointments
                 .findBySalonIdAndAppointmentDateGreaterThanEqualOrderByAppointmentDateAscAppointmentTimeAscIdAsc(
-                        salon.getId(), today, PageRequest.of(currentPage - 1, 10)));
+                        salon.getId(), today, PageRequest.of(currentPage - 1, 10));
+        model.addAttribute("appointments", schedule);
+        model.addAttribute("returningAppointmentIds", analyticsService.getReturningAppointmentIds(salon.getId(), schedule, now));
         model.addAttribute("currentPage", currentPage);
         model.addAttribute("totalPages", totalPages);
         model.addAttribute("appointmentDate", today.toString());

@@ -1,6 +1,7 @@
 package com.cmpt276.project.model;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 import jakarta.persistence.Column;
@@ -131,8 +132,16 @@ public class Appointment {
         return durationMinutes == null ? 60 : durationMinutes;
     }
 
+    public LocalDateTime getStartDateTime() {
+        return appointmentDate.atTime(LocalTime.parse(appointmentTime));
+    }
+
+    public LocalDateTime getEndDateTime() {
+        return getStartDateTime().plusMinutes(getDurationMinutes());
+    }
+
     public LocalTime getEndTime() {
-        return LocalTime.parse(appointmentTime).plusMinutes(getDurationMinutes());
+        return getEndDateTime().toLocalTime();
     }
   
     public String getGoogleEventId() {

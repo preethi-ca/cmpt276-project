@@ -4,7 +4,10 @@ import com.cmpt276.project.model.Appointment;
 import com.cmpt276.project.repository.AppointmentRepository;
 import org.springframework.stereotype.Service;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
+import java.time.LocalDateTime;
 import java.math.BigDecimal;
 import com.cmpt276.project.owner.model.Salon;
 import com.cmpt276.project.owner.model.SalonService;
@@ -17,6 +20,33 @@ public class SalonAnalyticsService {
 
     public SalonAnalyticsService(AppointmentRepository appointmentRepository) {
         this.appointmentRepository = appointmentRepository;
+    }
+
+    public Set<Integer> getReturningAppointmentIds(String salonId, List<Appointment> schedule, LocalDateTime now) {
+        if (schedule.isEmpty()) {
+            return Set.of();
+        }
+        var customerIds = schedule.stream().map(visit -> visit.getCustomer().getId()).distinct().toList();
+        var history = appointmentRepository.findBySalonIdAndCustomer_IdInAndAppointmentDateLessThanEqual(
+                salonId, customerIds, now.toLocalDate());
+        Map<Integer, LocalDateTime> firstCompletedEnd = new HashMap<>();
+        for (Appointment visit : history) {
+            LocalDateTime end = visit.getEndDateTime();
+            if (!end.isAfter(now)) {
+                firstCompletedEnd.merge(visit.getCustomer().getId(), end,
+                        (first, other) -> first.isBefore(other) ? first : other);
+            }
+        }
+
+        // A completed visit counts only for later appointments, never for its own row.
+        Set<Integer> returning = new HashSet<>();
+        for (Appointment visit : schedule) {
+            LocalDateTime firstEnd = firstCompletedEnd.get(visit.getCustomer().getId());
+            if (firstEnd != null && !firstEnd.isAfter(visit.getStartDateTime())) {
+                returning.add(visit.getId());
+            }
+        }
+        return returning;
     }
 
     public int getTotalAppointments(String salonId) {
