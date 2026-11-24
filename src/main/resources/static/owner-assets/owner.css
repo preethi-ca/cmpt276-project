@@ -301,3 +301,15 @@ dialog::backdrop { background: rgb(25 34 28 / 35%); }
 .owner-account-links a.text-button {
     color: #285943;
 }
+
+.print-preview .print-controls { display: flex; align-items: center; gap: 16px; }
+.print-preview td { overflow-wrap: anywhere; }
+@media print {
+    body.print-preview { background: white; color: black; }
+    .print-preview .sidebar, .print-preview .workspace-header, .print-preview .print-controls,
+    .print-preview .skip-link, .print-preview .notice { display: none; }
+    .print-preview .app-layout { display: block; min-height: 0; }
+    .print-preview .workspace, .print-preview .panel { max-width: none; padding: 0; border: 0; }
+    .print-preview thead { display: table-header-group; }
+    .print-preview tr { break-inside: avoid; }
+}

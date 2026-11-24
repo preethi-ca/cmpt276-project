@@ -445,6 +445,32 @@ class Cmpt276ProjectApplicationTests {
     }
 
     @Test
+    void printableScheduleIncludesTheEntireDayForTheOwnersSalon() throws Exception {
+        Salon salon = store.findByOwnerId(ownerId);
+        Salon other = createAdditionalSalon("Other Salon", "200 Main Street");
+        LocalDate today = LocalDate.now(ZoneId.of("America/Vancouver"));
+        List<Appointment> expected = new ArrayList<>();
+        for (int hour = 17; hour >= 7; hour--) {
+            String time = String.format("%02d:00", hour);
+            expected.add(appointments.save(new Appointment("Visit at " + time, "service", salon.getId(),
+                    today, time, dashboardCustomer, null, hour == 17 ? 90 : 30)));
+        }
+        appointments.save(new Appointment("Other shop visit", "service", other.getId(), today, "11:00", dashboardCustomer));
+        appointments.save(new Appointment("Tomorrow visit", "service", salon.getId(), today.plusDays(1), "11:00", dashboardCustomer));
+
+        var result = mvc.perform(get("/owner/appointments/print").with(user(owner.getEmail()).roles("SALONOWNER")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Visit at 17:00")))
+                .andExpect(content().string(containsString("18:30")))
+                .andExpect(content().string(not(containsString("Other shop visit"))))
+                .andExpect(content().string(not(containsString("Tomorrow visit"))))
+                .andReturn();
+        var printed = (List<Appointment>) result.getModelAndView().getModel().get("appointments");
+        expected.sort(Comparator.comparing(Appointment::getAppointmentTime).thenComparingInt(Appointment::getId));
+        assertEquals(expected.stream().map(Appointment::getId).toList(), printed.stream().map(Appointment::getId).toList());
+    }
+
+    @Test
     void persistedOwnerAppointmentsAreScopedSortedPagedAndCountedAcrossWeekBoundaries() throws Exception {
         Salon salon = store.findByOwnerId(ownerId);
         Account customer = accounts.save(new Account("Visible Customer", UUID.randomUUID() + "@example.com", "hash", RoleType.CUSTOMER));

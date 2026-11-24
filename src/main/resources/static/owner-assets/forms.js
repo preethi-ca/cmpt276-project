@@ -1,3 +1,8 @@
+var printSchedule = document.getElementById('print-schedule');
+if (printSchedule) {
+  printSchedule.addEventListener('click', function () { window.print(); });
+}
+
 document.querySelectorAll('.day-row').forEach(function (row) {
   var checkbox = row.querySelector('input[type="checkbox"]');
   function updateDay() {

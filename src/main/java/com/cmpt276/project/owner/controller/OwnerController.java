@@ -35,6 +35,7 @@ import com.cmpt276.project.owner.service.SalonAnalyticsService;
 @Controller
 @RequestMapping("/owner")
 public class OwnerController {
+    private static final ZoneId SALON_TIME_ZONE = ZoneId.of("America/Vancouver");
     private final OwnerService service;
     private final CurrentOwner currentOwner;
     private final Environment environment;
@@ -143,7 +144,7 @@ public class OwnerController {
         if (salon == null) {
             return "redirect:/owner/setup";
         }
-        LocalDate today = LocalDate.now(ZoneId.of("America/Vancouver"));
+        LocalDate today = LocalDate.now(SALON_TIME_ZONE);
         LocalDate weekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         long todayCount = appointments.countBySalonIdAndAppointmentDate(salon.getId(), today);
         long upcomingCount = appointments.countBySalonIdAndAppointmentDateAfter(salon.getId(), today);
@@ -163,6 +164,19 @@ public class OwnerController {
         model.addAttribute("appointmentDateLabel", today.format(
                 DateTimeFormatter.ofPattern("EEEE, MMMM d, uuuu", Locale.CANADA)));
         return page(model, "appointments", "Appointments");
+    }
+
+    @GetMapping("/appointments/print")
+    public String printTodayAppointments(Model model) {
+        Salon salon = (Salon) model.getAttribute("salon");
+        if (salon == null) {
+            return "redirect:/owner/setup";
+        }
+        LocalDate today = LocalDate.now(SALON_TIME_ZONE);
+        model.addAttribute("appointments", appointments.findBySalonIdAndAppointmentDateOrderByAppointmentTimeAscIdAsc(
+                salon.getId(), today));
+        model.addAttribute("appointmentDate", today);
+        return page(model, "print-appointments", "Today's appointments");
     }
 
     @GetMapping("/profile")

@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{owner/fragments :: head(${title})}"></head>
-<body class="owner-app">
+<body class="owner-app" th:classappend="${section == 'print-appointments' ? 'print-preview' : ''}">
 <a class="skip-link" href="#main">Skip to content</a>
 <div class="app-layout">
   <aside class="sidebar">
@@ -35,6 +35,11 @@
     <main id="main" class="workspace">
       <div class="page-heading">
         <h1 th:text="${title}"></h1>
+        <a th:if="${section == 'appointments'}" class="button" th:href="@{/owner/appointments/print}">Print today's appointments</a>
+        <div th:if="${section == 'print-appointments'}" class="print-controls">
+          <a th:href="@{/owner/appointments}">Back to appointments</a>
+          <button type="button" class="button primary" id="print-schedule">Print</button>
+        </div>
         <a th:if="${section == 'services'}" class="button primary" th:href="@{/owner/services(view='add')}"><span aria-hidden="true">＋ </span>Add Service</a>
         <button th:if="${section == 'profile'}" type="submit" form="salon-form" class="button primary">Save Changes</button>
         <button th:if="${section == 'hours'}" type="submit" form="hours-form" class="button primary">Save Availability</button>
@@ -122,6 +127,23 @@
             <a th:if="${currentPage < totalPages}" th:href="@{/owner/appointments(page=${currentPage + 1})}">Next</a>
           </nav>
         </section>
+      </section>
+
+      <section th:if="${section == 'print-appointments'}" class="panel" aria-labelledby="print-salon">
+        <h2 id="print-salon" th:text="${salon.name}"></h2>
+        <p><time th:datetime="${appointmentDate}" th:text="${appointmentDate}"></time> · Vancouver time</p>
+        <p th:if="${appointments.isEmpty()}">No appointments scheduled for today.</p>
+        <table th:unless="${appointments.isEmpty()}">
+          <caption class="sr-only">Today's appointments in start time order</caption>
+          <thead><tr><th scope="col">Time</th><th scope="col">Customer</th><th scope="col">Service</th></tr></thead>
+          <tbody>
+            <tr th:each="appointment : ${appointments}">
+              <td th:text="|${appointment.appointmentTime} – ${appointment.endTime}|"></td>
+              <td th:text="${appointment.customer.name}"></td>
+              <td th:text="${appointment.serviceName}"></td>
+            </tr>
+          </tbody>
+        </table>
       </section>
 
       <section th:if="${section == 'setup' or section == 'profile'}" class="profile-layout">

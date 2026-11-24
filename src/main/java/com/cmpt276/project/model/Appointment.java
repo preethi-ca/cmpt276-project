@@ -1,6 +1,7 @@
 package com.cmpt276.project.model;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -128,6 +129,10 @@ public class Appointment {
 
     public int getDurationMinutes() {
         return durationMinutes == null ? 60 : durationMinutes;
+    }
+
+    public LocalTime getEndTime() {
+        return LocalTime.parse(appointmentTime).plusMinutes(getDurationMinutes());
     }
   
     public String getGoogleEventId() {
