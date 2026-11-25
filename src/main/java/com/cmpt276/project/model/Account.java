@@ -15,6 +15,9 @@ public class Account {
 
     private String passwordHash;
 
+    @Column(unique = true)
+    private String googleSubject;
+
     @Enumerated(EnumType.STRING)
     private RoleType roleType;
 
@@ -79,5 +82,13 @@ public class Account {
 
     public void setNotificationPreference(NotificationPreference notificationPreference) {
         this.notificationPreference = notificationPreference;
+    }
+
+    public String getGoogleSubject() {
+        return googleSubject;
+    }
+
+    public void setGoogleSubject(String googleSubject) {
+        this.googleSubject = googleSubject;
     }
 }
