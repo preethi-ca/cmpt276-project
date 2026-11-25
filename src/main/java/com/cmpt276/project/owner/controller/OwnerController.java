@@ -331,11 +331,12 @@ public class OwnerController {
 
     private void serviceList(Model model, int requestedPage) {
         Salon salon = (Salon) model.getAttribute("salon");
-        int total = salon.getServices().size();
+        List<SalonService> menu = salon.getServices();
+        int total = menu.size();
         int pages = Math.max(1, (total + 9) / 10);
         int current = Math.max(1, Math.min(requestedPage, pages));
         int start = (current - 1) * 10;
-        model.addAttribute("servicePage", salon.getServices().subList(start, Math.min(start + 10, total)));
+        model.addAttribute("servicePage", menu.subList(start, Math.min(start + 10, total)));
         model.addAttribute("currentPage", current);
         model.addAttribute("totalPages", pages);
     }

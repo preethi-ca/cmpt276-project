@@ -202,8 +202,8 @@
       <section th:if="${section == 'services'}" class="services-layout" aria-label="Service menu">
 
         <div class="service-list">
-          <div th:if="${salon.services.isEmpty()}" class="empty-state"><h2>No services yet.</h2><p>Choose Add Service to create your first service and price.</p></div>
-          <div th:unless="${salon.services.isEmpty()}" class="table-scroll">
+          <div th:if="${servicePage.isEmpty()}" class="empty-state"><h2>No services yet.</h2><p>Choose Add Service to create your first service and price.</p></div>
+          <div th:unless="${servicePage.isEmpty()}" class="table-scroll">
             <table class="service-table">
               <caption class="sr-only">Salon services, prices in Canadian dollars and durations</caption>
               <thead><tr><th scope="col">Service</th><th scope="col">Price (CAD)</th><th scope="col">Actions</th></tr></thead>

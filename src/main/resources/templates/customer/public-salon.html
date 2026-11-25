@@ -69,9 +69,9 @@
       <section th:if="${photoIds != null and !photoIds.isEmpty()}" class="card mb-4" aria-labelledby="salon-photos-title">
         <div class="card-body">
           <h2 id="salon-photos-title" class="h4 mb-3">Salon Gallery</h2>
-          <ul class="list-unstyled">
+          <ul class="list-unstyled row row-cols-2 row-cols-sm-3 row-cols-lg-5 g-2 mb-0">
             <li class="col" th:each="photoId, row : ${photoIds}">
-              <a class="ratio ratio-4x3" th:href="@{/salons/{slug}/photos/{id}(slug=${salon.slug},id=${photoId})}">
+              <a class="d-block ratio ratio-4x3" th:href="@{/salons/{slug}/photos/{id}(slug=${salon.slug},id=${photoId})}">
                 <img class="object-fit-cover rounded" loading="lazy"
                      th:src="@{/salons/{slug}/photos/{id}(slug=${salon.slug},id=${photoId})}"
                      th:alt="|${salon.name}, photo ${row.count}|">

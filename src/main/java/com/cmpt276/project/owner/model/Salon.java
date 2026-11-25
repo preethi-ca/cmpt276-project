@@ -20,7 +20,7 @@ public class Salon {
     private String province;
     private String phone;
     private String email;
-    private List<SalonService> services = new ArrayList<>();
+    private volatile List<SalonService> services = new ArrayList<>();
     private List<OpeningDay> openingHours = new ArrayList<>();
 
     public String getId() { return id; }

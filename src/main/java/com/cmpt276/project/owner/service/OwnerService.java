@@ -171,8 +171,11 @@ public class OwnerService {
         }
         return salon;
     }
-    //Use synchronized keyword to avoid data errors caused by concurrent modifications
     public synchronized boolean saveProfile(String ownerId, SalonForm form, boolean create, Errors errors) {
+        return store.withSalonForUpdate(ownerId, salon -> saveProfile(salon, ownerId, form, create, errors));
+    }
+
+    private boolean saveProfile(Salon salon, String ownerId, SalonForm form, boolean create, Errors errors) {
         validateText(form.getName(), "name", 80, true, errors);
         validateText(form.getDescription(), "description", 500, false, errors);
         validateText(form.getAddress(), "address", 200, false, errors);
@@ -191,7 +194,6 @@ public class OwnerService {
         if (!email.isEmpty() && !email.matches("[^\\s@]+@[^\\s@]+\\.[^\\s@]+")) {
             errors.rejectValue("email", "email", "Enter a valid email address.");
         }
-        Salon salon = store.findByOwnerId(ownerId);
         if (create && salon != null) {
             errors.reject("exists", "You already have a salon. Open your workspace to view it.");
         }
@@ -220,30 +222,39 @@ public class OwnerService {
         return true;
     }
 
-    public synchronized boolean addService(String ownerId, ServiceForm form, Errors errors) {
-        return saveService(ownerId, null, form, errors);
+    public boolean addService(String ownerId, ServiceForm form, Errors errors) {
+        return store.withSalonForUpdate(ownerId, salon -> saveService(requireSalon(salon), null, form, errors));
     }
 
-    public synchronized boolean updateService(String ownerId, String id, ServiceForm form, Errors errors) {
-        return saveService(ownerId, id, form, errors);
+    public boolean updateService(String ownerId, String id, ServiceForm form, Errors errors) {
+        return store.withSalonForUpdate(ownerId, salon -> saveService(requireSalon(salon), id, form, errors));
     }
 
     public SalonService findService(String ownerId, String id) {
-        return requireSalon(ownerId).getServices().stream().filter(item -> item.getId().equals(id))
+        return findService(requireSalon(ownerId), id);
+    }
+
+    private SalonService findService(Salon salon, String id) {
+        return salon.getServices().stream().filter(item -> item.getId().equals(id))
                 .findFirst().orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
-    public synchronized void deleteService(String ownerId, String id) {
-        Salon salon = requireSalon(ownerId);
-        findService(ownerId, id);
-        // Remove only this owner's menu entry; saved appointments remain intact.
-        salon.getServices().removeIf(item -> item.getId().equals(id));
-        store.save(salon);
+    public void deleteService(String ownerId, String id) {
+        store.withSalonForUpdate(ownerId, salon -> {
+            var menu = new ArrayList<>(requireSalon(salon).getServices());
+            if (!menu.removeIf(item -> item.getId().equals(id))) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+            }
+            salon.setServices(menu);
+            store.save(salon);
+            return null;
+        });
     }
 
-    private boolean saveService(String ownerId, String id, ServiceForm form, Errors errors) {
-        Salon salon = requireSalon(ownerId);
-        SalonService target = id == null ? new SalonService() : findService(ownerId, id);
+    private boolean saveService(Salon salon, String id, ServiceForm form, Errors errors) {
+        if (id != null) {
+            findService(salon, id);
+        }
         if (!SalonService.DURATION_OPTIONS.contains(form.getDurationMinutes())) {
             errors.rejectValue("durationMinutes", "duration", "Choose 30, 60, 90 or 120 minutes.");
         }
@@ -268,23 +279,28 @@ public class OwnerService {
         if (errors.hasErrors()) {
             return false;
         }
-        // Validate before mutation and preserve identity on edits.
+        var menu = new ArrayList<>(salon.getServices());
+        SalonService target = new SalonService();
+        target.setId(id == null ? UUID.randomUUID().toString() : id);
         target.setName(form.getName().trim());
         target.setPrice(price);
         target.setDurationMinutes(form.getDurationMinutes());
         target.setDescription(clean(form.getDescription()));
         if (id == null) {
-            target.setId(UUID.randomUUID().toString());
-            salon.getServices().add(target);
+            menu.add(target);
         } else {
-            salon.getServices().replaceAll(item -> item.getId().equals(id) ? target : item);
+            menu.replaceAll(item -> item.getId().equals(id) ? target : item);
         }
+        salon.setServices(menu);
         store.save(salon);
         return true;
     }
 
-    public synchronized boolean setOpeningHours(String ownerId, HoursForm form, Errors errors) {
-        Salon salon = requireSalon(ownerId);
+    public boolean setOpeningHours(String ownerId, HoursForm form, Errors errors) {
+        return store.withSalonForUpdate(ownerId, salon -> setOpeningHours(requireSalon(salon), form, errors));
+    }
+
+    private boolean setOpeningHours(Salon salon, HoursForm form, Errors errors) {
         if (form.getDays() == null || form.getDays().size() != 7) {
             errors.reject("days", "Provide a weekly schedule with seven days.");
             return false;
@@ -340,7 +356,10 @@ public class OwnerService {
     }
 
     private Salon requireSalon(String ownerId) {
-        Salon salon = store.findByOwnerId(ownerId);
+        return requireSalon(store.findByOwnerId(ownerId));
+    }
+
+    private Salon requireSalon(Salon salon) {
         if (salon == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }

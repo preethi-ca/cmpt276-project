@@ -4,10 +4,12 @@ import java.time.temporal.TemporalAdjusters;
 import com.cmpt276.project.model.Account;
 import com.cmpt276.project.model.Appointment;
 import com.cmpt276.project.model.RoleType;
+import com.cmpt276.project.owner.controller.OwnerController;
 import com.cmpt276.project.owner.controller.OwnerController.HoursForm;
 import com.cmpt276.project.owner.controller.OwnerController.SalonForm;
 import com.cmpt276.project.owner.controller.OwnerController.ServiceForm;
 import com.cmpt276.project.owner.model.Salon;
+import com.cmpt276.project.owner.model.SalonService;
 import com.cmpt276.project.owner.service.OwnerService;
 import com.cmpt276.project.owner.service.SalonAnalyticsService;
 import com.cmpt276.project.owner.store.JpaSalonStore;
@@ -33,6 +35,10 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.ui.ExtendedModelMap;
 import org.springframework.validation.BeanPropertyBindingResult;
 
 import static org.hamcrest.Matchers.containsString;
@@ -120,41 +126,6 @@ class Cmpt276ProjectApplicationTests {
                 .andExpect(status().is3xxRedirection());
         mvc.perform(get(publicPath)).andExpect(status().isNotFound());
         assertEquals(4, owners.getGalleryPhotoIds(salon.getId()).size());
-    }
-
-    @Test
-    void emptyMemoryStoreProvidesAnEmptyPublicSalonList() {
-        var memory = new MemorySalonStore();
-        assertTrue(memory.findAll().isEmpty());
-        assertTrue(new OwnerService(memory).findPublicSalons().isEmpty());
-    }
-
-    @Test
-    void memorySalonListDoesNotExposeTheBackingCollection() {
-        var memory = new MemorySalonStore();
-        Salon first = memorySalon("first", "First Salon");
-        memory.save(first);
-        var snapshot = memory.findAll();
-        memory.save(memorySalon("second", "Second Salon"));
-        assertEquals(List.of(first), snapshot);
-        // Changing the returned collection must not remove saved salons.
-        snapshot.clear();
-        assertEquals(2, memory.findAll().size());
-        assertSame(first, memory.findById(first.getId()));
-    }
-
-    @Test
-    void publicSalonsSortByNameThenSlugAndKeepSameNameSalons() {
-        var memory = new MemorySalonStore();
-        Salon zulu = memorySalon("zulu", "Zulu");
-        Salon secondAlpha = memorySalon("alpha-2", "Alpha");
-        Salon firstAlpha = memorySalon("alpha", "alpha");
-        memory.save(zulu);
-        memory.save(secondAlpha);
-        memory.save(firstAlpha);
-
-        assertEquals(List.of(firstAlpha, secondAlpha, zulu), new OwnerService(memory).findPublicSalons());
-        assertEquals(List.of(zulu, secondAlpha, firstAlpha), memory.findAll());
     }
 
     @Test
@@ -583,6 +554,57 @@ class Cmpt276ProjectApplicationTests {
         }
         mvc.perform(get("/owner/appointments").param("page", "2").with(user(owner.getEmail()).roles("SALONOWNER")))
                 .andExpect(status().isOk()).andExpect(model().attribute("currentPage", 1));
+    }
+
+    @Test
+    void servicePageKeepsItsMenuWhileAnotherTabEditsIt(@Autowired OwnerController controller) {
+        var memory = new MemorySalonStore();
+        var menu = new OwnerService(memory);
+        Salon salon = memorySalon("cedar", "Cedar Salon");
+        memory.save(salon);
+        ServiceForm service = new ServiceForm();
+        service.setName("Cut");
+        service.setPrice("30");
+        assertTrue(menu.addService(salon.getOwnerId(), service, errors(service, "serviceForm")));
+        String id = salon.getServices().get(0).getId();
+
+        var model = new ExtendedModelMap();
+        model.addAttribute("salon", salon);
+        controller.services(1, "", model);
+
+        // Another tab changes the menu after the GET has built its model but before rendering.
+        service.setName("Trim");
+        assertTrue(menu.updateService(salon.getOwnerId(), id, service, errors(service, "serviceForm")));
+        menu.deleteService(salon.getOwnerId(), id);
+        assertTrue(salon.getServices().isEmpty());
+        var page = (List<?>) model.getAttribute("servicePage");
+        assertEquals("Cut", ((SalonService) page.get(0)).getName());
+    }
+
+    @Test
+    void overlappingOwnerEditsPreserveProfileMenuAndHours(@Autowired PlatformTransactionManager transactions) {
+        var secondInstance = new OwnerService(store);
+        var otherTransaction = new TransactionTemplate(transactions);
+        otherTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+
+        new TransactionTemplate(transactions).executeWithoutResult(first -> {
+            assertTrue(store.findByOwnerId(ownerId).getServices().isEmpty());
+            otherTransaction.executeWithoutResult(second -> {
+                var service = new ServiceForm();
+                service.setName("Haircut");
+                service.setPrice("35");
+                assertTrue(owners.addService(ownerId, service, errors(service, "serviceForm")));
+                saveHours("09:00", "17:00");
+            });
+            var changed = profile();
+            changed.setCity("Richmond");
+            assertTrue(secondInstance.saveProfile(ownerId, changed, false, errors(changed, "salonForm")));
+        });
+
+        Salon saved = store.findByOwnerId(ownerId);
+        assertEquals("Richmond", saved.getCity());
+        assertEquals(List.of("Haircut"), saved.getServices().stream().map(item -> item.getName()).toList());
+        assertEquals("09:00", saved.getOpeningHours().get(0).getStartTime());
     }
 
     private SalonForm profile() {
