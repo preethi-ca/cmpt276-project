@@ -4,6 +4,8 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
+import java.util.UUID;
 
 @Entity
 @Table(name = "salon")
@@ -85,5 +87,37 @@ public class SalonEntity {
     public String getOpeningHoursJson() { return openingHoursJson; }
     public void setOpeningHoursJson(String openingHoursJson) {
         this.openingHoursJson = openingHoursJson;
+    }
+
+    @Entity(name = "SalonPhoto")
+    @Table(name = "salon_photo", uniqueConstraints = @UniqueConstraint(columnNames = {"salon_id", "slot"}))
+    public static class Photo {
+        @Id
+        private UUID id;
+
+        @Column(name = "salon_id", nullable = false)
+        private String salonId;
+
+        @Column(nullable = false)
+        private int slot;
+
+        @Column(nullable = false)
+        private String contentType;
+
+        @Column(nullable = false, length = 5 * 1024 * 1024)
+        private byte[] content;
+
+        protected Photo() {}
+
+        public Photo(String salonId, int slot, String contentType, byte[] content) {
+            this.id = UUID.randomUUID();
+            this.salonId = salonId;
+            this.slot = slot;
+            this.contentType = contentType;
+            this.content = content;
+        }
+
+        public String getContentType() { return contentType; }
+        public byte[] getContent() { return content; }
     }
 }

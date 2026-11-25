@@ -2,6 +2,9 @@
 package com.cmpt276.project.owner.controller;
 
 import com.cmpt276.project.service.AccountService;
+import java.util.UUID;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import com.cmpt276.project.owner.service.OwnerService;
@@ -28,6 +31,7 @@ public class PublicSalonController {
             accounts.recordSalonVisit(authentication.getName(), salon.getId());
         }
         model.addAttribute("salon", salon);
+        model.addAttribute("photoIds", ownerService.getGalleryPhotoIds(salon.getId()));
         String[] days = {
                 "Monday", "Tuesday", "Wednesday", "Thursday",
                 "Friday", "Saturday", "Sunday"
@@ -35,5 +39,12 @@ public class PublicSalonController {
         model.addAttribute("days", days);
 
         return "customer/public-salon";
+    }
+
+    @GetMapping("/salons/{slug}/photos/{id}")
+    public ResponseEntity<byte[]> photo(@PathVariable String slug, @PathVariable UUID id) {
+        String salonId = ownerService.findPublicSalonBySlug(slug).getId();
+        var photo = ownerService.getGalleryPhoto(salonId, id);
+        return ResponseEntity.ok().contentType(MediaType.parseMediaType(photo.getContentType())).body(photo.getContent());
     }
 }

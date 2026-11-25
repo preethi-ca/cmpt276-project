@@ -3,6 +3,28 @@ if (printSchedule) {
   printSchedule.addEventListener('click', function () { window.print(); });
 }
 
+var photos = document.getElementById('photos');
+if (photos) {
+  photos.addEventListener('invalid', function () {
+    if (!photos.files.length) photos.setCustomValidity('Choose at least one photo.');
+  });
+  photos.addEventListener('change', function () {
+    var remaining = Number(photos.dataset.remaining);
+    var count = photos.files.length;
+    var selection = document.getElementById('photo-selection');
+    selection.textContent = count === 1 ? photos.files[0].name : count + ' photos selected';
+    if (!count) selection.textContent = 'No photos selected';
+    var message = '';
+    if (photos.files.length > remaining) {
+      message = 'Choose at most ' + remaining + (remaining === 1 ? ' more photo.' : ' more photos.');
+    } else if (Array.from(photos.files).some(function (file) { return file.size > 5 * 1024 * 1024; })) {
+      message = 'Each photo must be 5 MB or smaller.';
+    }
+    photos.setCustomValidity(message);
+    if (message) photos.reportValidity();
+  });
+}
+
 document.querySelectorAll('.day-row').forEach(function (row) {
   var checkbox = row.querySelector('input[type="checkbox"]');
   function updateDay() {

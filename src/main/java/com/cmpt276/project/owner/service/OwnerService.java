@@ -1,18 +1,29 @@
 package com.cmpt276.project.owner.service;
 
 import java.util.Objects;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Iterator;
 import java.util.Locale;
 import java.util.UUID;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.MemoryCacheImageInputStream;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.Errors;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.cmpt276.project.owner.controller.OwnerController.HoursForm;
@@ -22,10 +33,16 @@ import com.cmpt276.project.owner.model.OpeningDay;
 import com.cmpt276.project.owner.model.Salon;
 import com.cmpt276.project.owner.model.SalonService;
 import com.cmpt276.project.owner.store.SalonStore;
+import com.cmpt276.project.owner.store.SalonEntity.Photo;
 
 @Service
 public class OwnerService {
+    private static final int MAX_GALLERY_PHOTOS = 5;
+    private static final int MAX_PHOTO_BYTES = 5 * 1024 * 1024;
+
     private final SalonStore store;
+    @PersistenceContext
+    private EntityManager entityManager;
 
     public OwnerService(SalonStore store) {
         this.store = store;
@@ -33,6 +50,93 @@ public class OwnerService {
 
     public Salon findForOwner(String ownerId) {
         return store.findByOwnerId(ownerId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<UUID> getGalleryPhotoIds(String salonId) {
+        return entityManager.createQuery(
+                "select p.id from SalonPhoto p where p.salonId = :salon order by p.slot", UUID.class)
+                .setParameter("salon", salonId).getResultList();
+    }
+
+    @Transactional(readOnly = true)
+    public Photo getGalleryPhoto(String salonId, UUID id) {
+        Photo photo = entityManager.createQuery(
+                "select p from SalonPhoto p where p.salonId = :salon and p.id = :id", Photo.class)
+                .setParameter("salon", salonId).setParameter("id", id).getSingleResultOrNull();
+        if (photo == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+        return photo;
+    }
+
+    @Transactional
+    public void addGalleryPhotos(String ownerId, List<MultipartFile> files) {
+        String salonId = requireSalon(ownerId).getId();
+        if (files == null || files.isEmpty()) {
+            throw new IllegalArgumentException("Choose a JPEG or PNG photo to upload.");
+        }
+        List<Integer> occupied = entityManager.createQuery(
+                "select p.slot from SalonPhoto p where p.salonId = :salon", Integer.class)
+                .setParameter("salon", salonId).getResultList();
+        if (occupied.size() + files.size() > MAX_GALLERY_PHOTOS) {
+            throw new IllegalArgumentException("Your gallery can contain up to 5 photos.");
+        }
+        int slot = 0;
+        for (MultipartFile file : files) {
+            while (occupied.contains(slot)) {
+                slot++;
+            }
+            entityManager.persist(readGalleryPhoto(salonId, slot++, file));
+        }
+    }
+
+    private Photo readGalleryPhoto(String salonId, int slot, MultipartFile file) {
+        if (file.isEmpty() || file.getSize() > MAX_PHOTO_BYTES) {
+            throw new IllegalArgumentException("Choose a non-empty photo of 5 MB or less.");
+        }
+        try {
+            byte[] content = file.getBytes();
+            try (var input = new MemoryCacheImageInputStream(new ByteArrayInputStream(content))) {
+                Iterator<ImageReader> readers = ImageIO.getImageReaders(input);
+                if (!readers.hasNext()) {
+                    throw new IllegalArgumentException("Choose a valid JPEG or PNG photo.");
+                }
+                ImageReader reader = readers.next();
+                try {
+                    String format = reader.getFormatName().toLowerCase(Locale.ROOT);
+                    if (!format.equals("jpeg") && !format.equals("png")) {
+                        throw new IllegalArgumentException("Choose a JPEG or PNG photo.");
+                    }
+                    reader.setInput(input, true, true);
+                    int width = reader.getWidth(0);
+                    int height = reader.getHeight(0);
+                    if ((long) width * height > 64_000_000L) {
+                        throw new IllegalArgumentException("Choose a photo with at most 64 megapixels.");
+                    }
+                    ImageReadParam options = reader.getDefaultReadParam();
+                    int step = Math.max(1, Math.max(width, height) / 1024);
+                    options.setSourceSubsampling(step, step, 0, 0);
+                    reader.read(0, options);
+                    return new Photo(salonId, slot, "image/" + format, content);
+                } finally {
+                    reader.dispose();
+                }
+            }
+        } catch (IOException ex) {
+            throw new IllegalArgumentException("Choose a readable JPEG or PNG photo.", ex);
+        }
+    }
+
+    @Transactional
+    public void removeGalleryPhoto(String ownerId, UUID id) {
+        String salonId = requireSalon(ownerId).getId();
+        int removed = entityManager.createQuery(
+                "delete from SalonPhoto p where p.salonId = :salon and p.id = :id")
+                .setParameter("salon", salonId).setParameter("id", id).executeUpdate();
+        if (removed == 0) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
     }
 
     public List<Salon> findPublicSalons() {

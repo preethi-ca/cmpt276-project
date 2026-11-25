@@ -20,6 +20,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
@@ -29,6 +30,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.validation.BeanPropertyBindingResult;
@@ -80,6 +82,44 @@ class Cmpt276ProjectApplicationTests {
     @Test
     void contextLoads() {
         assertInstanceOf(JpaSalonStore.class, store);
+    }
+
+    @Test
+    void ownerCanPublishAndRemovePhotosWithinTheFivePhotoLimit() throws Exception {
+        Salon salon = store.findByOwnerId(ownerId);
+        Salon otherSalon = createAdditionalSalon("Other Gallery", "200 Main Street");
+        var signedIn = user(owner.getEmail()).roles("SALONOWNER");
+        String upload = "/owner/profile/photos";
+        mvc.perform(get("/owner/profile").with(signedIn)).andExpect(status().isOk())
+                .andExpect(content().string(containsString("Choose photos")))
+                .andExpect(content().string(containsString("No photos selected")));
+        byte[] png = Base64.getDecoder().decode(
+                "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGMwK1gCAAIqAUsxPtcIAAAAAElFTkSuQmCC");
+        var photo = new MockMultipartFile("photos", "salon.png", "image/png", png);
+        mvc.perform(multipart(upload).file(photo).with(signedIn).with(csrf()))
+                .andExpect(status().is3xxRedirection());
+        var ids = owners.getGalleryPhotoIds(salon.getId());
+        assertEquals(1, ids.size());
+        String publicPath = "/salons/" + salon.getSlug() + "/photos/" + ids.get(0);
+        mvc.perform(get("/salons/" + salon.getSlug())).andExpect(status().isOk())
+                .andExpect(content().string(containsString("Salon Gallery")))
+                .andExpect(content().string(containsString(publicPath)));
+        mvc.perform(get(publicPath)).andExpect(status().isOk())
+                .andExpect(content().contentType("image/png")).andExpect(content().bytes(png));
+        mvc.perform(get("/salons/" + otherSalon.getSlug() + "/photos/" + ids.get(0)))
+                .andExpect(status().isNotFound());
+
+        mvc.perform(multipart(upload).file(photo).file(photo).file(photo).file(photo).file(photo)
+                        .with(signedIn).with(csrf()))
+                .andExpect(status().is3xxRedirection()).andExpect(flash().attributeExists("photoError"));
+        assertEquals(ids, owners.getGalleryPhotoIds(salon.getId()));
+        mvc.perform(multipart(upload).file(photo).file(photo).file(photo).file(photo).with(signedIn).with(csrf()))
+                .andExpect(status().is3xxRedirection());
+        assertEquals(5, owners.getGalleryPhotoIds(salon.getId()).size());
+        mvc.perform(post(upload + "/" + ids.get(0) + "/remove").with(signedIn).with(csrf()))
+                .andExpect(status().is3xxRedirection());
+        mvc.perform(get(publicPath)).andExpect(status().isNotFound());
+        assertEquals(4, owners.getGalleryPhotoIds(salon.getId()).size());
     }
 
     @Test

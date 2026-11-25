@@ -17,6 +17,8 @@ import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.core.env.Environment;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Controller;
@@ -31,6 +33,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.multipart.MultipartFile;
 import com.cmpt276.project.owner.service.SalonAnalyticsService;
 
 @Controller
@@ -198,6 +201,7 @@ public class OwnerController {
         form.setPhone(salon.getPhone());
         form.setEmail(salon.getEmail());
         model.addAttribute("salonForm", form);
+        model.addAttribute("photoIds", service.getGalleryPhotoIds(salon.getId()));
         return page(model, "profile", "Salon Settings");
     }
 
@@ -205,10 +209,35 @@ public class OwnerController {
     public String saveProfile(@ModelAttribute("salonForm") SalonForm salonForm, BindingResult errors, Model model,
             RedirectAttributes redirect) {
         if (!service.saveProfile(currentOwner.getOwnerId(), salonForm, false, errors)) {
+            Salon salon = (Salon) model.getAttribute("salon");
+            if (salon != null) {
+                model.addAttribute("photoIds", service.getGalleryPhotoIds(salon.getId()));
+            }
             return page(model, "profile", "Salon Settings");
         }
         redirect.addFlashAttribute("success", "Salon profile saved.");
         return "redirect:/owner/profile";
+    }
+
+    @PostMapping("/profile/photos")
+    public String uploadPhotos(@RequestParam(name = "photos", required = false) List<MultipartFile> photos,
+            RedirectAttributes redirect) {
+        try {
+            service.addGalleryPhotos(currentOwner.getOwnerId(), photos);
+            redirect.addFlashAttribute("success", "Photos added to your salon.");
+        } catch (IllegalArgumentException ex) {
+            redirect.addFlashAttribute("photoError", ex.getMessage());
+        } catch (DataIntegrityViolationException ex) {
+            redirect.addFlashAttribute("photoError", "Your gallery changed. Check the available spaces and try again.");
+        }
+        return "redirect:/owner/profile#salon-photos";
+    }
+
+    @PostMapping("/profile/photos/{id}/remove")
+    public String removePhoto(@PathVariable UUID id, RedirectAttributes redirect) {
+        service.removeGalleryPhoto(currentOwner.getOwnerId(), id);
+        redirect.addFlashAttribute("success", "Photo removed.");
+        return "redirect:/owner/profile#salon-photos";
     }
 
     @GetMapping("/services")

@@ -66,6 +66,21 @@
         </div>
       </div>
 
+      <section th:if="${photoIds != null and !photoIds.isEmpty()}" class="card mb-4" aria-labelledby="salon-photos-title">
+        <div class="card-body">
+          <h2 id="salon-photos-title" class="h4 mb-3">Salon Gallery</h2>
+          <ul class="list-unstyled">
+            <li class="col" th:each="photoId, row : ${photoIds}">
+              <a class="ratio ratio-4x3" th:href="@{/salons/{slug}/photos/{id}(slug=${salon.slug},id=${photoId})}">
+                <img class="object-fit-cover rounded" loading="lazy"
+                     th:src="@{/salons/{slug}/photos/{id}(slug=${salon.slug},id=${photoId})}"
+                     th:alt="|${salon.name}, photo ${row.count}|">
+              </a>
+            </li>
+          </ul>
+        </div>
+      </section>
+
       <div class="card">
         <div class="card-body">
           <h2 class="h4 mb-3">Choose a Service</h2>
