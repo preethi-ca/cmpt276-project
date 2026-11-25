@@ -7,7 +7,6 @@ import java.math.BigDecimal;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Iterator;
 import java.util.Locale;
@@ -137,14 +136,6 @@ public class OwnerService {
         if (removed == 0) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
-    }
-
-    public List<Salon> findPublicSalons() {
-        // Sort in one place for both stores; the unique slug keeps same-name salons in a stable order.
-        return store.findAll().stream()
-                .sorted(Comparator.comparing(Salon::getName, String.CASE_INSENSITIVE_ORDER)
-                        .thenComparing(Salon::getSlug))
-                .toList();
     }
 
     public List<Salon> findRecentlyVisitedSalons(List<String> orderedIds) {

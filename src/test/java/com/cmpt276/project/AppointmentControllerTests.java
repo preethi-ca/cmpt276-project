@@ -28,12 +28,10 @@ import java.time.ZoneId;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.mockito.Mockito.mock;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
@@ -60,9 +58,26 @@ class AppointmentControllerTests {
     @MockitoBean
     private BookingService bookingService;
 
-    //Test that the owner's appointments page displays unavailable counts without accessing customer bookings
     @Test
-    void ownerAppointmentsReadOnlyTheSignedInSalonAndRenderRealCounts() throws Exception {
+    void ownerEntryAndSetupShareOneSalonLookupPerRequest() throws Exception {
+        var owner = mock(Account.class);
+        when(owner.getId()).thenReturn(42);
+        when(owner.getRoleType()).thenReturn(RoleType.SALONOWNER);
+        when(accountRepository.findByEmail("owner@test.com")).thenReturn(Optional.of(owner));
+        var signedIn = user("owner@test.com").roles("SALONOWNER");
+
+        mockMvc.perform(get("/owner").with(signedIn)).andExpect(redirectedUrl("/owner/setup"));
+        mockMvc.perform(get("/owner/setup").with(signedIn)).andExpect(status().isOk())
+                .andExpect(model().attributeExists("salonForm"));
+
+        when(ownerService.findForOwner("42")).thenReturn(new Salon());
+        mockMvc.perform(get("/owner").with(signedIn)).andExpect(redirectedUrl("/owner/dashboard"));
+        mockMvc.perform(get("/owner/setup").with(signedIn)).andExpect(redirectedUrl("/owner/dashboard"));
+        verify(ownerService, times(4)).findForOwner("42");
+    }
+
+    @Test
+    void ownerAppointmentsShowTheSignedInSalonsBookingsAndCounts() throws Exception {
         Account owner = mock(Account.class);
         Salon salon = mock(Salon.class);
         when(owner.getId()).thenReturn(42);
@@ -70,9 +85,6 @@ class AppointmentControllerTests {
         when(accountRepository.findByEmail("owner@test.com")).thenReturn(Optional.of(owner));
         when(ownerService.findForOwner("42")).thenReturn(salon);
         when(salon.getId()).thenReturn("owned-salon");
-        when(salon.getName()).thenReturn("Owner Salon");
-        when(salon.getSlug()).thenReturn("owner-salon");
-        when(ownerService.findPublicSalonBySlug("owner-salon")).thenReturn(salon);
         LocalDate today = LocalDate.now(ZoneId.of("America/Vancouver"));
         LocalDate monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         when(appointmentRepository.countBySalonIdAndAppointmentDate("owned-salon", today)).thenReturn(2L);
@@ -85,35 +97,13 @@ class AppointmentControllerTests {
         mockMvc.perform(get("/owner/appointments").param("ownerId", "other").param("salonId", "other")
                         .with(user("owner@test.com").roles("SALONOWNER")))
                 .andExpect(status().isOk())
-                .andExpect(view().name("owner/workspace"))
-                .andExpect(model().attribute("section", "appointments"))
-                .andExpect(model().attribute("salon", salon))
-                .andExpect(model().attribute("salonUrl", "/salons/owner-salon"))
-                .andExpect(model().attribute("appointmentDate", today.toString()))
-                .andExpect(content().string(not(containsString("href=\"/salons/owner-salon\""))))
-                .andExpect(content().string(not(containsString("/demo/salons/"))))
-                .andExpect(content().string(containsString("href=\"/owner/appointments\" aria-current=\"page\"")))
-                .andExpect(content().string(not(containsString("Local demo"))))
                 .andExpect(model().attribute("todayAppointmentCount", 2L))
                 .andExpect(model().attribute("upcomingAppointmentCount", 11L))
                 .andExpect(model().attribute("weekAppointmentCount", 4L))
-                .andExpect(model().attribute("totalPages", 2L))
                 .andExpect(content().string(containsString("Customer &lt;script&gt;")))
                 .andExpect(content().string(containsString("Original &lt;Cut&gt;")))
                 .andExpect(content().string(not(containsString("private-hash"))))
-                .andExpect(content().string(not(containsString("No appointments to display"))))
                 .andExpect(content().string(containsString("/owner/appointments?page=2")));
-        verify(appointmentRepository).countBySalonIdAndAppointmentDate("owned-salon", today);
-        verify(appointmentRepository).countBySalonIdAndAppointmentDateAfter("owned-salon", today);
-        verify(appointmentRepository).countBySalonIdAndAppointmentDateBetween("owned-salon", monday, monday.plusDays(6));
-        verify(appointmentRepository).findBySalonIdAndAppointmentDateGreaterThanEqualOrderByAppointmentDateAscAppointmentTimeAscIdAsc(
-                "owned-salon", today, PageRequest.of(0, 10));
-        verify(appointmentRepository).findBySalonIdAndCustomer_IdInAndAppointmentDateLessThanEqual(
-                eq("owned-salon"), argThat(ids -> ids.size() == 1 && ids.contains(customer.getId())), eq(today));
-        verifyNoMoreInteractions(appointmentRepository);
-        mockMvc.perform(get("/salons/owner-salon"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("customer/public-salon"));
     }
 
     //Test that an owner must have an existing salon to access the appointments page

@@ -27,7 +27,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -35,6 +34,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -71,16 +71,12 @@ class Cmpt276ProjectApplicationTests {
     @Autowired private AppointmentRepository appointments;
     @Autowired private BookingService bookings;
     private Account owner;
-    private Account dashboardCustomer;
     private String ownerId;
 
-    @BeforeEach
-    void createOwnerAndSalon() {
+    private void createOwnerAndSalon() {
         owner = accounts.save(new Account("Owner", UUID.randomUUID() + "@example.com",
                 "unused-test-hash", RoleType.SALONOWNER));
         ownerId = String.valueOf(owner.getId());
-        dashboardCustomer = accounts.save(new Account("Dashboard Customer",
-                UUID.randomUUID() + "@example.com", "unused-test-hash", RoleType.CUSTOMER));
         SalonForm form = profile();
         assertTrue(owners.saveProfile(ownerId, form, true, errors(form, "salonForm")));
     }
@@ -92,6 +88,7 @@ class Cmpt276ProjectApplicationTests {
 
     @Test
     void ownerCanPublishAndRemovePhotosWithinTheFivePhotoLimit() throws Exception {
+        createOwnerAndSalon();
         Salon salon = store.findByOwnerId(ownerId);
         Salon otherSalon = createAdditionalSalon("Other Gallery", "200 Main Street");
         var signedIn = user(owner.getEmail()).roles("SALONOWNER");
@@ -144,6 +141,8 @@ class Cmpt276ProjectApplicationTests {
 
     @Test
     void customerCanOpenEachSalonByItsOwnUrl() throws Exception {
+        createOwnerAndSalon();
+        Account dashboardCustomer = createCustomer();
         Salon first = store.findByOwnerId(ownerId);
         Salon second = createAdditionalSalon(first.getName(), "200 Second Street");
         var customer = user(dashboardCustomer.getEmail()).roles("CUSTOMER");
@@ -172,7 +171,8 @@ class Cmpt276ProjectApplicationTests {
     }
 
     @Test
-    void jpaSalonListingReloadsPublicContactsServicesAndHours() {
+    void jpaSalonReloadsPublicContactsServicesAndHours() {
+        createOwnerAndSalon();
         ServiceForm service = new ServiceForm();
         service.setName("Haircut");
         service.setDescription("Wash and cut");
@@ -181,26 +181,26 @@ class Cmpt276ProjectApplicationTests {
         saveHours("09:00", "17:00");
         Salon saved = store.findByOwnerId(ownerId);
 
-        Salon listed = store.findAll().stream().filter(item -> item.getId().equals(saved.getId()))
-                .findFirst().orElseThrow();
-        assertNotSame(saved, listed);
-        assertEquals(saved.getSlug(), listed.getSlug());
-        assertEquals("Burnaby", listed.getCity());
-        assertEquals("BC", listed.getProvince());
-        assertEquals("604-555-0123", listed.getPhone());
-        assertEquals("salon@example.com", listed.getEmail());
-        assertEquals(1, listed.getServices().size());
-        assertEquals("Haircut", listed.getServices().get(0).getName());
-        assertEquals("Wash and cut", listed.getServices().get(0).getDescription());
-        assertEquals("35.00", listed.getServices().get(0).getPrice().toPlainString());
-        assertEquals(7, listed.getOpeningHours().size());
-        assertTrue(listed.getOpeningHours().get(0).isOpen());
-        assertEquals("09:00", listed.getOpeningHours().get(0).getStartTime());
-        assertEquals("17:00", listed.getOpeningHours().get(0).getEndTime());
+        Salon reloaded = store.findById(saved.getId());
+        assertNotSame(saved, reloaded);
+        assertEquals(saved.getSlug(), reloaded.getSlug());
+        assertEquals("Burnaby", reloaded.getCity());
+        assertEquals("BC", reloaded.getProvince());
+        assertEquals("604-555-0123", reloaded.getPhone());
+        assertEquals("salon@example.com", reloaded.getEmail());
+        assertEquals(1, reloaded.getServices().size());
+        assertEquals("Haircut", reloaded.getServices().get(0).getName());
+        assertEquals("Wash and cut", reloaded.getServices().get(0).getDescription());
+        assertEquals("35.00", reloaded.getServices().get(0).getPrice().toPlainString());
+        assertEquals(7, reloaded.getOpeningHours().size());
+        assertTrue(reloaded.getOpeningHours().get(0).isOpen());
+        assertEquals("09:00", reloaded.getOpeningHours().get(0).getStartTime());
+        assertEquals("17:00", reloaded.getOpeningHours().get(0).getEndTime());
     }
 
     @Test
     void profileUpdatesPersistAndKeepLoginIdentityAndSalonId() throws Exception {
+        createOwnerAndSalon();
         Salon original = store.findByOwnerId(ownerId);
         mvc.perform(post("/owner/profile").with(user(owner.getEmail()).roles("SALONOWNER")).with(csrf())
                 .param("name", "Updated Salon").param("address", "456 Main Street")
@@ -231,6 +231,7 @@ class Cmpt276ProjectApplicationTests {
 
     @Test
     void invalidContactFieldsKeepInputAndDoNotPartiallySave() throws Exception {
+        createOwnerAndSalon();
         mvc.perform(post("/owner/profile").with(user(owner.getEmail()).roles("SALONOWNER")).with(csrf())
                 .param("name", "Must not save").param("city", "Retain this city")
                 .param("phone", "abc").param("email", "not-an-email"))
@@ -255,6 +256,7 @@ class Cmpt276ProjectApplicationTests {
 
     @Test
     void optionalContactsCanBeClearedAndTextIsEscaped() throws Exception {
+        createOwnerAndSalon();
         SalonForm form = profile();
         form.setCity("<script>alert(1)</script>");
         form.setProvince("");
@@ -271,6 +273,7 @@ class Cmpt276ProjectApplicationTests {
 
     @Test
     void legacyNullContactsRenderAndCanBeUpdated() throws Exception {
+        createOwnerAndSalon();
         Salon salon = store.findByOwnerId(ownerId);
         salon.setCity(null);
         salon.setProvince(null);
@@ -287,6 +290,7 @@ class Cmpt276ProjectApplicationTests {
 
     @Test
     void savedScheduleCanBeEditedAndReloadedWithoutMutatingItOnGet() throws Exception {
+        createOwnerAndSalon();
         saveHours("09:00", "17:00");
         mvc.perform(get("/owner/hours").with(user(owner.getEmail()).roles("SALONOWNER")))
                 .andExpect(status().isOk())
@@ -321,6 +325,7 @@ class Cmpt276ProjectApplicationTests {
 
     @Test
     void invalidRepeatScheduleRetainsPreviousWeekAndShowsErrors() throws Exception {
+        createOwnerAndSalon();
         saveHours("09:00", "17:00");
         for (String[] range : new String[][]{{"10:00", "10:29"}, {"17:00", "09:00"}, {"25:00", "17:00"}, {"", "17:00"}}) {
             mvc.perform(post("/owner/hours").with(user(owner.getEmail()).roles("SALONOWNER")).with(csrf())
@@ -342,6 +347,7 @@ class Cmpt276ProjectApplicationTests {
 
     @Test
     void ownerCanChooseOnlySupportedServiceDurations() throws Exception {
+        createOwnerAndSalon();
         var signedInOwner = user(owner.getEmail()).roles("SALONOWNER");
         mvc.perform(post("/owner/services").with(signedInOwner).with(csrf())
                         .param("name", "Colour").param("price", "90").param("durationMinutes", "45"))
@@ -357,6 +363,7 @@ class Cmpt276ProjectApplicationTests {
 
     @Test
     void scheduleChangesKeepBookingsAndExcludeOverlapsOnShiftedGrid() {
+        createOwnerAndSalon();
         ServiceForm service = new ServiceForm();
         service.setName("Cut");
         service.setPrice("30");
@@ -390,6 +397,7 @@ class Cmpt276ProjectApplicationTests {
 
     @Test
     void lateClosingDoesNotWrapSlotGenerationPastMidnight() {
+        createOwnerAndSalon();
         saveHours("22:00", "23:59");
         Salon salon = store.findByOwnerId(ownerId);
         assertTimeoutPreemptively(Duration.ofSeconds(2), () ->
@@ -418,6 +426,7 @@ class Cmpt276ProjectApplicationTests {
 
     @Test
     void customerBookingRescheduleServiceDeletionAndCancellationReachOwner() throws Exception {
+        createOwnerAndSalon();
         ServiceForm service = new ServiceForm();
         service.setName("Original <Cut>");
         service.setPrice("35");
@@ -460,6 +469,8 @@ class Cmpt276ProjectApplicationTests {
 
     @Test
     void printableScheduleIncludesTheEntireDayForTheOwnersSalon() throws Exception {
+        createOwnerAndSalon();
+        Account dashboardCustomer = createCustomer();
         Salon salon = store.findByOwnerId(ownerId);
         Salon other = createAdditionalSalon("Other Salon", "200 Main Street");
         LocalDate today = LocalDate.now(ZoneId.of("America/Vancouver"));
@@ -486,6 +497,8 @@ class Cmpt276ProjectApplicationTests {
 
     @Test
     void returningCustomerRequiresAnEarlierCompletedVisitAtThisSalon() {
+        createOwnerAndSalon();
+        Account dashboardCustomer = createCustomer();
         String salonId = store.findByOwnerId(ownerId).getId();
         String otherSalonId = createAdditionalSalon("Other Salon", "200 Main Street").getId();
         LocalDate day = LocalDate.of(2026, 11, 23);
@@ -503,57 +516,67 @@ class Cmpt276ProjectApplicationTests {
     }
 
     @Test
-    void persistedOwnerAppointmentsAreScopedSortedPagedAndCountedAcrossWeekBoundaries() throws Exception {
-        Salon salon = store.findByOwnerId(ownerId);
-        Account customer = accounts.save(new Account("Visible Customer", UUID.randomUUID() + "@example.com", "hash", RoleType.CUSTOMER));
+    void appointmentCountIncludesMondayThroughSunday() throws Exception {
+        createOwnerAndSalon();
+        String salonId = store.findByOwnerId(ownerId).getId();
+        Account customer = createCustomer();
+        LocalDate monday = LocalDate.now(ZoneId.of("America/Vancouver"))
+                .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        appointments.save(new Appointment("Monday morning", "cut", salonId, monday, "09:00", customer));
+        appointments.save(new Appointment("Monday noon", "cut", salonId, monday, "12:00", customer));
+        appointments.save(new Appointment("Sunday morning", "cut", salonId, monday.plusDays(6), "09:00", customer));
+        appointments.save(new Appointment("Sunday noon", "cut", salonId, monday.plusDays(6), "12:00", customer));
+        appointments.save(new Appointment("Previous week", "cut", salonId, monday.minusDays(1), "09:00", customer));
+        appointments.save(new Appointment("Next week", "cut", salonId, monday.plusWeeks(1), "09:00", customer));
+
+        mvc.perform(get("/owner/appointments").with(user(owner.getEmail()).roles("SALONOWNER")))
+                .andExpect(model().attribute("weekAppointmentCount", 4L));
+    }
+
+    @Test
+    void ownerSeesOnlyTheirAppointmentsInTimeOrderAcrossPages() throws Exception {
+        createOwnerAndSalon();
+        String salonId = store.findByOwnerId(ownerId).getId();
+        Account customer = createCustomer();
         LocalDate today = LocalDate.now(ZoneId.of("America/Vancouver"));
-        LocalDate monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-        ArrayList<Appointment> saved = new java.util.ArrayList<>();
-        for (int i = 11; i >= 0; i--) {
-            saved.add(appointments.save(new Appointment("Service " + i, "old-service", salon.getId(), today.plusDays(i / 3),
-                    String.format("%02d:00", 9 + i % 3), customer)));
+        appointments.save(new Appointment("Previous visit", "cut", salonId, today.minusDays(1), "09:00", customer));
+        // The two visits at the same time fall on opposite sides of the page boundary, in ID order.
+        appointments.save(new Appointment("Tomorrow A", "cut", salonId, today.plusDays(1), "08:00", customer));
+        Appointment lastVisit = appointments.save(new Appointment("Tomorrow B", "cut", salonId, today.plusDays(1), "08:00", customer));
+        for (int hour = 17; hour >= 9; hour--) {
+            String time = String.format("%02d:00", hour);
+            appointments.save(new Appointment(time, "cut", salonId, today, time, customer));
         }
-        saved.add(appointments.save(new Appointment("Week start", "old", salon.getId(), monday, "08:00", customer)));
-        saved.add(appointments.save(new Appointment("Week end", "old", salon.getId(), monday.plusDays(6), "16:00", customer)));
-        saved.add(appointments.save(new Appointment("Previous week", "old", salon.getId(), monday.minusDays(1), "09:00", customer)));
-        saved.add(appointments.save(new Appointment("Next week", "old", salon.getId(), monday.plusWeeks(1), "09:00", customer)));
-        Account otherOwner = accounts.save(new Account("Other owner", UUID.randomUUID() + "@example.com", "hash", RoleType.SALONOWNER));
-        SalonForm otherProfile = profile();
-        assertTrue(owners.saveProfile(String.valueOf(otherOwner.getId()), otherProfile, true, errors(otherProfile, "salonForm")));
-        Salon otherSalon = store.findByOwnerId(String.valueOf(otherOwner.getId()));
-        appointments.save(new Appointment("PRIVATE OTHER BOOKING", "other", otherSalon.getId(), today, "09:00", customer));
-        var expected = saved.stream().filter(a -> !a.getAppointmentDate().isBefore(today))
-                .sorted(Comparator.comparing(Appointment::getAppointmentDate)
-                        .thenComparing(Appointment::getAppointmentTime).thenComparingInt(Appointment::getId)).toList();
-        long expectedToday = saved.stream().filter(a -> a.getAppointmentDate().equals(today)).count();
-        long expectedWeek = saved.stream().filter(a -> !a.getAppointmentDate().isBefore(monday)
-                && !a.getAppointmentDate().isAfter(monday.plusDays(6))).count();
-        var first = mvc.perform(get("/owner/appointments").param("salonId", otherSalon.getId())
-                        .param("ownerId", String.valueOf(otherOwner.getId())).with(user(owner.getEmail()).roles("SALONOWNER")))
-                .andExpect(status().isOk()).andExpect(model().attribute("todayAppointmentCount", expectedToday))
-                .andExpect(model().attribute("upcomingAppointmentCount", expected.size() - expectedToday))
-                .andExpect(model().attribute("weekAppointmentCount", expectedWeek))
+        Salon otherSalon = createAdditionalSalon("Other Salon", "200 Main Street");
+        Account otherOwner = accounts.findById(Integer.valueOf(otherSalon.getOwnerId())).orElseThrow();
+        appointments.save(new Appointment("Other salon visit", "cut", otherSalon.getId(), today, "09:00", customer));
+
+        var signedIn = user(owner.getEmail()).roles("SALONOWNER");
+        var first = mvc.perform(get("/owner/appointments").param("page", "-1")
+                        .param("salonId", otherSalon.getId()).param("ownerId", otherSalon.getOwnerId()).with(signedIn))
+                .andExpect(status().isOk()).andExpect(model().attribute("currentPage", 1))
+                .andExpect(model().attribute("todayAppointmentCount", 9L))
+                .andExpect(model().attribute("upcomingAppointmentCount", 2L))
                 .andExpect(content().string(containsString("Returning customer")))
-                .andExpect(content().string(not(containsString("PRIVATE OTHER BOOKING"))))
                 .andReturn();
-        var page = (List<Appointment>) first.getModelAndView().getModel().get("appointments");
-        assertEquals(expected.subList(0, 10).stream().map(Appointment::getId).toList(), page.stream().map(Appointment::getId).toList());
-        var last = mvc.perform(get("/owner/appointments").param("page", "2147483647")
-                        .with(user(owner.getEmail()).roles("SALONOWNER")))
-                .andExpect(status().isOk()).andExpect(model().attribute("currentPage", 2)).andReturn();
-        var lastPage = (List<Appointment>) last.getModelAndView().getModel().get("appointments");
-        assertEquals(expected.subList(10, expected.size()).stream().map(Appointment::getId).toList(), lastPage.stream().map(Appointment::getId).toList());
-        mvc.perform(get("/owner/appointments").param("page", "-1").with(user(owner.getEmail()).roles("SALONOWNER")))
-                .andExpect(status().isOk()).andExpect(model().attribute("currentPage", 1));
-        mvc.perform(get("/owner/appointments").with(user(otherOwner.getEmail()).roles("SALONOWNER")))
-                .andExpect(status().isOk()).andExpect(model().attribute("todayAppointmentCount", 1L))
-                .andExpect(content().string(containsString("PRIVATE OTHER BOOKING")))
-                .andExpect(content().string(not(containsString("Service 0"))));
-        for (Appointment item : expected.subList(10, expected.size())) {
-            appointments.deleteById(item.getId());
-        }
-        mvc.perform(get("/owner/appointments").param("page", "2").with(user(owner.getEmail()).roles("SALONOWNER")))
-                .andExpect(status().isOk()).andExpect(model().attribute("currentPage", 1));
+        assertEquals(List.of("09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "Tomorrow A"),
+                serviceNamesOnPage(first));
+
+        var last = mvc.perform(get("/owner/appointments").param("page", "2147483647").with(signedIn))
+                .andExpect(model().attribute("currentPage", 2)).andReturn();
+        assertEquals(List.of("Tomorrow B"), serviceNamesOnPage(last));
+        var otherPage = mvc.perform(get("/owner/appointments").with(user(otherOwner.getEmail()).roles("SALONOWNER")))
+                .andExpect(model().attribute("todayAppointmentCount", 1L)).andReturn();
+        assertEquals(List.of("Other salon visit"), serviceNamesOnPage(otherPage));
+
+        appointments.deleteById(lastVisit.getId());
+        mvc.perform(get("/owner/appointments").param("page", "2").with(signedIn))
+                .andExpect(model().attribute("currentPage", 1));
+    }
+
+    private List<String> serviceNamesOnPage(MvcResult result) {
+        var rows = (List<?>) result.getModelAndView().getModel().get("appointments");
+        return rows.stream().map(Appointment.class::cast).map(Appointment::getServiceName).toList();
     }
 
     @Test
@@ -583,6 +606,7 @@ class Cmpt276ProjectApplicationTests {
 
     @Test
     void overlappingOwnerEditsPreserveProfileMenuAndHours(@Autowired PlatformTransactionManager transactions) {
+        createOwnerAndSalon();
         var secondInstance = new OwnerService(store);
         var otherTransaction = new TransactionTemplate(transactions);
         otherTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
@@ -605,6 +629,11 @@ class Cmpt276ProjectApplicationTests {
         assertEquals("Richmond", saved.getCity());
         assertEquals(List.of("Haircut"), saved.getServices().stream().map(item -> item.getName()).toList());
         assertEquals("09:00", saved.getOpeningHours().get(0).getStartTime());
+    }
+
+    private Account createCustomer() {
+        return accounts.save(new Account("Customer", UUID.randomUUID() + "@example.com",
+                "unused-test-hash", RoleType.CUSTOMER));
     }
 
     private SalonForm profile() {

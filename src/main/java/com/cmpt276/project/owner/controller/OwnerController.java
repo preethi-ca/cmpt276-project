@@ -91,8 +91,8 @@ public class OwnerController {
     }
 
     @GetMapping
-    public String entry() {
-        if (service.findForOwner(currentOwner.getOwnerId()) == null) {
+    public String entry(Model model) {
+        if (model.getAttribute("salon") == null) {
             return "redirect:/owner/setup";
         }
         return "redirect:/owner/dashboard";
@@ -100,7 +100,7 @@ public class OwnerController {
 
     @GetMapping("/setup")
     public String setup(Model model) {
-        if (service.findForOwner(currentOwner.getOwnerId()) != null) {
+        if (model.getAttribute("salon") != null) {
             return "redirect:/owner/dashboard";
         }
         model.addAttribute("salonForm", new SalonForm());

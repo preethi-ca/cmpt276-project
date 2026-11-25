@@ -49,7 +49,6 @@ class PublicSalonControllerTests {
                 .andExpect(content().string(containsString("<details class=\"card-body\">")))
                 .andExpect(content().string(not(containsString("id=\"salon\""))))
                 .andExpect(content().string(not(containsString("/customer/salons/visit"))));
-        verify(ownerService, never()).findPublicSalons();
     }
 
     @Test
