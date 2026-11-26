@@ -117,6 +117,25 @@ class BookingSmsBuilderTests {
         assertTrue(text.matches("[A-Za-z0-9 .,:'()_-]+"), text);
     }
 
+    @Test
+    void writesTheMovedAndCancelledTexts() {
+        Salon salon = newSalon("salon-1", "CS_Salon");
+        Account customer = saveCustomer("Alex Lee", "alex@example.invalid", "604-555-1234");
+        Appointment appointment = saveAppointment(customer, salon, "Haircut", LocalDate.of(2026, 11, 5), "14:00");
+
+        BookingSmsMessage moved = builder.buildRescheduled(appointment, salon, LocalDate.of(2026, 11, 3), "10:00");
+
+        assertEquals("+16045551234", moved.getRecipient());
+        assertEquals("BookEasy: Your Haircut at CS_Salon has moved to 2026-11-05 at 14:00 (Vancouver time)."
+                + " You can view it in My Appointments.", moved.getText());
+
+        BookingSmsMessage cancelled = builder.buildCancelled(appointment, salon);
+
+        assertEquals("+16045551234", cancelled.getRecipient());
+        assertEquals("BookEasy: Your Haircut at CS_Salon on 2026-11-05 at 14:00 (Vancouver time) has been cancelled.",
+                cancelled.getText());
+    }
+
     private void assertCannotBuild(Appointment appointment, Salon salon) {
         boolean rejected = false;
         try {

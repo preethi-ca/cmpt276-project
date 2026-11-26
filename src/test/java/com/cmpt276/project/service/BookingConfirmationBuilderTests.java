@@ -100,6 +100,41 @@ class BookingConfirmationBuilderTests {
         assertCannotBuild(noTime, salon);
     }
 
+    @Test
+    void writesTheMovedAndCancelledEmails() {
+        Salon salon = newSalon("salon-1", "CS_Salon", "123 Main Street");
+        Account customer = saveCustomer("Alex Lee", "alex@example.invalid");
+        Appointment appointment = saveAppointment(customer, salon, "Haircut", LocalDate.of(2026, 11, 5), "14:00");
+
+        BookingConfirmationMessage moved = builder.buildRescheduled(appointment, salon, LocalDate.of(2026, 11, 3), "10:00");
+
+        assertEquals("alex@example.invalid", moved.getRecipient());
+        assertEquals("Your booking at CS_Salon has moved", moved.getSubject());
+        assertEquals("Hi Alex Lee,\n\n"
+                + "Your booking has been moved to a new time.\n\n"
+                + "Booking reference: " + appointment.getId() + "\n"
+                + "Salon: CS_Salon\n"
+                + "Address: 123 Main Street\n"
+                + "Service: Haircut\n"
+                + "Old time: 2026-11-03 at 10:00\n"
+                + "New date: 2026-11-05\n"
+                + "New time: 14:00 (Vancouver time)\n\n"
+                + "Sign in to BookEasy and check My Appointments to view your booking.\n", moved.getBody());
+
+        BookingConfirmationMessage cancelled = builder.buildCancelled(appointment, salon);
+
+        assertEquals("alex@example.invalid", cancelled.getRecipient());
+        assertEquals("Your booking at CS_Salon is cancelled", cancelled.getSubject());
+        assertEquals("Hi Alex Lee,\n\n"
+                + "Your booking has been cancelled.\n\n"
+                + "Booking reference: " + appointment.getId() + "\n"
+                + "Salon: CS_Salon\n"
+                + "Service: Haircut\n"
+                + "Date: 2026-11-05\n"
+                + "Time: 14:00 (Vancouver time)\n\n"
+                + "You can book another time on BookEasy if you want to.\n", cancelled.getBody());
+    }
+
     private void assertCannotBuild(Appointment appointment, Salon salon) {
         boolean rejected = false;
         try {
