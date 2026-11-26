@@ -22,6 +22,8 @@
         </div>
 
         <div th:if="${calendarMessage}" class="alert alert-info" role="status" th:text="${calendarMessage}"></div>
+        <div th:if="${emailMessage}" class="alert alert-info" role="status" th:text="${emailMessage}"></div>
+        <div th:if="${smsMessage}" class="alert alert-info" role="status" th:text="${smsMessage}"></div>
 
         <div th:if="${#lists.isEmpty(appointments)}" class="alert alert-secondary">
             You currently have no appointments.
