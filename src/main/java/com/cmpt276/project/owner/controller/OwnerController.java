@@ -123,6 +123,10 @@ public class OwnerController {
             return "redirect:/owner/setup";
         }
 
+        if (range != 7 && range != 30) {
+            range = 30;
+        }
+
         LocalDate endDate = LocalDate.now();
         LocalDate startDate = endDate.minusDays(range - 1);
 

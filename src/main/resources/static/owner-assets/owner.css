@@ -266,9 +266,9 @@ dialog::backdrop { background: rgb(25 34 28 / 35%); }
 
 .booking-trend-row {
   display: grid;
-  grid-template-columns: 110px 1fr 40px;
+  grid-template-columns: 130px minmax(0, 1fr) 90px;
   align-items: center;
-  gap: 1rem;
+  gap: 12px;
 }
 
 .booking-trend-date {
@@ -354,4 +354,31 @@ dialog::backdrop { background: rgb(25 34 28 / 35%); }
 
 .owner-account-links a.text-button {
     color: #285943;
+}
+
+.analytics-filter {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+#smart-insights-title ~ div .analytics-card {
+  margin-bottom: 12px;
+}
+
+#smart-insights-title ~ div .analytics-card p {
+  margin-bottom: 0;
+}
+
+@media (max-width: 600px) {
+  .analytics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .booking-trend-row {
+    grid-template-columns: 100px minmax(0, 1fr) 75px;
+    gap: 8px;
+  }
 }
