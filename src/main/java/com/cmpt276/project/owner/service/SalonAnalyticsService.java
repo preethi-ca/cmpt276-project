@@ -9,11 +9,11 @@ import java.math.BigDecimal;
 import com.cmpt276.project.owner.model.Salon;
 import java.util.List;
 import java.time.DayOfWeek;
+import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.util.Locale;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
-import java.time.temporal.WeekFields;
 
 @Service
 public class SalonAnalyticsService {
@@ -309,8 +309,7 @@ public class SalonAnalyticsService {
         LocalDate currentDate = startDate;
 
         while (!currentDate.isAfter(endDate)) {
-            String weekLabel = "Week " +
-                    currentDate.get(WeekFields.ISO.weekOfWeekBasedYear());
+            String weekLabel = getWeekLabel(currentDate, startDate, endDate);
 
             weeklyRevenue.putIfAbsent(weekLabel, BigDecimal.ZERO);
 
@@ -321,9 +320,8 @@ public class SalonAnalyticsService {
             if (appointment.getAppointmentDate() != null
                     && appointment.getBookedPrice() != null) {
 
-                String weekLabel = "Week " +
-                        appointment.getAppointmentDate()
-                                .get(WeekFields.ISO.weekOfWeekBasedYear());
+                String weekLabel = getWeekLabel(
+                        appointment.getAppointmentDate(), startDate, endDate);
 
                 weeklyRevenue.put(
                         weekLabel,
@@ -352,8 +350,7 @@ public class SalonAnalyticsService {
         LocalDate currentDate = startDate;
 
         while (!currentDate.isAfter(endDate)) {
-            String weekLabel = "Week " +
-                    currentDate.get(WeekFields.ISO.weekOfWeekBasedYear());
+            String weekLabel = getWeekLabel(currentDate, startDate, endDate);
 
             weeklyTrends.putIfAbsent(weekLabel, 0);
 
@@ -363,9 +360,8 @@ public class SalonAnalyticsService {
         for (Appointment appointment : appointments) {
             if (appointment.getAppointmentDate() != null) {
 
-                String weekLabel = "Week " +
-                        appointment.getAppointmentDate()
-                                .get(WeekFields.ISO.weekOfWeekBasedYear());
+                String weekLabel = getWeekLabel(
+                        appointment.getAppointmentDate(), startDate, endDate);
 
                 weeklyTrends.put(
                         weekLabel,
@@ -514,6 +510,70 @@ public class SalonAnalyticsService {
         return topService + " makes up "
                 + Math.round(percentage)
                 + "% of appointments. Consider highlighting this service in promotions.";
+    }
+
+    public String getBookingTrendInsight(
+            String salonId,
+            LocalDate startDate,
+            LocalDate endDate) {
+
+        long days = java.time.temporal.ChronoUnit.DAYS
+                .between(startDate, endDate) + 1;
+
+        LocalDate previousEndDate = startDate.minusDays(1);
+        LocalDate previousStartDate = startDate.minusDays(days);
+
+        int currentBookings = getTotalAppointments(
+                salonId, startDate, endDate);
+
+        int previousBookings = getTotalAppointments(
+                salonId, previousStartDate, previousEndDate);
+
+        if (currentBookings < 5 || previousBookings < 5) {
+            return "Not enough booking history to compare periods.";
+        }
+
+        double percentageChange = ((currentBookings - previousBookings) * 100.0)
+                / previousBookings;
+
+        if (percentageChange >= 15) {
+            return "Bookings increased by "
+                    + Math.round(percentageChange)
+                    + "% compared to the previous period.";
+        }
+
+        if (percentageChange <= -15) {
+            return "Bookings decreased by "
+                    + Math.round(Math.abs(percentageChange))
+                    + "% compared to the previous period. Consider running a promotion.";
+        }
+
+        return "Booking levels have remained relatively stable.";
+    }
+
+    private String getWeekLabel(
+            LocalDate date,
+            LocalDate startDate,
+            LocalDate endDate) {
+
+        LocalDate weekStart = date.minusDays(
+                date.getDayOfWeek().getValue() - 1);
+
+        LocalDate weekEnd = weekStart.plusDays(6);
+
+        if (weekStart.isBefore(startDate)) {
+            weekStart = startDate;
+        }
+
+        if (weekEnd.isAfter(endDate)) {
+            weekEnd = endDate;
+        }
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM d", Locale.ENGLISH);
+
+        return weekStart.format(formatter)
+                + " – "
+                + weekEnd.format(formatter);
     }
 
 }

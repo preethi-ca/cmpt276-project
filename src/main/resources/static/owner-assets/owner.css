@@ -250,7 +250,7 @@ dialog::backdrop { background: rgb(25 34 28 / 35%); }
   background: #f8faf6;
 }
 
-.analytics-trends {
+.workspace .analytics-trends {
   margin-top: 2rem;
 }
 
@@ -275,15 +275,27 @@ dialog::backdrop { background: rgb(25 34 28 / 35%); }
   font-size: 0.9rem;
 }
 
-.booking-trend-bar-track {
+.analytics-meter {
+  width: 100%;
+  height: 14px;
+  appearance: none;
+  border: none;
   background: #eceff3;
   border-radius: 999px;
-  min-height: 14px;
-  overflow: hidden;
 }
 
-.booking-trend-bar {
-  height: 14px;
+.analytics-meter::-webkit-meter-bar {
+  background: #eceff3;
+  border: none;
+  border-radius: 999px;
+}
+
+.analytics-meter::-webkit-meter-optimum-value {
+  background: #294b3b;
+  border-radius: 999px;
+}
+
+.analytics-meter::-moz-meter-bar {
   background: #294b3b;
   border-radius: 999px;
 }

@@ -499,8 +499,8 @@ public class SalonAnalyticsServiceTests {
                                 startDate,
                                 endDate);
 
-                assertEquals(2, result.get("Week 45"));
-                assertEquals(1, result.get("Week 46"));
+                assertEquals(2, result.get("Nov 2 – Nov 8"));
+                assertEquals(1, result.get("Nov 9 – Nov 14"));
         }
 
         @Test
@@ -610,11 +610,11 @@ public class SalonAnalyticsServiceTests {
 
                 assertEquals(
                                 new BigDecimal("65.00"),
-                                result.get("Week 45"));
+                                result.get("Nov 2 – Nov 8"));
 
                 assertEquals(
                                 new BigDecimal("30.00"),
-                                result.get("Week 46"));
+                                result.get("Nov 9 – Nov 14"));
         }
 
         @Test
@@ -823,6 +823,66 @@ public class SalonAnalyticsServiceTests {
                 assertEquals(
                                 "Not enough booking data for an insight yet.",
                                 analyticsService.getPopularServiceInsight(
+                                                "salon1", startDate, endDate));
+        }
+
+        @Test
+        void shouldReturnBookingGrowthInsight() {
+                LocalDate startDate = LocalDate.of(2026, 11, 8);
+                LocalDate endDate = LocalDate.of(2026, 11, 14);
+
+                when(appointmentRepository.countBySalonIdAndAppointmentDateBetween(
+                                "salon1", startDate, endDate))
+                                .thenReturn(15L);
+
+                when(appointmentRepository.countBySalonIdAndAppointmentDateBetween(
+                                "salon1", LocalDate.of(2026, 11, 1),
+                                LocalDate.of(2026, 11, 7)))
+                                .thenReturn(10L);
+
+                assertEquals(
+                                "Bookings increased by 50% compared to the previous period.",
+                                analyticsService.getBookingTrendInsight(
+                                                "salon1", startDate, endDate));
+        }
+
+        @Test
+        void shouldReturnBookingDeclineInsight() {
+                LocalDate startDate = LocalDate.of(2026, 11, 8);
+                LocalDate endDate = LocalDate.of(2026, 11, 14);
+
+                when(appointmentRepository.countBySalonIdAndAppointmentDateBetween(
+                                "salon1", startDate, endDate))
+                                .thenReturn(5L);
+
+                when(appointmentRepository.countBySalonIdAndAppointmentDateBetween(
+                                "salon1", LocalDate.of(2026, 11, 1),
+                                LocalDate.of(2026, 11, 7)))
+                                .thenReturn(10L);
+
+                assertEquals(
+                                "Bookings decreased by 50% compared to the previous period. Consider running a promotion.",
+                                analyticsService.getBookingTrendInsight(
+                                                "salon1", startDate, endDate));
+        }
+
+        @Test
+        void shouldReturnInsufficientBookingHistory() {
+                LocalDate startDate = LocalDate.of(2026, 11, 8);
+                LocalDate endDate = LocalDate.of(2026, 11, 14);
+
+                when(appointmentRepository.countBySalonIdAndAppointmentDateBetween(
+                                "salon1", startDate, endDate))
+                                .thenReturn(10L);
+
+                when(appointmentRepository.countBySalonIdAndAppointmentDateBetween(
+                                "salon1", LocalDate.of(2026, 11, 1),
+                                LocalDate.of(2026, 11, 7)))
+                                .thenReturn(0L);
+
+                assertEquals(
+                                "Not enough booking history to compare periods.",
+                                analyticsService.getBookingTrendInsight(
                                                 "salon1", startDate, endDate));
         }
 

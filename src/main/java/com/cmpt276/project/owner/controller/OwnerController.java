@@ -189,6 +189,11 @@ public class OwnerController {
                 startDate,
                 endDate);
 
+        String bookingTrendInsight = analyticsService.getBookingTrendInsight(
+                salon.getId(),
+                startDate,
+                endDate);
+
         model.addAttribute("totalAppointments", totalAppointments);
         model.addAttribute("mostPopularService", mostPopularService);
         model.addAttribute("busiestTime", busiestTime);
@@ -197,10 +202,24 @@ public class OwnerController {
         model.addAttribute("selectedRange", range);
         model.addAttribute("startDate", startDate);
         model.addAttribute("endDate", endDate);
+        int maxBookings = bookingTrends.values()
+                .stream()
+                .mapToInt(Integer::intValue)
+                .max()
+                .orElse(0);
+
+        BigDecimal maxRevenue = revenueTrends.values()
+                .stream()
+                .max(BigDecimal::compareTo)
+                .orElse(BigDecimal.ZERO);
+
+        model.addAttribute("maxBookings", maxBookings);
+        model.addAttribute("maxRevenue", maxRevenue);
         model.addAttribute("bookingTrends", bookingTrends);
         model.addAttribute("revenueTrends", revenueTrends);
         model.addAttribute("busiestDayInsight", busiestDayInsight);
         model.addAttribute("popularServiceInsight", popularServiceInsight);
+        model.addAttribute("bookingTrendInsight", bookingTrendInsight);
 
         return page(model, "dashboard", "Dashboard");
     }

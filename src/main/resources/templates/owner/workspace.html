@@ -185,13 +185,13 @@
                     2026-11-01
                   </span>
 
-                  <div class="booking-trend-bar-track">
-                    <div
-                      class="booking-trend-bar"
-                      th:if="${entry.value > 0}"
-                      th:style="'width: ' + (${entry.value} * 10) + '%'"
-                    ></div>
-                  </div>
+                  <meter
+                    class="analytics-meter"
+                    min="0"
+                    th:max="${maxBookings > 0 ? maxBookings : 1}"
+                    th:value="${entry.value}"
+                    aria-label="Appointment count"
+                  ></meter>
 
                   <strong class="booking-trend-count" th:text="${entry.value}">
                     0
@@ -218,13 +218,13 @@
                     2026-11-01
                   </span>
 
-                  <div class="booking-trend-bar-track">
-                    <div
-                      class="booking-trend-bar"
-                      th:if="${entry.value.compareTo(T(java.math.BigDecimal).ZERO) > 0}"
-                      th:style="'width: ' + (${entry.value.doubleValue()} / 100) + '%'"
-                    ></div>
-                  </div>
+                  <meter
+                    class="analytics-meter"
+                    min="0"
+                    th:max="${maxRevenue.signum() > 0 ? maxRevenue : 1}"
+                    th:value="${entry.value}"
+                    aria-label="Estimated revenue"
+                  ></meter>
 
                   <strong
                     class="booking-trend-count"
@@ -254,6 +254,10 @@
                 <div class="analytics-card">
                   <span class="analytics-label">Service Opportunity</span>
                   <p th:text="${popularServiceInsight}"></p>
+                </div>
+                <div class="analytics-card">
+                  <span class="analytics-label">Booking Performance</span>
+                  <p th:text="${bookingTrendInsight}"></p>
                 </div>
               </div>
             </section>
