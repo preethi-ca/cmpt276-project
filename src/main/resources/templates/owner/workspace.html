@@ -172,14 +172,11 @@
             >
               <h3 id="booking-trends-title">Booking Trends</h3>
 
-              <div th:if="${bookingTrends.isEmpty()}" class="empty-state">
+              <div th:if="${totalAppointments == 0}" class="empty-state">
                 <p>No booking data for this date range.</p>
               </div>
 
-              <div
-                th:unless="${bookingTrends.isEmpty()}"
-                class="booking-trend-list"
-              >
+              <div th:if="${totalAppointments > 0}" class="booking-trend-list">
                 <div
                   class="booking-trend-row"
                   th:each="entry : ${bookingTrends}"
@@ -208,14 +205,11 @@
             >
               <h3 id="revenue-trends-title">Revenue Trends</h3>
 
-              <div th:if="${revenueTrends.isEmpty()}" class="empty-state">
+              <div th:if="${totalAppointments == 0}" class="empty-state">
                 <p>No revenue data for this date range.</p>
               </div>
 
-              <div
-                th:unless="${revenueTrends.isEmpty()}"
-                class="booking-trend-list"
-              >
+              <div th:if="${totalAppointments > 0}" class="booking-trend-list">
                 <div
                   class="booking-trend-row"
                   th:each="entry : ${revenueTrends}"
@@ -247,18 +241,20 @@
             >
               <h3 id="smart-insights-title">Smart Salon Insights</h3>
 
-              <div class="analytics-card">
-                <span class="analytics-label">Booking Pattern</span>
-                <p th:text="${busiestDayInsight}">
-                  Not enough booking data for an insight yet.
-                </p>
+              <div th:if="${totalAppointments < 5}" class="empty-state">
+                <p>Not enough booking data to generate insights yet.</p>
               </div>
 
-              <div class="analytics-card">
-                <span class="analytics-label">Service Opportunity</span>
-                <p th:text="${popularServiceInsight}">
-                  Not enough booking data for an insight yet.
-                </p>
+              <div th:if="${totalAppointments >= 5}">
+                <div class="analytics-card">
+                  <span class="analytics-label">Booking Pattern</span>
+                  <p th:text="${busiestDayInsight}"></p>
+                </div>
+
+                <div class="analytics-card">
+                  <span class="analytics-label">Service Opportunity</span>
+                  <p th:text="${popularServiceInsight}"></p>
+                </div>
               </div>
             </section>
           </section>

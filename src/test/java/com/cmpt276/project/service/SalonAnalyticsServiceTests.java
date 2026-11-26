@@ -649,6 +649,15 @@ public class SalonAnalyticsServiceTests {
                                 null,
                                 BigDecimal.ZERO);
 
+                Appointment saturday4 = new Appointment(
+                                "Haircut",
+                                "service1",
+                                "salon1",
+                                LocalDate.of(2026, 11, 28),
+                                "12:00",
+                                null,
+                                BigDecimal.ZERO);
+
                 Appointment monday = new Appointment(
                                 "Color",
                                 "service2",
@@ -666,6 +675,7 @@ public class SalonAnalyticsServiceTests {
                                                 saturday1,
                                                 saturday2,
                                                 saturday3,
+                                                saturday4,
                                                 monday));
 
                 String result = analyticsService.getBusiestDayInsight(
@@ -674,7 +684,7 @@ public class SalonAnalyticsServiceTests {
                                 endDate);
 
                 assertEquals(
-                                "Saturday accounts for 75% of appointments. Consider adding more availability on Saturday.",
+                                "Saturday accounts for 80% of appointments. Consider adding more availability on Saturday.",
                                 result);
         }
 
@@ -719,6 +729,11 @@ public class SalonAnalyticsServiceTests {
                                 LocalDate.of(2026, 11, 8),
                                 "12:00", null, BigDecimal.ZERO);
 
+                Appointment haircut4 = new Appointment(
+                                "Haircut", "service1", "salon1",
+                                LocalDate.of(2026, 11, 12),
+                                "13:00", null, BigDecimal.ZERO);
+
                 Appointment color = new Appointment(
                                 "Color", "service2", "salon1",
                                 LocalDate.of(2026, 11, 10),
@@ -732,6 +747,7 @@ public class SalonAnalyticsServiceTests {
                                                 haircut1,
                                                 haircut2,
                                                 haircut3,
+                                                haircut4,
                                                 color));
 
                 String result = analyticsService.getPopularServiceInsight(
@@ -740,8 +756,74 @@ public class SalonAnalyticsServiceTests {
                                 endDate);
 
                 assertEquals(
-                                "Haircut makes up 75% of appointments. Consider highlighting this service in promotions.",
+                                "Haircut makes up 80% of appointments. Consider highlighting this service in promotions.",
                                 result);
+        }
+
+        @Test
+        void shouldNotGenerateInsightsWithFewerThanFiveAppointments() {
+                LocalDate startDate = LocalDate.of(2026, 11, 1);
+                LocalDate endDate = LocalDate.of(2026, 11, 30);
+
+                Appointment appointment = new Appointment(
+                                "Haircut",
+                                "service1",
+                                "salon1",
+                                LocalDate.of(2026, 11, 7),
+                                "10:00",
+                                null,
+                                BigDecimal.ZERO);
+
+                when(appointmentRepository.findBySalonIdAndAppointmentDateBetween(
+                                "salon1",
+                                startDate,
+                                endDate))
+                                .thenReturn(List.of(appointment));
+
+                assertEquals(
+                                "Not enough booking data for an insight yet.",
+                                analyticsService.getBusiestDayInsight(
+                                                "salon1", startDate, endDate));
+
+                assertEquals(
+                                "Not enough booking data for an insight yet.",
+                                analyticsService.getPopularServiceInsight(
+                                                "salon1", startDate, endDate));
+        }
+
+        @Test
+        void shouldNotGenerateInsightsWithFourAppointments() {
+                LocalDate startDate = LocalDate.of(2026, 11, 1);
+                LocalDate endDate = LocalDate.of(2026, 11, 30);
+
+                Appointment appointment = new Appointment(
+                                "Haircut",
+                                "service1",
+                                "salon1",
+                                LocalDate.of(2026, 11, 7),
+                                "10:00",
+                                null,
+                                BigDecimal.ZERO);
+
+                when(appointmentRepository.findBySalonIdAndAppointmentDateBetween(
+                                "salon1",
+                                startDate,
+                                endDate))
+                                .thenReturn(List.of(
+                                                appointment,
+                                                appointment,
+                                                appointment,
+                                                appointment));
+
+                assertEquals(
+                                "Not enough booking data for an insight yet.",
+                                analyticsService.getBusiestDayInsight(
+                                                "salon1", startDate, endDate));
+
+                assertEquals(
+                                "Not enough booking data for an insight yet.",
+                                analyticsService.getPopularServiceInsight(
+                                                "salon1", startDate, endDate));
         }
 
 }

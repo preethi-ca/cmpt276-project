@@ -421,7 +421,7 @@ public class SalonAnalyticsService {
                 startDate,
                 endDate);
 
-        if (appointments.isEmpty()) {
+        if (appointments.size() < 5) {
             return "Not enough booking data for an insight yet.";
         }
 
@@ -477,7 +477,7 @@ public class SalonAnalyticsService {
                 startDate,
                 endDate);
 
-        if (appointments.isEmpty()) {
+        if (appointments.size() < 5) {
             return "Not enough booking data for an insight yet.";
         }
 
