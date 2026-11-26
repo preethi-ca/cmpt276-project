@@ -125,9 +125,33 @@ class AppointmentChangeNoticeTests {
         assertTrue(page.contains(TEXT_SENT), page);
     }
 
+    @Test
+    void rescheduleSendsEmailAndText() throws Exception {
+        Appointment appointment = appointmentRepository.save(
+                new Appointment("Haircut", "change-notice-service", "change-notice-salon", DATE, "10:00", alex));
+        when(emailSender.send(any(BookingConfirmationMessage.class))).thenReturn(BookingEmailResult.ACCEPTED);
+        when(smsSender.send(anyString(), anyString())).thenReturn(BookingSmsResult.ACCEPTED);
+
+        MvcResult result = edit(ALEX, appointment, "11:00");
+
+        verify(emailSender, times(1)).send(any(BookingConfirmationMessage.class));
+        verify(smsSender, times(1)).send(anyString(), anyString());
+        String page = followRedirect(ALEX, result);
+        assertTrue(page.contains("Email with the new time submitted."), page);
+        assertTrue(page.contains("Text with the new time submitted for delivery."), page);
+    }
+
     private MvcResult cancel(String customerEmail, Appointment appointment) throws Exception {
         return mockMvc.perform(post("/customer/appointments/cancel")
                 .param("id", String.valueOf(appointment.getId()))
+                .with(user(customerEmail).roles("CUSTOMER")).with(csrf()))
+                .andExpect(status().is3xxRedirection()).andReturn();
+    }
+
+    private MvcResult edit(String customerEmail, Appointment appointment, String time) throws Exception {
+        return mockMvc.perform(post("/customer/appointments/edit")
+                .param("id", String.valueOf(appointment.getId()))
+                .param("appointmentDate", DATE.toString()).param("appointmentTime", time)
                 .with(user(customerEmail).roles("CUSTOMER")).with(csrf()))
                 .andExpect(status().is3xxRedirection()).andReturn();
     }
