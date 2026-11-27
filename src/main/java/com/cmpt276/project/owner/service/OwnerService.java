@@ -1,5 +1,6 @@
 package com.cmpt276.project.owner.service;
 
+import java.util.Objects;
 import java.math.BigDecimal;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
@@ -39,6 +40,15 @@ public class OwnerService {
         return store.findAll().stream()
                 .sorted(Comparator.comparing(Salon::getName, String.CASE_INSENSITIVE_ORDER)
                         .thenComparing(Salon::getSlug))
+                .toList();
+    }
+
+    public List<Salon> findRecentlyVisitedSalons(List<String> orderedIds) {
+        // Unavailable salons do not count toward the dashboard limit.
+        return orderedIds.stream()
+                .map(store::findById)
+                .filter(Objects::nonNull)
+                .limit(3)
                 .toList();
     }
 
