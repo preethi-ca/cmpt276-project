@@ -30,6 +30,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import com.cmpt276.project.owner.service.SalonAnalyticsService;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/owner")
@@ -112,7 +113,9 @@ public class OwnerController {
     }
 
     @GetMapping("/dashboard")
-    public String dashboard(Model model) {
+    public String dashboard(
+            @RequestParam(defaultValue = "30") int range,
+            Model model) {
 
         Salon salon = (Salon) model.getAttribute("salon");
 
@@ -120,18 +123,107 @@ public class OwnerController {
             return "redirect:/owner/setup";
         }
 
-        int totalAppointments = analyticsService.getTotalAppointments(salon.getId());
+        if (range != 7 && range != 30) {
+            range = 30;
+        }
 
-        String mostPopularService = analyticsService.getMostPopularService(salon.getId());
+        LocalDate endDate = LocalDate.now();
+        LocalDate startDate = endDate.minusDays(range - 1);
 
-        String busiestTime = analyticsService.getBusiestTime(salon.getId());
+        int totalAppointments = analyticsService.getTotalAppointments(
+                salon.getId(),
+                startDate,
+                endDate);
 
-        BigDecimal estimatedRevenue = analyticsService.getEstimatedRevenue(salon);
+        String mostPopularService = analyticsService.getMostPopularService(
+                salon.getId(),
+                startDate,
+                endDate);
+
+        String busiestTime = analyticsService.getBusiestTime(
+                salon.getId(),
+                startDate,
+                endDate);
+
+        String busiestDay = analyticsService.getBusiestDay(
+                salon.getId(),
+                startDate,
+                endDate);
+
+        BigDecimal estimatedRevenue = analyticsService.getEstimatedRevenue(
+                salon,
+                startDate,
+                endDate);
+
+        Map<?, Integer> bookingTrends;
+
+        if (range == 7) {
+            bookingTrends = analyticsService.getBookingTrends(
+                    salon.getId(),
+                    startDate,
+                    endDate);
+        } else {
+            bookingTrends = analyticsService.getWeeklyBookingTrends(
+                    salon.getId(),
+                    startDate,
+                    endDate);
+        }
+
+        Map<?, BigDecimal> revenueTrends;
+
+        if (range == 7) {
+            revenueTrends = analyticsService.getRevenueTrends(
+                    salon.getId(),
+                    startDate,
+                    endDate);
+        } else {
+            revenueTrends = analyticsService.getWeeklyRevenueTrends(
+                    salon.getId(),
+                    startDate,
+                    endDate);
+        }
+
+        String busiestDayInsight = analyticsService.getBusiestDayInsight(
+                salon.getId(),
+                startDate,
+                endDate);
+
+        String popularServiceInsight = analyticsService.getPopularServiceInsight(
+                salon.getId(),
+                startDate,
+                endDate);
+
+        String bookingTrendInsight = analyticsService.getBookingTrendInsight(
+                salon.getId(),
+                startDate,
+                endDate);
 
         model.addAttribute("totalAppointments", totalAppointments);
         model.addAttribute("mostPopularService", mostPopularService);
         model.addAttribute("busiestTime", busiestTime);
+        model.addAttribute("busiestDay", busiestDay);
         model.addAttribute("estimatedRevenue", estimatedRevenue);
+        model.addAttribute("selectedRange", range);
+        model.addAttribute("startDate", startDate);
+        model.addAttribute("endDate", endDate);
+        int maxBookings = bookingTrends.values()
+                .stream()
+                .mapToInt(Integer::intValue)
+                .max()
+                .orElse(0);
+
+        BigDecimal maxRevenue = revenueTrends.values()
+                .stream()
+                .max(BigDecimal::compareTo)
+                .orElse(BigDecimal.ZERO);
+
+        model.addAttribute("maxBookings", maxBookings);
+        model.addAttribute("maxRevenue", maxRevenue);
+        model.addAttribute("bookingTrends", bookingTrends);
+        model.addAttribute("revenueTrends", revenueTrends);
+        model.addAttribute("busiestDayInsight", busiestDayInsight);
+        model.addAttribute("popularServiceInsight", popularServiceInsight);
+        model.addAttribute("bookingTrendInsight", bookingTrendInsight);
 
         return page(model, "dashboard", "Dashboard");
     }

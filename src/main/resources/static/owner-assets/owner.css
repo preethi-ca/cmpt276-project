@@ -250,6 +250,60 @@ dialog::backdrop { background: rgb(25 34 28 / 35%); }
   background: #f8faf6;
 }
 
+.workspace .analytics-trends {
+  margin-top: 2rem;
+}
+
+.analytics-trends h3 {
+  margin-bottom: 1rem;
+}
+
+.booking-trend-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.booking-trend-row {
+  display: grid;
+  grid-template-columns: 130px minmax(0, 1fr) 90px;
+  align-items: center;
+  gap: 12px;
+}
+
+.booking-trend-date {
+  font-size: 0.9rem;
+}
+
+.analytics-meter {
+  width: 100%;
+  height: 14px;
+  appearance: none;
+  border: none;
+  background: #eceff3;
+  border-radius: 999px;
+}
+
+.analytics-meter::-webkit-meter-bar {
+  background: #eceff3;
+  border: none;
+  border-radius: 999px;
+}
+
+.analytics-meter::-webkit-meter-optimum-value {
+  background: #294b3b;
+  border-radius: 999px;
+}
+
+.analytics-meter::-moz-meter-bar {
+  background: #294b3b;
+  border-radius: 999px;
+}
+
+.booking-trend-count {
+  text-align: right;
+}
+
 .analytics-label {
   display: block;
   margin-bottom: 8px;
@@ -300,4 +354,31 @@ dialog::backdrop { background: rgb(25 34 28 / 35%); }
 
 .owner-account-links a.text-button {
     color: #285943;
+}
+
+.analytics-filter {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+#smart-insights-title ~ div .analytics-card {
+  margin-bottom: 12px;
+}
+
+#smart-insights-title ~ div .analytics-card p {
+  margin-bottom: 0;
+}
+
+@media (max-width: 600px) {
+  .analytics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .booking-trend-row {
+    grid-template-columns: 100px minmax(0, 1fr) 75px;
+    gap: 8px;
+  }
 }
