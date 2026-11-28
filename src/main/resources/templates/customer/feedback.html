@@ -1,0 +1,85 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Appointment Feedback</title>
+
+        <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}" />
+        <link rel="stylesheet" th:href="@{/css/style.css}" />
+    </head>
+
+    <body>
+        <main class="container py-5">
+            <div th:if="${message}" class="alert alert-success" role="alert"
+                th:text="${message}">
+            </div>
+            <div th:if="${errorMessage}" class="alert alert-danger" role="alert"
+                th:text="${errorMessage}">
+            </div>
+
+        <h1>Appointment Feedback</h1>
+
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <p class="mb-2"><strong>Salon Name:</strong>
+                    <span th:text="${salonName}"></span>
+                </p>
+
+                <p class="mb-2">
+                    <strong>Service:</strong>
+                    <span th:text="${appointment.serviceName}"></span>
+                </p>
+
+                <p class="mb-2">
+                    <strong>Date:</strong>
+                    <span th:text="${appointment.appointmentDate}"></span>
+                </p>
+
+                <p class="mb-4">
+                    <strong>Time:</strong>
+                    <span th:text="${appointment.appointmentTime}"></span> (Vancouver time)
+                </p>
+
+                <p th:if="${feedbackSent}" class="mb-4">You already sent feedback for this appointment.</p>
+
+                <p th:if="${!feedbackSent and !isOver}" class="mb-4">You can leave feedback after your appointment is over.</p>
+
+                <form th:if="${!feedbackSent and isOver}" th:action="@{/customer/appointments/feedback}" method="post">
+                    <input type="hidden" name="id" th:value="${appointment.id}"/>
+
+                    <div class="mb-3">
+                    <label for="rating" class="form-label">How was your appointment?</label>
+                    <select class="form-select" id="rating" name="rating" aria-describedby="ratingHelp" required>
+                        <option value="" selected disabled>Pick a rating</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                    </select>
+                    <div id="ratingHelp" class="form-text">1 is the lowest and 5 is the highest.</div>
+                    </div>
+
+                    <div class="mb-3">
+                    <label for="comment" class="form-label">Anything the salon should know? (optional)</label>
+                    <textarea class="form-control" id="comment" name="comment" rows="4" maxlength="500"></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        Send feedback
+                    </button>
+
+                    <a th:href="@{/customer/appointments}" class="btn btn-outline-secondary">
+                        Back to My Appointments
+                    </a>
+                </form>
+
+                <a th:unless="${!feedbackSent and isOver}" th:href="@{/customer/appointments}" class="btn btn-outline-secondary">
+                    Back to My Appointments
+                </a>
+            </div>
+        </div>
+        </main>
+    </body>
+</html>
