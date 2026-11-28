@@ -153,6 +153,12 @@ class AppointmentControllerTests {
         when(appointment.getSalonId())
                 .thenReturn("10");
 
+        when(appointment.getAppointmentDate())
+                .thenReturn(LocalDate.now().plusDays(2));
+
+        when(appointment.getAppointmentTime())
+                .thenReturn("10:00");
+
         when(ownerService.findPublicSalon("10"))
                 .thenReturn(salon);
 
