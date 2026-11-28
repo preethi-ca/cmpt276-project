@@ -119,6 +119,11 @@ public class AccountService {
         Account account = accountRepository.findByEmail(normalizedEmail)
                 .orElseThrow(() -> new IllegalArgumentException("Account not found"));
 
+        if (account.getGoogleSubject() != null) {
+            throw new IllegalArgumentException(
+                    "Your sign-in is managed by Google.");
+        }
+
         // verify the current password
         if (currentPassword == null || !passwordEncoder.matches(currentPassword, account.getPasswordHash())) {
             return false;
@@ -138,7 +143,8 @@ public class AccountService {
     }
 
     public void updateAccountSettings(String email, String name, String phoneNumber, String notificationPreference) {
-        Account account = accountRepository.findByEmail(normalizeEmail(email)).orElseThrow(() -> new IllegalArgumentException("Account not found"));
+        Account account = accountRepository.findByEmail(normalizeEmail(email))
+                .orElseThrow(() -> new IllegalArgumentException("Account not found"));
 
         // validate name
         if (name == null || name.trim().isBlank() || name.trim().length() > 100) {

@@ -9,6 +9,7 @@ import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import com.cmpt276.project.model.Account;
+import org.springframework.core.env.Environment;
 
 /**
  * Shared authentication endpoints; Spring Security handles login and logout
@@ -17,9 +18,13 @@ import com.cmpt276.project.model.Account;
 @Controller
 public class AuthController {
     private final AccountService accountService;
+    private final Environment environment;
 
-    public AuthController(AccountService accountService) {
+    public AuthController(
+            AccountService accountService,
+            Environment environment) {
         this.accountService = accountService;
+        this.environment = environment;
     }
 
     @InitBinder("registrationForm")
@@ -41,7 +46,9 @@ public class AuthController {
     }
 
     @GetMapping("/login")
-    public String showLoginPage() {
+    public String showLoginPage(Model model) {
+        model.addAttribute("googleLoginEnabled",
+                environment.matchesProfiles("google"));
         return "login";
     }
 
@@ -59,7 +66,13 @@ public class AuthController {
     }
 
     @GetMapping("/change-password")
-    public String showChangePasswordPage() {
+    public String showChangePasswordPage(Authentication authentication) {
+        Account account = accountService.findByEmail(authentication.getName());
+
+        if (account.getGoogleSubject() != null) {
+            return "redirect:/account-settings";
+        }
+
         return "change-password";
     }
 

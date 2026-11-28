@@ -20,4 +20,5 @@ public interface AccountRepository extends JpaRepository<Account, Integer> {
     List<String> recentSalonIds(String email);
 
     Optional<Account> findByEmail(String email);
+    Optional<Account> findByGoogleSubject(String googleSubject);
 }
