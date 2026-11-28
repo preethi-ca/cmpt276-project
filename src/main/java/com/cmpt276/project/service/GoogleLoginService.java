@@ -13,6 +13,7 @@ import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.stereotype.Service;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.util.List;
 import java.util.Locale;
@@ -68,25 +69,43 @@ public class GoogleLoginService extends OidcUserService {
                     name == null || name.isBlank() ? email : name,
                     email,
                     passwordEncoder.encode(UUID.randomUUID().toString()),
-                    RoleType.CUSTOMER
-            );
+                    RoleType.CUSTOMER);
 
             account.setGoogleSubject(subject);
             account = accountRepository.saveAndFlush(account);
         }
 
-        // Existing BookEasy controllers identify users by email.
+        // Update the email for an existing Google account
+        // only if the new email is not already in use.
         if (!account.getEmail().equals(email)) {
-            throw new OAuth2AuthenticationException(
-                    new OAuth2Error("email_changed"));
+
+            if (accountRepository.findByEmail(email).isPresent()) {
+                throw new OAuth2AuthenticationException(
+                        new OAuth2Error("account_link_required"));
+            }
+
+            account.setEmail(email);
+
+            try {
+                account = accountRepository.saveAndFlush(account);
+            } catch (DataIntegrityViolationException exception) {
+                throw new OAuth2AuthenticationException(
+                        new OAuth2Error("account_link_required"));
+            }
         }
+
+        final String accountEmail = account.getEmail();
 
         return new DefaultOidcUser(
                 List.of(new SimpleGrantedAuthority(
                         "ROLE_" + account.getRoleType().name())),
                 googleUser.getIdToken(),
                 googleUser.getUserInfo(),
-                "email"
-        );
+                "email") {
+            @Override
+            public String getName() {
+                return accountEmail;
+            }
+        };
     }
 }
