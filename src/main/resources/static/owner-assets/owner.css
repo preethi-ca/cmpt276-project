@@ -301,3 +301,91 @@ dialog::backdrop { background: rgb(25 34 28 / 35%); }
 .owner-account-links a.text-button {
     color: #285943;
 }
+
+/* BookEasy UI Consistency - Owner Dashboard */
+
+/* Main background */
+body.owner-app {
+    background-color: #fafaf5;
+}
+
+/* Sidebar branding */
+.sidebar .brand {
+    color: #294b3b;
+    font-family: Arial, sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+}
+
+/* Navigation */
+.sidebar nav a {
+    border-radius: 8px;
+}
+
+.sidebar nav a[aria-current="page"] {
+    background-color: #e0e7da;
+    color: #294b3b;
+}
+
+/* Cards and panels */
+.workspace .panel,
+.analytics-card {
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+/* Form inputs */
+.owner-app .field input:not([type="checkbox"]),
+.owner-app .field select,
+.owner-app textarea {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    background-color: white;
+}
+
+/* Form focus */
+.owner-app .field input:focus,
+.owner-app .field select:focus,
+.owner-app textarea:focus {
+    border-color: #294b3b;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(41, 75, 59, 0.15);
+}
+
+/* Buttons */
+.owner-app button,
+.owner-app .button {
+    border-radius: 8px;
+}
+
+/* Primary buttons */
+.owner-app .button.primary {
+    background-color: #294b3b;
+    border-color: #294b3b;
+    color: white;
+}
+
+.owner-app .button.primary:hover {
+    background-color: #243c2d;
+    border-color: #243c2d;
+}
+
+/* Tables */
+.owner-app .service-table td:first-child {
+    border-radius: 8px 0 0 8px;
+}
+
+.owner-app .service-table td:last-child {
+    border-radius: 0 8px 8px 0;
+}
+
+/* Analytics cards */
+.owner-app .analytics-card {
+    background-color: #fff;
+}
+
+.owner-app .analytics-card strong {
+    color: #294b3b;
+}

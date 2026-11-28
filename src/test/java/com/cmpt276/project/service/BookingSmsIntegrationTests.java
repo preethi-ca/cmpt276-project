@@ -19,6 +19,7 @@ import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -56,7 +57,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class BookingSmsIntegrationTests {
     private static final String DATABASE_URL = "jdbc:h2:mem:booking-sms-integration;DB_CLOSE_DELAY=-1";
     private static final String CUSTOMER_EMAIL = "alex@example.invalid";
-    private static final String DATE = LocalDate.now().plusDays(2).toString();
+    private static final String DATE = LocalDate.now(ZoneId.of("America/Vancouver"))
+        .plusDays(2).toString();
     private static final String ACCOUNT_SID = "AC11111111111111111111111111111111";
     private static final String API_KEY_SID = "SK22222222222222222222222222222222";
     private static final String API_KEY_SECRET = "fake-test-secret";
@@ -320,7 +322,7 @@ class BookingSmsIntegrationTests {
     @Test
     void viewingPagesAfterABookingDoesNotSendAnotherText() throws Exception {
         useCustomer(NotificationPreference.SMS, "6045551234");
-        assertConfirmation(book("09:00"));
+        assertConfirmation(book("10:00"));
         Appointment saved = appointmentRepository.findAll().get(0);
         assertEquals(1, providers.sms.requestCount);
 

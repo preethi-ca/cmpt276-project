@@ -7,7 +7,6 @@ import com.cmpt276.project.model.RoleType;
 import com.cmpt276.project.owner.controller.OwnerController.HoursForm;
 import com.cmpt276.project.owner.controller.OwnerController.SalonForm;
 import com.cmpt276.project.owner.controller.OwnerController.ServiceForm;
-import com.cmpt276.project.owner.controller.PublicSalon;
 import com.cmpt276.project.owner.model.Salon;
 import com.cmpt276.project.owner.service.OwnerService;
 import com.cmpt276.project.owner.store.JpaSalonStore;
@@ -116,42 +115,46 @@ class Cmpt276ProjectApplicationTests {
     }
 
     @Test
-    void customerDashboardListsPersistedSalonsAndReflectsOwnerUpdates() throws Exception {
-        // Unique names isolate these assertions from salons saved by other tests in this context.
-        String suffix = UUID.randomUUID().toString();
-        SalonForm zuluForm = profile();
-        zuluForm.setName("Zulu " + suffix);
-        assertTrue(owners.saveProfile(ownerId, zuluForm, false, errors(zuluForm, "salonForm")));
-        Salon zulu = store.findByOwnerId(ownerId);
-        Salon alpha = createAdditionalSalon("alpha " + suffix, "100 First Street");
-        Salon secondAlpha = createAdditionalSalon("Alpha " + suffix, "200 Second Street");
-        List<String> ids = List.of(alpha.getId(), secondAlpha.getId(), zulu.getId());
+    void recentSalonListShowsTheFirstThreeInVisitOrder() {
+        var memory = new MemorySalonStore();
+        var salons = new ArrayList<Salon>();
+        for (int i = 0; i < 4; i++) {
+            Salon salon = memorySalon("salon-" + i, "Salon " + i);
+            memory.save(salon);
+            salons.add(salon);
+        }
+        var orderedIds = salons.stream().map(Salon::getId).toList();
+        assertEquals(salons.subList(0, 3),
+                new OwnerService(memory).findRecentlyVisitedSalons(orderedIds));
+    }
 
-        var listed = customerSalons().stream().filter(item -> ids.contains(item.getId())).toList();
-        assertEquals(ids, listed.stream().map(PublicSalon::getId).toList());
-        assertEquals(List.of(alpha.getSlug(), secondAlpha.getSlug(), zulu.getSlug()),
-                listed.stream().map(PublicSalon::getSlug).toList());
-        assertEquals(List.of("100 First Street", "200 Second Street", "123 Main Street"),
-                listed.stream().map(PublicSalon::getAddress).toList());
-        for (PublicSalon item : listed) {
-            // Exercise selection against persisted data before loading the destination page.
-            mvc.perform(get("/customer/salons/visit").param("slug", item.getSlug())
-                            .with(user("customer").roles("CUSTOMER")))
-                    .andExpect(redirectedUrl("/salons/" + item.getSlug()));
-            mvc.perform(get("/salons/" + item.getSlug()))
+    @Test
+    void customerCanOpenEachSalonByItsOwnUrl() throws Exception {
+        Salon first = store.findByOwnerId(ownerId);
+        Salon second = createAdditionalSalon(first.getName(), "200 Second Street");
+        var customer = user(dashboardCustomer.getEmail()).roles("CUSTOMER");
+
+        // Even salons with identical names have distinct public URLs.
+        for (Salon salon : List.of(first, second)) {
+            mvc.perform(get("/salons/" + salon.getSlug()).with(customer))
                     .andExpect(status().isOk())
-                    .andExpect(content().string(containsString(item.getAddress())));
+                    .andExpect(content().string(containsString(salon.getAddress())));
         }
 
-        mvc.perform(post("/owner/profile").with(user(owner.getEmail()).roles("SALONOWNER")).with(csrf())
-                .param("name", "Aardvark " + suffix).param("address", "Changed Address"))
-                .andExpect(redirectedUrl("/owner/profile"));
-        var refreshed = customerSalons().stream().filter(item -> ids.contains(item.getId())).toList();
-        assertEquals(List.of(zulu.getId(), alpha.getId(), secondAlpha.getId()),
-                refreshed.stream().map(PublicSalon::getId).toList());
-        assertEquals("Aardvark " + suffix, refreshed.get(0).getName());
-        assertEquals("Changed Address", refreshed.get(0).getAddress());
-        assertEquals(zulu.getSlug(), refreshed.get(0).getSlug());
+        mvc.perform(get("/salons/" + first.getSlug()).with(customer)).andExpect(status().isOk());
+        String html = mvc.perform(get("/customer/dashboard").with(customer))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        String firstLink = "href=\"/salons/" + first.getSlug() + "\"";
+        String secondLink = "href=\"/salons/" + second.getSlug() + "\"";
+        assertTrue(html.contains(firstLink));
+        assertTrue(html.indexOf(firstLink) < html.indexOf(secondLink));
+        assertEquals(html.indexOf(firstLink), html.lastIndexOf(firstLink));
+
+        var other = accounts.save(new Account("Other", UUID.randomUUID() + "@example.com",
+                "unused-test-hash", RoleType.CUSTOMER));
+        mvc.perform(get("/customer/dashboard").with(user(other.getEmail()).roles("CUSTOMER")))
+                .andExpect(content().string(containsString("Salons you visit using their links will appear here.")))
+                .andExpect(content().string(not(containsString(firstLink))));
     }
 
     @Test
@@ -333,7 +336,7 @@ class Cmpt276ProjectApplicationTests {
         Salon salon = store.findByOwnerId(ownerId);
         Account customer = accounts.save(new Account("Customer", UUID.randomUUID() + "@example.com",
                 "unused-test-hash", RoleType.CUSTOMER));
-        LocalDate monday = LocalDate.now()
+        LocalDate monday = LocalDate.now(ZoneId.of("America/Vancouver"))
                 .with(TemporalAdjusters.next(DayOfWeek.MONDAY));
         Appointment booked = bookings.bookAppointment(salon.getServices().get(0).getId(),
                 salon.getSlug(), monday.toString(), "10:00", customer.getEmail());
@@ -354,8 +357,10 @@ class Cmpt276ProjectApplicationTests {
     void lateClosingDoesNotWrapSlotGenerationPastMidnight() {
         saveHours("22:00", "23:59");
         Salon salon = store.findByOwnerId(ownerId);
+        LocalDate futureMonday = LocalDate.now(ZoneId.of("America/Vancouver"))
+                .with(TemporalAdjusters.next(DayOfWeek.MONDAY));
         assertTimeoutPreemptively(Duration.ofSeconds(2), () ->
-                assertEquals(List.of("22:00"), bookings.getAvailableTimes(salon.getSlug(), LocalDate.of(2026, 11, 9))));
+                assertEquals(List.of("22:00"), bookings.getAvailableTimes(salon.getSlug(), futureMonday)));
     }
 
     private Salon memorySalon(String slug, String name) {
@@ -388,7 +393,8 @@ class Cmpt276ProjectApplicationTests {
         Salon salon = store.findByOwnerId(ownerId);
         String serviceId = salon.getServices().get(0).getId();
         Account customer = accounts.save(new Account("Customer <Alice>", UUID.randomUUID() + "@example.com", "private-hash", RoleType.CUSTOMER));
-        LocalDate monday = LocalDate.now().plusDays(1).with(TemporalAdjusters.nextOrSame(DayOfWeek.MONDAY));
+        LocalDate monday = LocalDate.now(ZoneId.of("America/Vancouver"))
+                .plusDays(1).with(TemporalAdjusters.nextOrSame(DayOfWeek.MONDAY));
         mvc.perform(post("/customer/booking/confirm").with(csrf()).with(user(customer.getEmail()).roles("CUSTOMER"))
                         .param("salon", salon.getSlug()).param("service", serviceId)
                         .param("appointmentDate", monday.toString()).param("appointmentTime", "10:00"))
@@ -471,16 +477,6 @@ class Cmpt276ProjectApplicationTests {
         }
         mvc.perform(get("/owner/appointments").param("page", "2").with(user(owner.getEmail()).roles("SALONOWNER")))
                 .andExpect(status().isOk()).andExpect(model().attribute("currentPage", 1));
-    }
-
-    private List<PublicSalon> customerSalons() throws Exception {
-        var result = mvc.perform(get("/customer/dashboard")
-                .with(user(dashboardCustomer.getEmail()).roles("CUSTOMER"))
-                .with(csrf()))
-                .andExpect(status().isOk()).andExpect(view().name("customer/customer-dashboard"))
-                .andExpect(model().attributeExists("salons")).andReturn();
-        var salons = (List<?>) result.getModelAndView().getModel().get("salons");
-        return salons.stream().map(item -> assertInstanceOf(PublicSalon.class, item)).toList();
     }
 
     private SalonForm profile() {
