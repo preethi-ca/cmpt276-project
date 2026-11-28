@@ -18,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.*;
@@ -54,7 +55,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class BookingEmailIntegrationTests {
     private static final String DATABASE_URL = "jdbc:h2:mem:booking-email-integration;DB_CLOSE_DELAY=-1";
     private static final String CUSTOMER_EMAIL = "alex@example.invalid";
-    private static final String DATE = LocalDate.now().plusDays(2).toString();
+    private static final String DATE = LocalDate.now(ZoneId.of("America/Vancouver")).plusDays(2).toString();
 
     @Autowired
     private MockMvc mvc;
@@ -150,7 +151,7 @@ class BookingEmailIntegrationTests {
                 .with(user(CUSTOMER_EMAIL).roles("CUSTOMER"))).andExpect(status().isOk());
         mvc.perform(get("/customer/booking/confirmation")
                 .param("service", "email-test-service").param("salon", salon.getSlug())
-                .param("appointmentDate", DATE).param("appointmentTime", "09:00")
+                .param("appointmentDate", DATE).param("appointmentTime", "10:00")
                 .with(user(CUSTOMER_EMAIL).roles("CUSTOMER")))
                 .andExpect(status().isOk()).andExpect(view().name("customer/booking-summary"));
         assertEquals("customer/select-time", book("09:00").getModelAndView().getViewName());

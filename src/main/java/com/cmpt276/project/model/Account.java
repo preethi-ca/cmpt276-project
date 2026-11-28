@@ -1,6 +1,8 @@
 package com.cmpt276.project.model;
 
 import jakarta.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 public class Account {
@@ -23,6 +25,16 @@ public class Account {
 
     @Enumerated(EnumType.STRING)
     private NotificationPreference notificationPreference = NotificationPreference.EMAIL;
+
+    @ElementCollection
+    @OrderColumn(name = "visit_position")
+    private List<String> recentSalonIds = new ArrayList<>();
+
+    public void recordSalonVisit(String salonId) {
+        // Store each salon once, with the most recent visit at position zero.
+        recentSalonIds.remove(salonId);
+        recentSalonIds.add(0, salonId);
+    }
 
     public Account() {
     }

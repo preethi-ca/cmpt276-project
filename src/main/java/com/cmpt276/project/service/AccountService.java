@@ -1,5 +1,6 @@
 package com.cmpt276.project.service;
 
+import org.springframework.transaction.annotation.Transactional;
 import com.cmpt276.project.controller.AuthController.RegistrationForm;
 import com.cmpt276.project.model.Account;
 import com.cmpt276.project.model.RoleType;
@@ -24,6 +25,11 @@ public class AccountService {
     public AccountService(AccountRepository accountRepository, PasswordEncoder passwordEncoder) {
         this.accountRepository = accountRepository;
         this.passwordEncoder = passwordEncoder;
+    }
+
+    @Transactional
+    public void recordSalonVisit(String customerEmail, String salonId) {
+        accountRepository.lockForVisit(customerEmail).ifPresent(account -> account.recordSalonVisit(salonId));
     }
 
     public boolean register(RegistrationForm form, Errors errors) {
