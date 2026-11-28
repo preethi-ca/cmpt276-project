@@ -1,9 +1,11 @@
 package com.cmpt276.project.controller;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
@@ -21,6 +23,7 @@ import com.cmpt276.project.owner.model.SalonService;
 import com.cmpt276.project.owner.service.OwnerService;
 import com.cmpt276.project.repository.AccountRepository;
 import com.cmpt276.project.repository.AppointmentRepository;
+import com.cmpt276.project.service.AppointmentFeedbackService;
 import com.cmpt276.project.service.BookingService;
 import com.cmpt276.project.service.GoogleCalendarSync;
 import java.time.LocalDate;
@@ -33,12 +36,14 @@ public class AppointmentController {
     private final OwnerService ownerService;
     private final BookingService bookingService;
     private final GoogleCalendarSync calendarSync;
-    public AppointmentController(AppointmentRepository appointmentRepository,AccountRepository accountRepository, OwnerService ownerService, BookingService bookingService, GoogleCalendarSync calendarSync){
+    private final AppointmentFeedbackService feedbackService;
+    public AppointmentController(AppointmentRepository appointmentRepository,AccountRepository accountRepository, OwnerService ownerService, BookingService bookingService, GoogleCalendarSync calendarSync, AppointmentFeedbackService feedbackService){
         this.appointmentRepository = appointmentRepository;
         this.accountRepository = accountRepository;
         this.ownerService = ownerService;
         this.bookingService = bookingService;
         this.calendarSync = calendarSync;
+        this.feedbackService = feedbackService;
     }
 
     //show all appointments the customer has
@@ -53,11 +58,21 @@ public class AppointmentController {
         Account customer = customerOpt.get();
         List<Appointment> appointments = appointmentRepository.findByCustomer(customer);
         Map<Integer, String> salonNames = new HashMap<>();
+        Set<Integer> finishedIds = new HashSet<>();
+        Set<Integer> feedbackSentIds = new HashSet<>();
         for (Appointment appointment : appointments){ 
             Salon salon = ownerService.findPublicSalon(appointment.getSalonId()); 
             salonNames.put(appointment.getId(), salon.getName());
+            if (feedbackService.isOver(appointment)) {
+                finishedIds.add(appointment.getId());
+            }
+            if (feedbackService.hasFeedback(appointment.getId())) {
+                feedbackSentIds.add(appointment.getId());
+            }
         }
         model.addAttribute("salonNames", salonNames);
+        model.addAttribute("finishedIds", finishedIds);
+        model.addAttribute("feedbackSentIds", feedbackSentIds);
         model.addAttribute("appointments", appointmentRepository.findByCustomer(customer));
         return "customer/my-appointments";
     }

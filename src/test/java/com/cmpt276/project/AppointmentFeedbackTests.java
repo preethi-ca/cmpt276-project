@@ -38,6 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 class AppointmentFeedbackTests {
     private static final String ALEX = "alex@example.invalid";
+    private static final String SAM = "sam@example.invalid";
 
     @Autowired
     private MockMvc mockMvc;
@@ -58,18 +59,7 @@ class AppointmentFeedbackTests {
     void sendsFeedbackOnlyOnce() throws Exception {
         Account alex = accountRepository.save(new Account("Alex Lee", ALEX, "fake-password-hash", RoleType.CUSTOMER));
 
-        Salon salon = new Salon();
-        salon.setId("feedback-salon");
-        salon.setOwnerId("feedback-owner");
-        salon.setSlug("feedback-salon");
-        salon.setName("CS_Salon");
-        salon.setAddress("123 Main Street");
-        SalonService service = new SalonService();
-        service.setId("feedback-service");
-        service.setName("Haircut");
-        service.setPrice(new BigDecimal("25.00"));
-        salon.getServices().add(service);
-        salonStore.save(salon);
+        saveSalon();
 
         Appointment appointment = appointmentRepository.save(new Appointment(
                 "Haircut", "feedback-service", "feedback-salon", LocalDate.now().minusDays(2), "10:00", alex));
@@ -90,6 +80,38 @@ class AppointmentFeedbackTests {
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         assertTrue(page.contains("You already sent feedback for this appointment."), page);
         assertFalse(page.contains("Send feedback"));
+    }
+
+    @Test
+    void showsFeedbackButtonOnlyForFinishedAppointments() throws Exception {
+        Account sam = accountRepository.save(new Account("Sam Park", SAM, "fake-password-hash", RoleType.CUSTOMER));
+        saveSalon();
+
+        Appointment past = appointmentRepository.save(new Appointment(
+                "Haircut", "feedback-service", "feedback-salon", LocalDate.now().minusDays(2), "10:00", sam));
+        Appointment future = appointmentRepository.save(new Appointment(
+                "Haircut", "feedback-service", "feedback-salon", LocalDate.now().plusDays(2), "10:00", sam));
+
+        String page = mockMvc.perform(get("/customer/appointments")
+                .with(user(SAM).roles("CUSTOMER")))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        assertTrue(page.contains("/customer/appointments/feedback?id=" + past.getId() + "\""), page);
+        assertFalse(page.contains("/customer/appointments/feedback?id=" + future.getId() + "\""));
+    }
+
+    private void saveSalon() {
+        Salon salon = new Salon();
+        salon.setId("feedback-salon");
+        salon.setOwnerId("feedback-owner");
+        salon.setSlug("feedback-salon");
+        salon.setName("CS_Salon");
+        salon.setAddress("123 Main Street");
+        SalonService service = new SalonService();
+        service.setId("feedback-service");
+        service.setName("Haircut");
+        service.setPrice(new BigDecimal("25.00"));
+        salon.getServices().add(service);
+        salonStore.save(salon);
     }
 
     private MvcResult sendFeedback(Appointment appointment) throws Exception {

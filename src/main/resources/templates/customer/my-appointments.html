@@ -55,6 +55,15 @@
                     View Details
                 </a>
 
+                <a th:if="${finishedIds.contains(appointment.id) and !feedbackSentIds.contains(appointment.id)}"
+                    th:href="@{/customer/appointments/feedback(id=${appointment.id})}" class="btn btn-outline-success">
+                    Leave feedback
+                </a>
+
+                <span th:if="${feedbackSentIds.contains(appointment.id)}" class="small text-muted align-self-center">
+                    Feedback sent
+                </span>
+
                 <form th:action="@{/customer/appointments/cancel}"
                     method="post">
 
