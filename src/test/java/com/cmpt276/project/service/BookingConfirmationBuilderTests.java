@@ -44,7 +44,7 @@ class BookingConfirmationBuilderTests {
                 + "Service: Haircut\n"
                 + "Date: 2026-11-03\n"
                 + "Time: 10:00 (Vancouver time)\n"
-                + "Duration: one hour\n\n"
+                + "Duration: 30 minutes\n\n"
                 + "Sign in to BookEasy and check My Appointments to view your booking.\n", message.getBody());
         assertEquals(1, appointmentRepository.findByCustomer(customer).size());
 
@@ -115,7 +115,7 @@ class BookingConfirmationBuilderTests {
     }
 
     private Appointment saveAppointment(Account customer, Salon salon, String service, LocalDate date, String time) {
-        return appointmentRepository.saveAndFlush(new Appointment(service, "service-1", salon.getId(), date, time, customer));
+        return appointmentRepository.saveAndFlush(new Appointment(service, "service-1", salon.getId(), date, time, customer, null, 30));
     }
 
     private Salon newSalon(String id, String name, String address) {

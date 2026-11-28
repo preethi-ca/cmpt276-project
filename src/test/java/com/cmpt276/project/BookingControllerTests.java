@@ -10,6 +10,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
@@ -167,9 +168,8 @@ class BookingControllerTests {
         when(salon.getOpeningHours())
                 .thenReturn(List.of(monday));
 
-        when(bookingService.getAvailableTimes(
-                "magiccuts-salon",
-                LocalDate.parse(appointmentDate)))
+        when(service.getDurationMinutes()).thenReturn(90);
+        when(bookingService.getAvailableTimes(salon, LocalDate.parse(appointmentDate), 90, null))
                 .thenReturn(List.of("09:00", "10:00"));
 
         mockMvc.perform(get("/customer/booking/time")
@@ -209,7 +209,8 @@ class BookingControllerTests {
         when(service.getName())
                 .thenReturn("Haircut");
 
-        when(bookingService.getAvailableTimes("magiccuts-salon", LocalDate.parse(appointmentDate)))
+        when(service.getDurationMinutes()).thenReturn(90);
+        when(bookingService.getAvailableTimes(salon, LocalDate.parse(appointmentDate), 90, null))
                 .thenReturn(List.of("10:00"));
 
         mockMvc.perform(get("/customer/booking/confirmation")
@@ -225,6 +226,17 @@ class BookingControllerTests {
                 .andExpect(model().attribute("appointmentDate", appointmentDate))
                 .andExpect(model().attribute("appointmentTime", "10:00"))
                 .andExpect(model().attribute("bookedService", service));
+
+        // An unavailable start returns to the time picker with the same service duration.
+        mockMvc.perform(get("/customer/booking/confirmation")
+                .with(user("customer@test.com").roles("CUSTOMER"))
+                .param("service", "service1")
+                .param("salon", "magiccuts-salon")
+                .param("appointmentDate", appointmentDate)
+                .param("appointmentTime", "10:30"))
+                .andExpect(view().name("customer/select-time"))
+                .andExpect(model().attribute("availableTimes", List.of("10:00")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Duration: 90 minutes")));
     }
 
     @Test
@@ -306,9 +318,8 @@ class BookingControllerTests {
         when(service.getName())
                 .thenReturn("Haircut");
 
-        when(bookingService.getAvailableTimes(
-                "magiccuts-salon",
-                LocalDate.parse(appointmentDate)))
+        when(service.getDurationMinutes()).thenReturn(90);
+        when(bookingService.getAvailableTimes(salon, LocalDate.parse(appointmentDate), 90, null))
                 .thenReturn(List.of("09:00", "10:00"));
 
         doThrow(new IllegalArgumentException("Appointment time is no longer available"))
@@ -441,9 +452,8 @@ class BookingControllerTests {
                 when(salon.getOpeningHours())
                                 .thenReturn(List.of(monday));
 
-                when(bookingService.getAvailableTimes(
-                                "magiccuts-salon",
-                                LocalDate.parse(appointmentDate)))
+                when(service.getDurationMinutes()).thenReturn(90);
+                when(bookingService.getAvailableTimes(salon, LocalDate.parse(appointmentDate), 90, null))
                                 .thenReturn(List.of("09:00", "10:00"));
 
                 mockMvc.perform(get("/customer/booking/time")
@@ -507,7 +517,6 @@ class BookingControllerTests {
                 org.junit.jupiter.api.Assertions.assertTrue(savedUrl.contains("appointmentTime=10:00"));
         }
 
-        //test that the controller displays an error when a customer tries to book a past time today
         @Test
         void shouldReturnToTimePageWhenBookingTimeIsInPast() throws Exception {
 
@@ -529,9 +538,8 @@ class BookingControllerTests {
         when(service.getName())
                 .thenReturn("Haircut");
 
-        when(bookingService.getAvailableTimes(
-                "magiccuts-salon",
-                LocalDate.parse(appointmentDate)))
+        when(service.getDurationMinutes()).thenReturn(90);
+        when(bookingService.getAvailableTimes(salon, LocalDate.parse(appointmentDate), 90, null))
                 .thenReturn(List.of("11:00", "12:00"));
 
         doThrow(new IllegalArgumentException(

@@ -1,3 +1,30 @@
+var printSchedule = document.getElementById('print-schedule');
+if (printSchedule) {
+  printSchedule.addEventListener('click', function () { window.print(); });
+}
+
+var photos = document.getElementById('photos');
+if (photos) {
+  photos.addEventListener('invalid', function () {
+    if (!photos.files.length) photos.setCustomValidity('Choose at least one photo.');
+  });
+  photos.addEventListener('change', function () {
+    var remaining = Number(photos.dataset.remaining);
+    var count = photos.files.length;
+    var selection = document.getElementById('photo-selection');
+    selection.textContent = count === 1 ? photos.files[0].name : count + ' photos selected';
+    if (!count) selection.textContent = 'No photos selected';
+    var message = '';
+    if (photos.files.length > remaining) {
+      message = 'Choose at most ' + remaining + (remaining === 1 ? ' more photo.' : ' more photos.');
+    } else if (Array.from(photos.files).some(function (file) { return file.size > 5 * 1024 * 1024; })) {
+      message = 'Each photo must be 5 MB or smaller.';
+    }
+    photos.setCustomValidity(message);
+    if (message) photos.reportValidity();
+  });
+}
+
 document.querySelectorAll('.day-row').forEach(function (row) {
   var checkbox = row.querySelector('input[type="checkbox"]');
   function updateDay() {
@@ -21,6 +48,16 @@ document.querySelectorAll('textarea').forEach(function (input) {
 
 var dirty = false;
 var submitting = false;
+var dialog = document.getElementById('leave-dialog');
+var pendingLeave = null;
+
+function confirmLeave(action) {
+  if (dialog.open) return;
+  pendingLeave = action;
+  dialog.returnValue = '';
+  dialog.showModal();
+}
+
 document.querySelectorAll('form[data-dirty-guard]').forEach(function (form) {
   form.addEventListener('input', function (event) {
     dirty = true;
@@ -42,6 +79,11 @@ document.querySelectorAll('form[data-dirty-guard], form[data-submit-guard]').for
   form.addEventListener('submit', function (event) {
     if (submitting) {
       event.preventDefault();
+      return;
+    }
+    if (dirty && dialog && !form.hasAttribute('data-dirty-guard')) {
+      event.preventDefault();
+      confirmLeave(function () { form.requestSubmit(event.submitter || undefined); });
       return;
     }
     submitting = true;
@@ -79,21 +121,21 @@ window.addEventListener('beforeunload', function (event) {
   }
 });
 
-var dialog = document.getElementById('leave-dialog');
-var destination = '';
 if (dialog) {
   document.addEventListener('click', function (event) {
     var link = event.target.closest('a');
     if (dirty && link && !link.hash && !event.metaKey && !event.ctrlKey && !event.shiftKey) {
       event.preventDefault();
-      destination = link.href;
-      dialog.showModal();
+      confirmLeave(function () { window.location.assign(link.href); });
     }
   });
   dialog.addEventListener('close', function () {
-    if (dialog.returnValue === 'leave') {
+    var action = pendingLeave;
+    pendingLeave = null;
+    if (dialog.returnValue === 'leave' && action) {
+      // The user already confirmed. Allow the original navigation or form POST without a second prompt.
       dirty = false;
-      window.location.assign(destination);
+      action();
     }
   });
 }

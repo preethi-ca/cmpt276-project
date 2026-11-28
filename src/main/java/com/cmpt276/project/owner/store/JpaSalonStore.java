@@ -9,11 +9,16 @@ import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.PersistenceContext;
 import org.springframework.context.annotation.Profile;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
 @Repository
 @Profile("postgres")
@@ -21,18 +26,14 @@ public class JpaSalonStore implements SalonStore {
 
     private final SalonJpaRepository repository;
     private final ObjectMapper objectMapper;
+    @PersistenceContext
+    private EntityManager entityManager;
 
     public JpaSalonStore(
             SalonJpaRepository repository,
             ObjectMapper objectMapper) {
         this.repository = repository;
         this.objectMapper = objectMapper;
-    }
-
-    @Override
-    public List<Salon> findAll() {
-        // Reuse the single-salon mapping for persisted public details and services.
-        return repository.findAll().stream().map(this::toSalon).toList();
     }
 
     @Override
@@ -54,6 +55,17 @@ public class JpaSalonStore implements SalonStore {
         return repository.findBySlug(slug)
                 .map(this::toSalon)
                 .orElse(null);
+    }
+
+    @Override
+    @Transactional
+    public <T> T withSalonForUpdate(String ownerId, Function<Salon, T> edit) {
+        SalonEntity entity = repository.findByOwnerId(ownerId).orElse(null);
+        if (entity == null) {
+            return edit.apply(null);
+        }
+        entityManager.refresh(entity, LockModeType.PESSIMISTIC_WRITE);
+        return edit.apply(toSalon(entity));
     }
 
     @Override

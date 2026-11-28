@@ -47,7 +47,7 @@ public class BookingConfirmationBuilder {
         body = body + "Service: " + appointment.getServiceName() + "\n"
                 + "Date: " + appointment.getAppointmentDate() + "\n"
                 + "Time: " + appointment.getAppointmentTime() + " (Vancouver time)\n"
-                + "Duration: one hour\n\n"
+                + "Duration: " + appointment.getDurationMinutes() + " minutes\n\n"
                 + "Sign in to BookEasy and check My Appointments to view your booking.\n";
 
         return new BookingConfirmationMessage(customer.getEmail(), subject, body);

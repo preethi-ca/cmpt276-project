@@ -46,7 +46,7 @@ class BookingServiceTests {
     @Test
     void shouldRejectBookingForPastDate() {
         //Create a date from yesterday
-        String pastDate = LocalDate.now().minusDays(1).toString();
+        String pastDate = LocalDate.now(ZoneId.of("America/Vancouver")).minusDays(1).toString();
 
         Account customer = new Account(
             "Alex Lee",
@@ -79,15 +79,12 @@ class BookingServiceTests {
         verify(appointmentRepository, never()).save(any(Appointment.class));
     }
 
-    //test that a customer cannot book a time that has passed for the same day
     @Test
     void shouldRejectBookingForPastTimeOnSameDay() {
         ZoneId zone = ZoneId.of("America/Vancouver");
 
-        //Use the current date in Vancouver
         LocalDate today = LocalDate.now(zone);
 
-        //Set the current time to 11:00 AM Vancouver time
         bookingService.clock = Clock.fixed(ZonedDateTime.of(today, LocalTime.of(11, 0), zone).toInstant(),zone);
 
         Account customer = new Account(
@@ -111,7 +108,6 @@ class BookingServiceTests {
         when(selectedService.getId())
             .thenReturn("service1");
 
-        //Attempt to book at 10am which has already passed
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, 
             () -> bookingService.bookAppointment(
                 "service1",
@@ -126,27 +122,22 @@ class BookingServiceTests {
         verify(appointmentRepository, never()).save(any(Appointment.class));
     }
 
-    //test that past appointment times are excluded from available times
     @Test
     void shouldExcludePastTimesWhenGettingAvailableTimes() {
         ZoneId zone = ZoneId.of("America/Vancouver");
         LocalDate today = LocalDate.now(zone);
 
-        //Set the current time to 11:00 AM Vancouver time
         bookingService.clock = Clock.fixed(ZonedDateTime.of(today, LocalTime.of(11, 0), zone).toInstant(), zone );
 
         Salon salon = createTestSalon(today);
 
-        when(ownerService.findPublicSalonBySlug("magiccuts-salon"))
-            .thenReturn(salon);
-
         when(appointmentRepository.findBySalonIdAndAppointmentDate("salon1", today))
             .thenReturn(List.of());
 
-        List<String> availableTimes = bookingService.getAvailableTimes("magiccuts-salon", today);
+        List<String> availableTimes = bookingService.getAvailableTimes(salon, today, 90, null);
 
         //Only times at or after 11:00 AM should be available
-        assertEquals(List.of("11:00", "12:00", "13:00", "14:00", "15:00", "16:00"), availableTimes);
+        assertEquals(List.of("11:00", "11:30", "12:00", "12:30", "13:00", "13:30", "14:00", "14:30", "15:00", "15:30"), availableTimes);
     }
 
     //Test that a customer can book a future time on the same day
@@ -176,6 +167,7 @@ class BookingServiceTests {
             .thenReturn(salon);
         when(selectedService.getId())
             .thenReturn("service1");
+        when(selectedService.getDurationMinutes()).thenReturn(90);
         when(selectedService.getName())
             .thenReturn("Haircut");
 
@@ -207,6 +199,7 @@ class BookingServiceTests {
         );
         Appointment appointment = mock(Appointment.class);
         when(appointment.getId()).thenReturn(42);
+        when(appointment.getDurationMinutes()).thenReturn(120);
         when(appointment.getSalonId()).thenReturn("salon1");
 
         Salon salon = createTestSalon(date);
@@ -216,8 +209,6 @@ class BookingServiceTests {
         when(appointmentRepository.findByIdAndCustomer(42, customer))
             .thenReturn(Optional.of(appointment));
         when(ownerService.findPublicSalon("salon1")).thenReturn(salon);
-        when(ownerService.findPublicSalonBySlug("magiccuts-salon"))
-            .thenReturn(salon);
         when(appointmentRepository.findBySalonIdAndAppointmentDate("salon1", date))
             .thenReturn(List.of(appointment));
         when(appointmentRepository.save(appointment)).thenReturn(appointment);
@@ -243,10 +234,12 @@ class BookingServiceTests {
 
         Appointment appointment = mock(Appointment.class);
         when(appointment.getId()).thenReturn(42);
+        when(appointment.getDurationMinutes()).thenReturn(120);
         when(appointment.getSalonId()).thenReturn("salon1");
 
         Appointment bookedAppointment = mock(Appointment.class);
         when(bookedAppointment.getId()).thenReturn(99);
+        when(bookedAppointment.getDurationMinutes()).thenReturn(30);
         when(bookedAppointment.getAppointmentTime()).thenReturn("11:00");
 
         Salon salon = createTestSalon(date);
@@ -256,8 +249,6 @@ class BookingServiceTests {
         when(appointmentRepository.findByIdAndCustomer(42, customer))
             .thenReturn(Optional.of(appointment));
         when(ownerService.findPublicSalon("salon1")).thenReturn(salon);
-        when(ownerService.findPublicSalonBySlug("magiccuts-salon"))
-            .thenReturn(salon);
         when(appointmentRepository.findBySalonIdAndAppointmentDate("salon1", date))
             .thenReturn(List.of(bookedAppointment));
 
@@ -273,7 +264,7 @@ class BookingServiceTests {
     //Test that editing to a past date doesn't work
     @Test
     void shouldRejectUpdatingAppointmentToPastDate() {
-        LocalDate pastDate = LocalDate.now().minusDays(1);
+        LocalDate pastDate = LocalDate.now(ZoneId.of("America/Vancouver")).minusDays(1);
 
         Account customer = new Account(
             "Alex Lee",

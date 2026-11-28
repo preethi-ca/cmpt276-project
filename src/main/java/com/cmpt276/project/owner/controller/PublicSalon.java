@@ -24,7 +24,6 @@ public class PublicSalon {
     public List<SalonService> getServices() { return salon.getServices(); }
     public List<OpeningDay> getOpeningHours() { return salon.getOpeningHours(); }
     public boolean isHoursConfigured() { return salon.isHoursConfigured(); }
-    public int getAppointmentMinutes() { return 60; }
     public String getCurrency() { return "CAD"; }
     public String getTimeZone() { return "America/Vancouver"; }
 }

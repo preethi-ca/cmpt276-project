@@ -98,6 +98,14 @@ body.owner-app { max-width: none; padding: 0; background: #fafaf5; }
 .section-description { margin: -10px 0 26px; color: #59635b; }
 .workspace .panel { background: #fff; border-radius: 5px; margin: 0; }
 .service-form, .profile-form { max-width: 760px; }
+.workspace #salon-photos { margin-top: 24px; }
+.photo-picker { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.photo-picker .button { position: relative; overflow: hidden; margin: 0; }
+.photo-picker input[type="file"] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.photo-picker .button:focus-within { outline: 2px solid currentColor; outline-offset: 2px; }
+#photo-selection { overflow-wrap: anywhere; }
+.salon-photo-list { list-style: none; padding: 0; display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(min(135px, 100%), 1fr)); }
+.salon-photo-list img { display: block; width: 100%; max-width: 240px; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 4px; margin-bottom: 8px; }
 .workspace .panel > .muted { font-size: 14px; margin-bottom: 26px; }
 .workspace .field input, .workspace textarea { max-width: none; }
 .profile-form > .field { max-width: none; }
@@ -145,6 +153,7 @@ th, td { border: 1px solid #c8ccc8; padding: 12px; text-align: left; }
 .appointment-table th, .appointment-table td { overflow-wrap: anywhere; vertical-align: top; }
 .appointment-table th:first-child { width: 24%; }
 .appointment-table th:nth-child(2) { width: 14%; }
+.returning-customer { display: inline-block; padding: 2px 6px; border-radius: 4px; background: #e0e7da; color: #233c2d; font-size: 12px; }
 
 /* time sheet */
 .hours-form { margin-top: 24px; }
@@ -300,4 +309,16 @@ dialog::backdrop { background: rgb(25 34 28 / 35%); }
 
 .owner-account-links a.text-button {
     color: #285943;
+}
+
+.print-preview .print-controls { display: flex; align-items: center; gap: 16px; }
+.print-preview td { overflow-wrap: anywhere; }
+@media print {
+    body.print-preview { background: white; color: black; }
+    .print-preview .sidebar, .print-preview .workspace-header, .print-preview .print-controls,
+    .print-preview .skip-link, .print-preview .notice { display: none; }
+    .print-preview .app-layout { display: block; min-height: 0; }
+    .print-preview .workspace, .print-preview .panel { max-width: none; padding: 0; border: 0; }
+    .print-preview thead { display: table-header-group; }
+    .print-preview tr { break-inside: avoid; }
 }

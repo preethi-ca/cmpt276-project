@@ -1,18 +1,28 @@
 package com.cmpt276.project.owner.service;
 
 import java.util.Objects;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
+import java.util.Iterator;
 import java.util.Locale;
 import java.util.UUID;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.MemoryCacheImageInputStream;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.Errors;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.cmpt276.project.owner.controller.OwnerController.HoursForm;
@@ -22,10 +32,16 @@ import com.cmpt276.project.owner.model.OpeningDay;
 import com.cmpt276.project.owner.model.Salon;
 import com.cmpt276.project.owner.model.SalonService;
 import com.cmpt276.project.owner.store.SalonStore;
+import com.cmpt276.project.owner.store.SalonEntity.Photo;
 
 @Service
 public class OwnerService {
+    private static final int MAX_GALLERY_PHOTOS = 5;
+    private static final int MAX_PHOTO_BYTES = 5 * 1024 * 1024;
+
     private final SalonStore store;
+    @PersistenceContext
+    private EntityManager entityManager;
 
     public OwnerService(SalonStore store) {
         this.store = store;
@@ -35,12 +51,91 @@ public class OwnerService {
         return store.findByOwnerId(ownerId);
     }
 
-    public List<Salon> findPublicSalons() {
-        // Sort in one place for both stores; the unique slug keeps same-name salons in a stable order.
-        return store.findAll().stream()
-                .sorted(Comparator.comparing(Salon::getName, String.CASE_INSENSITIVE_ORDER)
-                        .thenComparing(Salon::getSlug))
-                .toList();
+    @Transactional(readOnly = true)
+    public List<UUID> getGalleryPhotoIds(String salonId) {
+        return entityManager.createQuery(
+                "select p.id from SalonPhoto p where p.salonId = :salon order by p.slot", UUID.class)
+                .setParameter("salon", salonId).getResultList();
+    }
+
+    @Transactional(readOnly = true)
+    public Photo getGalleryPhoto(String salonId, UUID id) {
+        Photo photo = entityManager.createQuery(
+                "select p from SalonPhoto p where p.salonId = :salon and p.id = :id", Photo.class)
+                .setParameter("salon", salonId).setParameter("id", id).getSingleResultOrNull();
+        if (photo == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+        return photo;
+    }
+
+    @Transactional
+    public void addGalleryPhotos(String ownerId, List<MultipartFile> files) {
+        String salonId = requireSalon(ownerId).getId();
+        if (files == null || files.isEmpty()) {
+            throw new IllegalArgumentException("Choose a JPEG or PNG photo to upload.");
+        }
+        List<Integer> occupied = entityManager.createQuery(
+                "select p.slot from SalonPhoto p where p.salonId = :salon", Integer.class)
+                .setParameter("salon", salonId).getResultList();
+        if (occupied.size() + files.size() > MAX_GALLERY_PHOTOS) {
+            throw new IllegalArgumentException("Your gallery can contain up to 5 photos.");
+        }
+        int slot = 0;
+        for (MultipartFile file : files) {
+            while (occupied.contains(slot)) {
+                slot++;
+            }
+            entityManager.persist(readGalleryPhoto(salonId, slot++, file));
+        }
+    }
+
+    private Photo readGalleryPhoto(String salonId, int slot, MultipartFile file) {
+        if (file.isEmpty() || file.getSize() > MAX_PHOTO_BYTES) {
+            throw new IllegalArgumentException("Choose a non-empty photo of 5 MB or less.");
+        }
+        try {
+            byte[] content = file.getBytes();
+            try (var input = new MemoryCacheImageInputStream(new ByteArrayInputStream(content))) {
+                Iterator<ImageReader> readers = ImageIO.getImageReaders(input);
+                if (!readers.hasNext()) {
+                    throw new IllegalArgumentException("Choose a valid JPEG or PNG photo.");
+                }
+                ImageReader reader = readers.next();
+                try {
+                    String format = reader.getFormatName().toLowerCase(Locale.ROOT);
+                    if (!format.equals("jpeg") && !format.equals("png")) {
+                        throw new IllegalArgumentException("Choose a JPEG or PNG photo.");
+                    }
+                    reader.setInput(input, true, true);
+                    int width = reader.getWidth(0);
+                    int height = reader.getHeight(0);
+                    if ((long) width * height > 64_000_000L) {
+                        throw new IllegalArgumentException("Choose a photo with at most 64 megapixels.");
+                    }
+                    ImageReadParam options = reader.getDefaultReadParam();
+                    int step = Math.max(1, Math.max(width, height) / 1024);
+                    options.setSourceSubsampling(step, step, 0, 0);
+                    reader.read(0, options);
+                    return new Photo(salonId, slot, "image/" + format, content);
+                } finally {
+                    reader.dispose();
+                }
+            }
+        } catch (IOException ex) {
+            throw new IllegalArgumentException("Choose a readable JPEG or PNG photo.", ex);
+        }
+    }
+
+    @Transactional
+    public void removeGalleryPhoto(String ownerId, UUID id) {
+        String salonId = requireSalon(ownerId).getId();
+        int removed = entityManager.createQuery(
+                "delete from SalonPhoto p where p.salonId = :salon and p.id = :id")
+                .setParameter("salon", salonId).setParameter("id", id).executeUpdate();
+        if (removed == 0) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
     }
 
     public List<Salon> findRecentlyVisitedSalons(List<String> orderedIds) {
@@ -67,8 +162,11 @@ public class OwnerService {
         }
         return salon;
     }
-    //Use synchronized keyword to avoid data errors caused by concurrent modifications
     public synchronized boolean saveProfile(String ownerId, SalonForm form, boolean create, Errors errors) {
+        return store.withSalonForUpdate(ownerId, salon -> saveProfile(salon, ownerId, form, create, errors));
+    }
+
+    private boolean saveProfile(Salon salon, String ownerId, SalonForm form, boolean create, Errors errors) {
         validateText(form.getName(), "name", 80, true, errors);
         validateText(form.getDescription(), "description", 500, false, errors);
         validateText(form.getAddress(), "address", 200, false, errors);
@@ -87,7 +185,6 @@ public class OwnerService {
         if (!email.isEmpty() && !email.matches("[^\\s@]+@[^\\s@]+\\.[^\\s@]+")) {
             errors.rejectValue("email", "email", "Enter a valid email address.");
         }
-        Salon salon = store.findByOwnerId(ownerId);
         if (create && salon != null) {
             errors.reject("exists", "You already have a salon. Open your workspace to view it.");
         }
@@ -116,30 +213,42 @@ public class OwnerService {
         return true;
     }
 
-    public synchronized boolean addService(String ownerId, ServiceForm form, Errors errors) {
-        return saveService(ownerId, null, form, errors);
+    public boolean addService(String ownerId, ServiceForm form, Errors errors) {
+        return store.withSalonForUpdate(ownerId, salon -> saveService(requireSalon(salon), null, form, errors));
     }
 
-    public synchronized boolean updateService(String ownerId, String id, ServiceForm form, Errors errors) {
-        return saveService(ownerId, id, form, errors);
+    public boolean updateService(String ownerId, String id, ServiceForm form, Errors errors) {
+        return store.withSalonForUpdate(ownerId, salon -> saveService(requireSalon(salon), id, form, errors));
     }
 
     public SalonService findService(String ownerId, String id) {
-        return requireSalon(ownerId).getServices().stream().filter(item -> item.getId().equals(id))
+        return findService(requireSalon(ownerId), id);
+    }
+
+    private SalonService findService(Salon salon, String id) {
+        return salon.getServices().stream().filter(item -> item.getId().equals(id))
                 .findFirst().orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
-    public synchronized void deleteService(String ownerId, String id) {
-        Salon salon = requireSalon(ownerId);
-        findService(ownerId, id);
-        // Remove only this owner's menu entry; saved appointments remain intact.
-        salon.getServices().removeIf(item -> item.getId().equals(id));
-        store.save(salon);
+    public void deleteService(String ownerId, String id) {
+        store.withSalonForUpdate(ownerId, salon -> {
+            var menu = new ArrayList<>(requireSalon(salon).getServices());
+            if (!menu.removeIf(item -> item.getId().equals(id))) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+            }
+            salon.setServices(menu);
+            store.save(salon);
+            return null;
+        });
     }
 
-    private boolean saveService(String ownerId, String id, ServiceForm form, Errors errors) {
-        Salon salon = requireSalon(ownerId);
-        SalonService target = id == null ? new SalonService() : findService(ownerId, id);
+    private boolean saveService(Salon salon, String id, ServiceForm form, Errors errors) {
+        if (id != null) {
+            findService(salon, id);
+        }
+        if (!SalonService.DURATION_OPTIONS.contains(form.getDurationMinutes())) {
+            errors.rejectValue("durationMinutes", "duration", "Choose 30, 60, 90 or 120 minutes.");
+        }
         validateText(form.getDescription(), "description", 500, false, errors);
         validateText(form.getName(), "name", 80, true, errors);
         BigDecimal price = null;
@@ -161,22 +270,28 @@ public class OwnerService {
         if (errors.hasErrors()) {
             return false;
         }
-        // Validate before mutation and preserve identity on edits.
+        var menu = new ArrayList<>(salon.getServices());
+        SalonService target = new SalonService();
+        target.setId(id == null ? UUID.randomUUID().toString() : id);
         target.setName(form.getName().trim());
         target.setPrice(price);
+        target.setDurationMinutes(form.getDurationMinutes());
         target.setDescription(clean(form.getDescription()));
         if (id == null) {
-            target.setId(UUID.randomUUID().toString());
-            salon.getServices().add(target);
+            menu.add(target);
         } else {
-            salon.getServices().replaceAll(item -> item.getId().equals(id) ? target : item);
+            menu.replaceAll(item -> item.getId().equals(id) ? target : item);
         }
+        salon.setServices(menu);
         store.save(salon);
         return true;
     }
 
-    public synchronized boolean setOpeningHours(String ownerId, HoursForm form, Errors errors) {
-        Salon salon = requireSalon(ownerId);
+    public boolean setOpeningHours(String ownerId, HoursForm form, Errors errors) {
+        return store.withSalonForUpdate(ownerId, salon -> setOpeningHours(requireSalon(salon), form, errors));
+    }
+
+    private boolean setOpeningHours(Salon salon, HoursForm form, Errors errors) {
         if (form.getDays() == null || form.getDays().size() != 7) {
             errors.reject("days", "Provide a weekly schedule with seven days.");
             return false;
@@ -199,8 +314,8 @@ public class OwnerService {
                 if (start != null && end != null) {
                     int startMinutes = start.getHour() * 60 + start.getMinute();
                     int endMinutes = end.getHour() * 60 + end.getMinute();
-                    if (endMinutes - startMinutes < 60) {
-                        errors.rejectValue(endField, "range", "Closing time must be at least one hour after opening.");
+                    if (endMinutes - startMinutes < 30) {
+                        errors.rejectValue(endField, "range", "Closing time must be at least 30 minutes after opening.");
                     }
                     day.setStartTime(start.toString());
                     day.setEndTime(end.toString());
@@ -232,7 +347,10 @@ public class OwnerService {
     }
 
     private Salon requireSalon(String ownerId) {
-        Salon salon = store.findByOwnerId(ownerId);
+        return requireSalon(store.findByOwnerId(ownerId));
+    }
+
+    private Salon requireSalon(Salon salon) {
         if (salon == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }

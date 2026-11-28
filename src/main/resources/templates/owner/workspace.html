@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{owner/fragments :: head(${title})}"></head>
-<body class="owner-app">
+<body class="owner-app" th:classappend="${section == 'print-appointments' ? 'print-preview' : ''}">
 <a class="skip-link" href="#main">Skip to content</a>
 <div class="app-layout">
   <aside class="sidebar">
@@ -35,6 +35,11 @@
     <main id="main" class="workspace">
       <div class="page-heading">
         <h1 th:text="${title}"></h1>
+        <a th:if="${section == 'appointments'}" class="button" th:href="@{/owner/appointments/print}">Print today's appointments</a>
+        <div th:if="${section == 'print-appointments'}" class="print-controls">
+          <a th:href="@{/owner/appointments}">Back to appointments</a>
+          <button type="button" class="button primary" id="print-schedule">Print</button>
+        </div>
         <a th:if="${section == 'services'}" class="button primary" th:href="@{/owner/services(view='add')}"><span aria-hidden="true">＋ </span>Add Service</a>
         <button th:if="${section == 'profile'}" type="submit" form="salon-form" class="button primary">Save Changes</button>
         <button th:if="${section == 'hours'}" type="submit" form="hours-form" class="button primary">Save Availability</button>
@@ -43,7 +48,6 @@
 
       <section th:if="${section == 'dashboard'}" class="panel" aria-label="Salon overview">
         <h2 th:text="${salon.name}"></h2>
-        <p>Appointment duration: 60 minutes.</p>
         <ul class="overview-links">
           <li><a th:href="@{/owner/profile}">Edit salon profile</a></li>
           <li><a th:href="@{/owner/services}">Manage services</a> — <span th:text="${salon.services.size()} + ' services'"></span></li>
@@ -97,7 +101,7 @@
         <section class="panel appointment-schedule" aria-labelledby="appointment-schedule-title">
           <div class="section-heading">
             <div><h2 id="appointment-schedule-title">Today and upcoming appointments</h2><p class="appointment-date">Today: <time th:datetime="${appointmentDate}" th:text="${appointmentDateLabel}"></time></p></div>
-            <span class="badge">Vancouver time · 60-minute appointments</span>
+            <span class="badge">Vancouver time</span>
           </div>
           <div th:if="${appointments.isEmpty()}" class="empty-state appointment-empty">
             <svg class="appointment-calendar" width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" focusable="false"><rect x="7" y="10" width="34" height="32" rx="3"/><path d="M15 6v9M33 6v9M7 21h34M17 29h14M17 35h8"/></svg>
@@ -112,7 +116,9 @@
               <tbody><tr th:each="appointment : ${appointments}">
                 <td><time th:datetime="${appointment.appointmentDate}" th:text="${appointment.appointmentDate}"></time></td>
                 <td th:text="${appointment.appointmentTime}"></td>
-                <td><span th:text="${appointment.customer.name}"></span><br><span class="muted" th:text="${appointment.customer.email}"></span></td>
+                <td><span th:text="${appointment.customer.name}"></span>
+                  <small class="returning-customer" th:if="${returningAppointmentIds.contains(appointment.id)}">Returning customer</small>
+                  <br><span class="muted" th:text="${appointment.customer.email}"></span></td>
                 <td th:text="${appointment.serviceName}"></td>
               </tr></tbody>
             </table>
@@ -123,6 +129,23 @@
             <a th:if="${currentPage < totalPages}" th:href="@{/owner/appointments(page=${currentPage + 1})}">Next</a>
           </nav>
         </section>
+      </section>
+
+      <section th:if="${section == 'print-appointments'}" class="panel" aria-labelledby="print-salon">
+        <h2 id="print-salon" th:text="${salon.name}"></h2>
+        <p><time th:datetime="${appointmentDate}" th:text="${appointmentDate}"></time> · Vancouver time</p>
+        <p th:if="${appointments.isEmpty()}">No appointments scheduled for today.</p>
+        <table th:unless="${appointments.isEmpty()}">
+          <caption class="sr-only">Today's appointments in start time order</caption>
+          <thead><tr><th scope="col">Time</th><th scope="col">Customer</th><th scope="col">Service</th></tr></thead>
+          <tbody>
+            <tr th:each="appointment : ${appointments}">
+              <td th:text="|${appointment.appointmentTime} – ${appointment.endTime}|"></td>
+              <td th:text="${appointment.customer.name}"></td>
+              <td th:text="${appointment.serviceName}"></td>
+            </tr>
+          </tbody>
+        </table>
       </section>
 
       <section th:if="${section == 'setup' or section == 'profile'}" class="profile-layout">
@@ -144,16 +167,49 @@
         </form>
       </section>
 
+      <section th:if="${section == 'profile' and photoIds != null}" id="salon-photos" class="panel profile-form" aria-labelledby="salon-photos-title">
+        <div class="section-heading">
+          <h2 id="salon-photos-title">Salon Gallery</h2>
+          <a th:href="@{/salons/{slug}(slug=${salon.slug})}">View public salon page</a>
+        </div>
+        <p id="photo-count" th:text="|${photoIds.size()} of 5 photos uploaded|"></p>
+        <p th:if="${photoError}" class="field-error" role="alert" th:text="${photoError}"></p>
+        <ul th:unless="${photoIds.isEmpty()}" class="salon-photo-list">
+          <li th:each="photoId, row : ${photoIds}">
+            <img th:src="@{/salons/{slug}/photos/{id}(slug=${salon.slug},id=${photoId})}"
+                 th:alt="|${salon.name}, photo ${row.count}|" loading="lazy">
+            <form th:action="@{/owner/profile/photos/{id}/remove(id=${photoId})}" method="post">
+              <button type="submit" th:attr="aria-label=|Remove photo ${row.count}|">Remove</button>
+            </form>
+          </li>
+        </ul>
+        <form th:if="${photoIds.size() < 5}" th:action="@{/owner/profile/photos}" method="post" enctype="multipart/form-data">
+          <div class="field">
+            <div class="photo-picker">
+              <label class="button" for="photos">Choose photos
+                <input type="file" id="photos" name="photos" accept="image/jpeg,image/png" multiple required
+                       title="Choose photos" th:attr="data-remaining=${5 - photoIds.size()}"
+                       aria-describedby="photo-selection photo-count photo-guidance">
+              </label>
+              <span id="photo-selection" role="status">No photos selected</span>
+            </div>
+            <small id="photo-guidance">JPEG or PNG, up to 5 MB per photo.</small>
+          </div>
+          <button type="submit" class="button primary">Upload photos</button>
+        </form>
+      </section>
+
       <section th:if="${section == 'services'}" class="services-layout" aria-label="Service menu">
 
         <div class="service-list">
-          <div th:if="${salon.services.isEmpty()}" class="empty-state"><h2>No services yet.</h2><p>Choose Add Service to create your first service and price.</p></div>
-          <div th:unless="${salon.services.isEmpty()}" class="table-scroll">
+          <div th:if="${servicePage.isEmpty()}" class="empty-state"><h2>No services yet.</h2><p>Choose Add Service to create your first service and price.</p></div>
+          <div th:unless="${servicePage.isEmpty()}" class="table-scroll">
             <table class="service-table">
-              <caption class="sr-only">Salon services and prices in Canadian dollars</caption>
+              <caption class="sr-only">Salon services, prices in Canadian dollars and durations</caption>
               <thead><tr><th scope="col">Service</th><th scope="col">Price (CAD)</th><th scope="col">Actions</th></tr></thead>
               <tbody><tr th:each="item : ${servicePage}">
-                <td class="service-name" th:text="${item.name}"></td><td class="price" th:text="'$' + ${item.price}"></td>
+                <td class="service-name"><span th:text="${item.name}"></span><br><small class="muted" th:text="|${item.durationMinutes} minutes|"></small></td>
+                <td class="price" th:text="'$' + ${item.price}"></td>
                 <td class="service-actions"><a class="button" th:href="@{/owner/services/{id}/edit(id=${item.id})}">Edit</a><form th:action="@{/owner/services/{id}/delete(id=${item.id})}" method="post" data-delete-service th:attr="data-service-name=${item.name}"><button type="submit">Delete</button></form></td>
               </tr></tbody>
             </table>
@@ -206,6 +262,14 @@
                   class="field-error"
                   th:errors="*{price}"
                 ></p>
+              </div>
+              <div class="field">
+                <label for="durationMinutes">Appointment duration *</label>
+                <select id="durationMinutes" th:field="*{durationMinutes}"
+                        th:attr="aria-invalid=${#fields.hasErrors('durationMinutes')}" aria-describedby="duration-error">
+                  <option th:each="minutes : ${serviceForm.durationOptions}" th:value="${minutes}" th:text="|${minutes} minutes|"></option>
+                </select>
+                <p id="duration-error" class="field-error" th:errors="*{durationMinutes}"></p>
               </div>
               <div class="field">
                 <label for="description">Description</label

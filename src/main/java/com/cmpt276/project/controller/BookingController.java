@@ -105,7 +105,8 @@ public class BookingController {
         model.addAttribute("appointmentDate", appointmentDate);
         model.addAttribute("serviceName", selectedService.getName());
     
-        List<String> availableTimes = bookingService.getAvailableTimes(salon, date);
+        model.addAttribute("bookedService", selectedService);
+        List<String> availableTimes = bookingService.getAvailableTimes(selectedSalon, date, selectedService.getDurationMinutes(), null);
         model.addAttribute("availableTimes", availableTimes);
         return "customer/select-time";
     }
@@ -116,7 +117,6 @@ public class BookingController {
         Salon selectedSalon = ownerService.findPublicSalonBySlug(salon);
         SalonService selectedService = findService(selectedSalon, service);
 
-        //validate the selected appointment time before showing the summary
         LocalDate date = LocalDate.parse(appointmentDate);
         if (date.isBefore(ZonedDateTime.now(SALON_TIME_ZONE).toLocalDate())) {
             model.addAttribute("error", "Sorry, this date has already passed.");
@@ -132,7 +132,7 @@ public class BookingController {
 
             return "customer/select-date";
         }
-        List<String> availableTimes = bookingService.getAvailableTimes(salon, date);
+        List<String> availableTimes = bookingService.getAvailableTimes(selectedSalon, date, selectedService.getDurationMinutes(), null);
         if (!availableTimes.contains(appointmentTime)) {
             model.addAttribute("error", "Sorry, this appointment time is no longer available.");
             model.addAttribute("service", service);
@@ -140,6 +140,7 @@ public class BookingController {
             model.addAttribute("serviceName", selectedService.getName());
             model.addAttribute("appointmentDate", appointmentDate);
             model.addAttribute("availableTimes", availableTimes);
+            model.addAttribute("bookedService", selectedService);
             return "customer/select-time";
         }
 
@@ -176,7 +177,7 @@ public class BookingController {
                 model.addAttribute("days", days);
                 return "customer/select-date"; // CHANGED
             }
-            List<String> availableTimes = bookingService.getAvailableTimes(salon, date);
+            List<String> availableTimes = bookingService.getAvailableTimes(selectedSalon, date, selectedService.getDurationMinutes(), null);
             model.addAttribute("error", error.getMessage());
             model.addAttribute("service", service);
             model.addAttribute("salon", salon);

@@ -57,12 +57,26 @@
             </div>
         </div>
 
+        <section th:if="${photoIds != null and !photoIds.isEmpty()}" class="card mb-4" aria-labelledby="salon-photos-title">
+          <div class="card-body">
+            <h2 id="salon-photos-title" class="h4 mb-3">Salon Gallery</h2>
+            <ul class="list-unstyled row row-cols-2 row-cols-sm-3 row-cols-lg-5 g-2 mb-0">
+              <li class="col" th:each="photoId, row : ${photoIds}">
+                <a class="d-block ratio ratio-4x3" th:href="@{/salons/{slug}/photos/{id}(slug=${salon.slug},id=${photoId})}">
+                  <img class="object-fit-cover rounded" loading="lazy"
+                       th:src="@{/salons/{slug}/photos/{id}(slug=${salon.slug},id=${photoId})}"
+                       th:alt="|${salon.name}, photo ${row.count}|">
+                </a>
+              </li>
+            </ul>
+          </div>
+        </section>
 
         <div class="card">
             <div class="card-body">
             <h2 class="h4 mb-3 fw-bold">Choose a Service</h2>
             <p class="text-muted">
-                All appointments are one hour. Prices shown in CAD.
+                Prices shown in CAD.
             </p>
             <div class="service-browser">
 
@@ -269,7 +283,7 @@
                                     <h3 class="h5" th:text="${item.name}"></h3> <!--service name -->
                                     <p th:if="${!#strings.isEmpty(item.description)}" th:text="${item.description}"></p> <!--service description if it exists -->
                                     <p class="fw-bold" th:text="'$' + ${item.price}"></p><!--service price-->
-                                    <p class="text-muted">One-hour appointment</p>
+                                    <p class="text-muted" th:text="|${item.durationMinutes} minutes|"></p>
                                     <a class="btn btn-success" th:href="@{/customer/booking(service=${item.id}, salon=${salon.slug})}">
                                         Book Service
                                     </a>

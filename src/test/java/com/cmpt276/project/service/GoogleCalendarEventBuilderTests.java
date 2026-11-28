@@ -15,11 +15,13 @@ class GoogleCalendarEventBuilderTests {
     private final GoogleCalendarEventBuilder builder = new GoogleCalendarEventBuilder();
 
     @Test
-    void buildsAOneHourEventWithTheBookingDetails() {
+    void buildsAnEventForTheBookedDuration() {
         Salon salon = newSalon("salon-1", "Test Salon", "123 Main Street");
         salon.setCity("Vancouver");
         salon.setProvince("British Columbia");
-        Appointment appointment = savedAppointment(7, "Haircut", "salon-1", LocalDate.of(2026, 11, 20), "10:00");
+        Appointment appointment = new Appointment("Haircut", "service-1", "salon-1",
+                LocalDate.of(2026, 11, 20), "10:00", null, null, 90);
+        ReflectionTestUtils.setField(appointment, "id", 7);
 
         GoogleCalendarEvent event = builder.build(appointment, salon);
 
@@ -27,7 +29,7 @@ class GoogleCalendarEventBuilderTests {
         assertEquals("123 Main Street, Vancouver, British Columbia", event.getLocation());
         assertEquals("Booked with BookEasy. You can view or change it in My Appointments.", event.getDescription());
         assertEquals(LocalDateTime.of(2026, 11, 20, 10, 0), event.getStart());
-        assertEquals(LocalDateTime.of(2026, 11, 20, 11, 0), event.getEnd());
+        assertEquals(LocalDateTime.of(2026, 11, 20, 11, 30), event.getEnd());
         assertEquals("America/Vancouver", event.getTimeZone());
     }
 

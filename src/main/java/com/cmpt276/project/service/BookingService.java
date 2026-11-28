@@ -29,7 +29,6 @@ public class BookingService {
     private final AccountRepository accountRepository;
     private final OwnerService ownerService;
 
-    //use vancouver time for bookings
     private static final ZoneId SALON_TIME_ZONE = ZoneId.of("America/Vancouver");
     Clock clock = Clock.system(SALON_TIME_ZONE);
 
@@ -63,18 +62,17 @@ public class BookingService {
         }
 
         ZonedDateTime now = ZonedDateTime.now(clock);
-        //Prevents customers from booking a date that has passed
         LocalDate date = LocalDate.parse(appointmentDate);
         if (date.isBefore(now.toLocalDate())) {
             throw new IllegalArgumentException("Sorry, this date has already passed.");
         }
-        //Prevent customers from booking a time that has already passed today
         LocalDateTime selectedDateTime = LocalDateTime.of(date, LocalTime.parse(appointmentTime));
         if (selectedDateTime.isBefore(now.toLocalDateTime())) {
             throw new IllegalArgumentException("Sorry, this appointment time has already passed.");
         }
 
-        List<String> availableTimes = getAvailableTimes(salonSlug, date);
+        int durationMinutes = selectedService.getDurationMinutes();
+        List<String> availableTimes = getAvailableTimes(salon, date, durationMinutes, null);
         if (!availableTimes.contains(appointmentTime)) {
             throw new IllegalArgumentException("Sorry, this appointment time is no longer available");
         }
@@ -85,7 +83,8 @@ public class BookingService {
                 date,
                 appointmentTime,
                 customer,
-                selectedService.getPrice());
+                selectedService.getPrice(),
+                durationMinutes);
 
         return appointmentRepository.save(appointment);
     }
@@ -118,7 +117,7 @@ public class BookingService {
         }
 
         Salon salon = ownerService.findPublicSalon(appointment.getSalonId());
-        List<String> availableTimes = getAvailableTimes(salon.getSlug(), date, appointment.getId());
+        List<String> availableTimes = getAvailableTimes(salon, date, appointment.getDurationMinutes(), appointment.getId());
         if (!availableTimes.contains(appointmentTime)) {
             throw new IllegalArgumentException("Sorry, this appointment time is no longer available.");
         }
@@ -127,14 +126,7 @@ public class BookingService {
         return appointmentRepository.save(appointment);
     }
 
-    // For regular bookings
-    public List<String> getAvailableTimes(String salonSlug, LocalDate date) {
-        return getAvailableTimes(salonSlug, date, null);
-    }
-
-    // Check available times while editing an appointment
-    public List<String> getAvailableTimes(String salonSlug, LocalDate date, Integer excludedAppointmentId) {
-        Salon salon = ownerService.findPublicSalonBySlug(salonSlug);
+    public List<String> getAvailableTimes(Salon salon, LocalDate date, int durationMinutes, Integer excludedAppointmentId) {
         int selectedDay = date.getDayOfWeek().getValue();
         OpeningDay selectedHours = null;
         for (OpeningDay day : salon.getOpeningHours()) {
@@ -153,16 +145,14 @@ public class BookingService {
         List<String> availableTimes = new ArrayList<>();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm");
         ZonedDateTime now = ZonedDateTime.now(clock);
-        // Minute arithmetic avoids wrapping past midnight for late closing times.
         int closingMinute = closingTime.getHour() * 60 + closingTime.getMinute();
         for (int minute = openingTime.getHour() * 60 + openingTime.getMinute(); minute
-                + 60 <= closingMinute; minute += 60) {
+                + durationMinutes <= closingMinute; minute += 30) {
             LocalTime currentTime = LocalTime.of(minute / 60, minute % 60);
-            //remove appointment times that have already passed today
             LocalDateTime selectedDateTime = LocalDateTime.of(date, currentTime);
             if (selectedDateTime.isBefore(now.toLocalDateTime())) {
                 continue;
-            }            
+            }
             boolean alreadyBooked = false;
             for (Appointment appointment : existingAppointments) {
                 // do not count the current appointment being edited as booked, so its current
@@ -172,7 +162,7 @@ public class BookingService {
                 }
                 LocalTime bookedTime = LocalTime.parse(appointment.getAppointmentTime());
                 int bookedMinute = bookedTime.getHour() * 60 + bookedTime.getMinute();
-                if (minute < bookedMinute + 60 && bookedMinute < minute + 60) {
+                if (minute < bookedMinute + appointment.getDurationMinutes() && bookedMinute < minute + durationMinutes) {
                     alreadyBooked = true;
                     break;
                 }

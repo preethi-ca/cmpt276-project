@@ -19,7 +19,7 @@
             <h1>Choose Your Appointment Time</h1>
             <p class="text-muted mb-1">Selected Service: <strong th:text="${serviceName}"></strong></p>
             <p class="text-muted mb-1">Selected Date: <strong th:text="${appointmentDate}"></strong></p>
-            <p class="text-muted mb-1"> Duration: 1 hour</p>
+            <p class="text-muted mb-1" th:text="|Duration: ${bookedService.durationMinutes} minutes|"></p>
         </div>
 
         <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>

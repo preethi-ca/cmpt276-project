@@ -3,18 +3,22 @@ package com.cmpt276.project.owner.controller;
 import com.cmpt276.project.owner.auth.CurrentOwner;
 import com.cmpt276.project.owner.model.OpeningDay;
 import com.cmpt276.project.owner.model.Salon;
+import com.cmpt276.project.owner.model.SalonService;
 import com.cmpt276.project.owner.service.OwnerService;
 
 import java.math.BigDecimal;
 import com.cmpt276.project.repository.AppointmentRepository;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.core.env.Environment;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Controller;
@@ -29,11 +33,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.multipart.MultipartFile;
 import com.cmpt276.project.owner.service.SalonAnalyticsService;
 
 @Controller
 @RequestMapping("/owner")
 public class OwnerController {
+    private static final ZoneId SALON_TIME_ZONE = ZoneId.of("America/Vancouver");
     private final OwnerService service;
     private final CurrentOwner currentOwner;
     private final Environment environment;
@@ -85,8 +91,8 @@ public class OwnerController {
     }
 
     @GetMapping
-    public String entry() {
-        if (service.findForOwner(currentOwner.getOwnerId()) == null) {
+    public String entry(Model model) {
+        if (model.getAttribute("salon") == null) {
             return "redirect:/owner/setup";
         }
         return "redirect:/owner/dashboard";
@@ -94,7 +100,7 @@ public class OwnerController {
 
     @GetMapping("/setup")
     public String setup(Model model) {
-        if (service.findForOwner(currentOwner.getOwnerId()) != null) {
+        if (model.getAttribute("salon") != null) {
             return "redirect:/owner/dashboard";
         }
         model.addAttribute("salonForm", new SalonForm());
@@ -142,7 +148,8 @@ public class OwnerController {
         if (salon == null) {
             return "redirect:/owner/setup";
         }
-        LocalDate today = LocalDate.now(ZoneId.of("America/Vancouver"));
+        LocalDateTime now = LocalDateTime.now(SALON_TIME_ZONE);
+        LocalDate today = now.toLocalDate();
         LocalDate weekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         long todayCount = appointments.countBySalonIdAndAppointmentDate(salon.getId(), today);
         long upcomingCount = appointments.countBySalonIdAndAppointmentDateAfter(salon.getId(), today);
@@ -153,15 +160,30 @@ public class OwnerController {
 
         long totalPages = Math.max(1, (todayCount + upcomingCount + 9) / 10);
         int currentPage = (int) Math.max(1, Math.min(page, totalPages));
-        model.addAttribute("appointments", appointments
+        var schedule = appointments
                 .findBySalonIdAndAppointmentDateGreaterThanEqualOrderByAppointmentDateAscAppointmentTimeAscIdAsc(
-                        salon.getId(), today, PageRequest.of(currentPage - 1, 10)));
+                        salon.getId(), today, PageRequest.of(currentPage - 1, 10));
+        model.addAttribute("appointments", schedule);
+        model.addAttribute("returningAppointmentIds", analyticsService.getReturningAppointmentIds(salon.getId(), schedule, now));
         model.addAttribute("currentPage", currentPage);
         model.addAttribute("totalPages", totalPages);
         model.addAttribute("appointmentDate", today.toString());
         model.addAttribute("appointmentDateLabel", today.format(
                 DateTimeFormatter.ofPattern("EEEE, MMMM d, uuuu", Locale.CANADA)));
         return page(model, "appointments", "Appointments");
+    }
+
+    @GetMapping("/appointments/print")
+    public String printTodayAppointments(Model model) {
+        Salon salon = (Salon) model.getAttribute("salon");
+        if (salon == null) {
+            return "redirect:/owner/setup";
+        }
+        LocalDate today = LocalDate.now(SALON_TIME_ZONE);
+        model.addAttribute("appointments", appointments.findBySalonIdAndAppointmentDateOrderByAppointmentTimeAscIdAsc(
+                salon.getId(), today));
+        model.addAttribute("appointmentDate", today);
+        return page(model, "print-appointments", "Today's appointments");
     }
 
     @GetMapping("/profile")
@@ -179,6 +201,7 @@ public class OwnerController {
         form.setPhone(salon.getPhone());
         form.setEmail(salon.getEmail());
         model.addAttribute("salonForm", form);
+        model.addAttribute("photoIds", service.getGalleryPhotoIds(salon.getId()));
         return page(model, "profile", "Salon Settings");
     }
 
@@ -186,10 +209,35 @@ public class OwnerController {
     public String saveProfile(@ModelAttribute("salonForm") SalonForm salonForm, BindingResult errors, Model model,
             RedirectAttributes redirect) {
         if (!service.saveProfile(currentOwner.getOwnerId(), salonForm, false, errors)) {
+            Salon salon = (Salon) model.getAttribute("salon");
+            if (salon != null) {
+                model.addAttribute("photoIds", service.getGalleryPhotoIds(salon.getId()));
+            }
             return page(model, "profile", "Salon Settings");
         }
         redirect.addFlashAttribute("success", "Salon profile saved.");
         return "redirect:/owner/profile";
+    }
+
+    @PostMapping("/profile/photos")
+    public String uploadPhotos(@RequestParam(name = "photos", required = false) List<MultipartFile> photos,
+            RedirectAttributes redirect) {
+        try {
+            service.addGalleryPhotos(currentOwner.getOwnerId(), photos);
+            redirect.addFlashAttribute("success", "Photos added to your salon.");
+        } catch (IllegalArgumentException ex) {
+            redirect.addFlashAttribute("photoError", ex.getMessage());
+        } catch (DataIntegrityViolationException ex) {
+            redirect.addFlashAttribute("photoError", "Your gallery changed. Check the available spaces and try again.");
+        }
+        return "redirect:/owner/profile#salon-photos";
+    }
+
+    @PostMapping("/profile/photos/{id}/remove")
+    public String removePhoto(@PathVariable UUID id, RedirectAttributes redirect) {
+        service.removeGalleryPhoto(currentOwner.getOwnerId(), id);
+        redirect.addFlashAttribute("success", "Photo removed.");
+        return "redirect:/owner/profile#salon-photos";
     }
 
     @GetMapping("/services")
@@ -224,6 +272,7 @@ public class OwnerController {
         ServiceForm form = new ServiceForm();
         form.setName(item.getName());
         form.setPrice(item.getPrice().toPlainString());
+        form.setDurationMinutes(item.getDurationMinutes());
         form.setDescription(item.getDescription());
         model.addAttribute("serviceForm", form);
         model.addAttribute("serviceId", id);
@@ -282,11 +331,12 @@ public class OwnerController {
 
     private void serviceList(Model model, int requestedPage) {
         Salon salon = (Salon) model.getAttribute("salon");
-        int total = salon.getServices().size();
+        List<SalonService> menu = salon.getServices();
+        int total = menu.size();
         int pages = Math.max(1, (total + 9) / 10);
         int current = Math.max(1, Math.min(requestedPage, pages));
         int start = (current - 1) * 10;
-        model.addAttribute("servicePage", salon.getServices().subList(start, Math.min(start + 10, total)));
+        model.addAttribute("servicePage", menu.subList(start, Math.min(start + 10, total)));
         model.addAttribute("currentPage", current);
         model.addAttribute("totalPages", pages);
     }
@@ -367,6 +417,10 @@ public class OwnerController {
         private String name = "";
         private String price = "";
         private String description = "";
+        private int durationMinutes = 60;
+        public int getDurationMinutes() { return durationMinutes; }
+        public void setDurationMinutes(int durationMinutes) { this.durationMinutes = durationMinutes; }
+        public List<Integer> getDurationOptions() { return SalonService.DURATION_OPTIONS; }
 
         public String getDescription() {
             return description;
