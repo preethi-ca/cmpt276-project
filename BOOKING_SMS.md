@@ -18,7 +18,25 @@ The text is sent only after the booking is saved. A sending problem never cancel
 BookEasy: Your Haircut at CS_Salon is confirmed for 2026-11-03 at 10:00 (Vancouver time). You can view it in My Appointments.
 ```
 
-This version covers customer booking confirmation only. Owner texts, reminders, cancellation or rescheduling texts and retries are not part of it.
+This version covers customer booking confirmation only. Owner texts, reminders and retries are not part of it. Texts for a moved or cancelled booking were added in Iteration 3 and are described below.
+
+## Moved and cancelled bookings
+
+Added in Iteration 3 on November 26, 2026. Customers who picked SMS or BOTH also get a text when they cancel an appointment or move it to a new date or time. Saving the same date and time again sends nothing, and owners don't get a text. For BOTH, the email and the text are tried on their own, the same as for a new booking.
+
+The moved text only has the new time, so it fits in one message:
+
+```text
+BookEasy: Your Haircut at CS_Salon has moved to 2026-11-05 at 14:00 (Vancouver time). You can view it in My Appointments.
+```
+
+A cancelled booking gets a text like this:
+
+```text
+BookEasy: Your Haircut at CS_Salon on 2026-11-03 at 10:00 (Vancouver time) has been cancelled.
+```
+
+The change is saved first. A refused or uncertain text never undoes it and only changes the text line on the page, which is My Appointments after a cancel and the appointment details after a move. AppointmentChangeNotifier sends the text, using buildRescheduled and buildCancelled in BookingSmsBuilder.
 
 ## User stories and tests
 
@@ -79,6 +97,12 @@ All 20 automated SMS tests pass. They use fake credentials and a local fake serv
 - BookingSmsBuilderTests (5): the text has the right customer's details, every phone format registration accepts becomes +1, bad phones and booking details are refused, and a typical text fits in 160 characters.
 - TwilioSmsSenderTests (4): the request Twilio receives and how accepted, rejected, uncertain and unavailable replies are read.
 - BookingSmsIntegrationTests (11): full bookings through the controller for each preference, page feedback, failed bookings, page views and timeouts.
+
+Iteration 3 added these tests for moved and cancelled bookings. The senders are mocked, so no real text is sent.
+
+- BookingSmsBuilderTests.writesTheMovedAndCancelledTexts
+- AppointmentChangeNoticeTests.cancelSendsEmailAndText
+- AppointmentChangeNoticeTests.rescheduleSendsEmailAndText
 
 The manual walkthrough on the Render site:
 

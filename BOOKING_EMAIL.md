@@ -10,7 +10,7 @@ After a customer confirms a booking, the app saves the appointment and waits for
 
 An unsuccessful booking sends no email. Email problems leave a successful booking saved, with an explanation and a My Appointments link on the confirmation page. Opening an existing appointment does not send another message.
 
-This version covers customer booking confirmation only. Owner emails, welcome emails, cancellation or rescheduling emails, Google Calendar, SMS, reminders, retries and a resend button are outside this iteration.
+This version covers customer booking confirmation only. Owner emails, welcome emails, Google Calendar, SMS, reminders, retries and a resend button are outside this iteration. Emails for a moved or cancelled booking were added in Iteration 3 and are described below.
 
 The subject is **Your booking at [salon name] is confirmed**. The email contains:
 
@@ -20,6 +20,14 @@ The subject is **Your booking at [salon name] is confirmed**. The email contains
 - The one-hour duration and a note about signing in to My Appointments.
 
 The details come from the saved appointment, its customer account and the matching salon. Missing or mismatched required details stop the email without removing the booking. A missing address is left out.
+
+## Moved and cancelled bookings
+
+Added in Iteration 3 on November 26, 2026. Customers who picked EMAIL or BOTH also get an email when they cancel an appointment or move it to a new date or time. Saving the same date and time again sends nothing. Owners are not emailed.
+
+The moved email has the subject "Your booking at CS_Salon has moved". It lists the booking reference, salon, address if there is one, service, the old date and time and the new date and time in Vancouver time. The cancelled email has the subject "Your booking at CS_Salon is cancelled" and lists the booking reference, salon, service, date and time.
+
+The change is saved before the email is tried, so a rejected or uncertain send never undoes it. It only changes the email line on the page, which is My Appointments after a cancel and the appointment details after a move. AppointmentChangeNotifier sends the email, and the wording comes from buildRescheduled and buildCancelled in BookingConfirmationBuilder.
 
 ## User stories and tests
 
@@ -128,6 +136,12 @@ All eleven tests passed in a separate offline package build: three builder, thre
 - Story 1: a separate database connection sees the committed booking before sending, with no booking transaction active. Tests also cover rejected slots, save and injected commit-stage failures, and no resend from views or rejected repeats.
 - Story 2: builder tests check saved details, separate customers, optional address and invalid data. The live email also matched the saved test booking.
 - Story 3: delivery and integration tests check acceptance, rejection, timeout, missing settings, preserved appointments and truthful page feedback.
+
+Iteration 3 added these tests for the moved and cancelled emails. The senders are mocked, so no real email is sent.
+
+- BookingConfirmationBuilderTests.writesTheMovedAndCancelledEmails
+- AppointmentChangeNoticeTests.cancelSendsEmailAndText
+- AppointmentChangeNoticeTests.rescheduleSendsEmailAndText
 
 The November 1 local walkthrough covered registration/login, salon/services/hours setup, booking, My Appointments and details. A repeated booking was rejected. Brevo accepted one real email, and the inbox screenshot matched the subject, customer, booking reference, salon/address, service, Vancouver date/time, duration and account note. The packaged app also loaded the external settings successfully.
 

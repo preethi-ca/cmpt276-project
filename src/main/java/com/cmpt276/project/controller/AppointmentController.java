@@ -15,12 +15,14 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.cmpt276.project.model.Account;
 import com.cmpt276.project.model.Appointment;
+import com.cmpt276.project.model.AppointmentNoticeResult;
 import com.cmpt276.project.model.GoogleCalendarResult;
 import com.cmpt276.project.owner.model.Salon;
 import com.cmpt276.project.owner.model.SalonService;
 import com.cmpt276.project.owner.service.OwnerService;
 import com.cmpt276.project.repository.AccountRepository;
 import com.cmpt276.project.repository.AppointmentRepository;
+import com.cmpt276.project.service.AppointmentChangeNotifier;
 import com.cmpt276.project.service.BookingService;
 import com.cmpt276.project.service.GoogleCalendarSync;
 import java.time.LocalDate;
@@ -33,12 +35,14 @@ public class AppointmentController {
     private final OwnerService ownerService;
     private final BookingService bookingService;
     private final GoogleCalendarSync calendarSync;
-    public AppointmentController(AppointmentRepository appointmentRepository,AccountRepository accountRepository, OwnerService ownerService, BookingService bookingService, GoogleCalendarSync calendarSync){
+    private final AppointmentChangeNotifier notifier;
+    public AppointmentController(AppointmentRepository appointmentRepository,AccountRepository accountRepository, OwnerService ownerService, BookingService bookingService, GoogleCalendarSync calendarSync, AppointmentChangeNotifier notifier){
         this.appointmentRepository = appointmentRepository;
         this.accountRepository = accountRepository;
         this.ownerService = ownerService;
         this.bookingService = bookingService;
         this.calendarSync = calendarSync;
+        this.notifier = notifier;
     }
 
     //show all appointments the customer has
@@ -158,12 +162,27 @@ public class AppointmentController {
         //Show a success message
         redirectAttributes.addFlashAttribute("message", "Your appointment has been cancelled");
         redirectAttributes.addFlashAttribute("calendarMessage", calendarSync.removeFeedback(calendarResult));
+
+        AppointmentNoticeResult noticeResult = notifier.sendCancelled(appointment);
+        redirectAttributes.addFlashAttribute("emailMessage", noticeResult.getEmailMessage());
+        redirectAttributes.addFlashAttribute("smsMessage", noticeResult.getSmsMessage());
         return "redirect:/customer/appointments";
     }
 
     //Handles editing an existing appointment (date and time)
     @PostMapping("/customer/appointments/edit")
     public String updateAppointment(@RequestParam int id, @RequestParam String appointmentDate, @RequestParam String appointmentTime, Authentication authentication, RedirectAttributes redirectAttributes) {
+        // updateAppointment changes the same appointment object, so keep the old date and time first
+        LocalDate previousDate = null;
+        String previousTime = null;
+        Optional<Account> customerOpt = accountRepository.findByEmail(authentication.getName());
+        if (customerOpt.isPresent()) {
+            Optional<Appointment> appointmentOpt = appointmentRepository.findByIdAndCustomer(id, customerOpt.get());
+            if (appointmentOpt.isPresent()) {
+                previousDate = appointmentOpt.get().getAppointmentDate();
+                previousTime = appointmentOpt.get().getAppointmentTime();
+            }
+        }
         Appointment appointment;
         try {
             appointment = bookingService.updateAppointment(id, appointmentDate, appointmentTime, authentication.getName());
@@ -176,6 +195,13 @@ public class AppointmentController {
         // Google Calendar runs after the change is saved, a failure only changes the message
         GoogleCalendarResult calendarResult = calendarSync.updateBooking(appointment);
         redirectAttributes.addFlashAttribute("calendarMessage", calendarSync.updateFeedback(calendarResult));
+
+        // saving the same slot again is allowed, the customer only hears about a real move
+        if (!appointment.getAppointmentDate().equals(previousDate) || !appointment.getAppointmentTime().equals(previousTime)) {
+            AppointmentNoticeResult noticeResult = notifier.sendRescheduled(appointment, previousDate, previousTime);
+            redirectAttributes.addFlashAttribute("emailMessage", noticeResult.getEmailMessage());
+            redirectAttributes.addFlashAttribute("smsMessage", noticeResult.getSmsMessage());
+        }
         return "redirect:/customer/appointments/details?id=" + id;
     }
 

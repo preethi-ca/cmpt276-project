@@ -4,6 +4,7 @@ import com.cmpt276.project.model.Account;
 import com.cmpt276.project.model.Appointment;
 import com.cmpt276.project.model.BookingSmsMessage;
 import com.cmpt276.project.owner.model.Salon;
+import java.time.LocalDate;
 
 public class BookingSmsBuilder {
 
@@ -44,6 +45,63 @@ public class BookingSmsBuilder {
                 + " You can view it in My Appointments.";
 
         return new BookingSmsMessage(recipient, text);
+    }
+
+    // the old time is left out so the text still fits in one message
+    public BookingSmsMessage buildRescheduled(Appointment appointment, Salon salon, LocalDate previousDate, String previousTime) {
+        String recipient = checkBooking(appointment, salon);
+
+        String text = "BookEasy: Your " + appointment.getServiceName()
+                + " at " + salon.getName()
+                + " has moved to " + appointment.getAppointmentDate()
+                + " at " + appointment.getAppointmentTime() + " (Vancouver time)."
+                + " You can view it in My Appointments.";
+
+        return new BookingSmsMessage(recipient, text);
+    }
+
+    public BookingSmsMessage buildCancelled(Appointment appointment, Salon salon) {
+        String recipient = checkBooking(appointment, salon);
+
+        String text = "BookEasy: Your " + appointment.getServiceName()
+                + " at " + salon.getName()
+                + " on " + appointment.getAppointmentDate()
+                + " at " + appointment.getAppointmentTime() + " (Vancouver time)"
+                + " has been cancelled.";
+
+        return new BookingSmsMessage(recipient, text);
+    }
+
+    // runs the same checks as build and returns the phone number to text
+    private String checkBooking(Appointment appointment, Salon salon) {
+        if (appointment == null || appointment.getId() <= 0) {
+            throw new IllegalArgumentException("A saved appointment is required");
+        }
+        if (salon == null) {
+            throw new IllegalArgumentException("Salon details are required");
+        }
+
+        requireText(appointment.getSalonId(), "Appointment salon ID");
+        requireText(salon.getId(), "Salon ID");
+        if (!appointment.getSalonId().equals(salon.getId())) {
+            throw new IllegalArgumentException("The salon does not match the appointment");
+        }
+
+        Account customer = appointment.getCustomer();
+        if (customer == null) {
+            throw new IllegalArgumentException("Customer details are required");
+        }
+        String recipient = normalizePhone(customer.getPhoneNumber());
+        if (recipient == null) {
+            throw new IllegalArgumentException("A valid customer phone number is required");
+        }
+        requireText(salon.getName(), "Salon name");
+        requireText(appointment.getServiceName(), "Service name");
+        requireText(appointment.getAppointmentTime(), "Appointment time");
+        if (appointment.getAppointmentDate() == null) {
+            throw new IllegalArgumentException("Appointment date is required");
+        }
+        return recipient;
     }
 
     // Registration saves the phone the way the customer typed it, so the formatting is removed here.

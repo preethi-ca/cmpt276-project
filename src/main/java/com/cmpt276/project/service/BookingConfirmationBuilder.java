@@ -4,6 +4,7 @@ import com.cmpt276.project.model.Account;
 import com.cmpt276.project.model.Appointment;
 import com.cmpt276.project.model.BookingConfirmationMessage;
 import com.cmpt276.project.owner.model.Salon;
+import java.time.LocalDate;
 
 public class BookingConfirmationBuilder {
 
@@ -51,6 +52,75 @@ public class BookingConfirmationBuilder {
                 + "Sign in to BookEasy and check My Appointments to view your booking.\n";
 
         return new BookingConfirmationMessage(customer.getEmail(), subject, body);
+    }
+
+    public BookingConfirmationMessage buildRescheduled(Appointment appointment, Salon salon, LocalDate previousDate, String previousTime) {
+        checkBooking(appointment, salon);
+        Account customer = appointment.getCustomer();
+
+        String subject = "Your booking at " + salon.getName() + " has moved";
+        String body = "Hi " + customer.getName() + ",\n\n"
+                + "Your booking has been moved to a new time.\n\n"
+                + "Booking reference: " + appointment.getId() + "\n"
+                + "Salon: " + salon.getName() + "\n";
+
+        if (salon.getAddress() != null && !salon.getAddress().trim().isEmpty()) {
+            body = body + "Address: " + salon.getAddress() + "\n";
+        }
+
+        body = body + "Service: " + appointment.getServiceName() + "\n"
+                + "Old time: " + previousDate + " at " + previousTime + "\n"
+                + "New date: " + appointment.getAppointmentDate() + "\n"
+                + "New time: " + appointment.getAppointmentTime() + " (Vancouver time)\n\n"
+                + "Sign in to BookEasy and check My Appointments to view your booking.\n";
+
+        return new BookingConfirmationMessage(customer.getEmail(), subject, body);
+    }
+
+    // the appointment is already deleted here, but the object still has its details
+    public BookingConfirmationMessage buildCancelled(Appointment appointment, Salon salon) {
+        checkBooking(appointment, salon);
+        Account customer = appointment.getCustomer();
+
+        String subject = "Your booking at " + salon.getName() + " is cancelled";
+        String body = "Hi " + customer.getName() + ",\n\n"
+                + "Your booking has been cancelled.\n\n"
+                + "Booking reference: " + appointment.getId() + "\n"
+                + "Salon: " + salon.getName() + "\n"
+                + "Service: " + appointment.getServiceName() + "\n"
+                + "Date: " + appointment.getAppointmentDate() + "\n"
+                + "Time: " + appointment.getAppointmentTime() + " (Vancouver time)\n\n"
+                + "You can book another time on BookEasy if you want to.\n";
+
+        return new BookingConfirmationMessage(customer.getEmail(), subject, body);
+    }
+
+    private void checkBooking(Appointment appointment, Salon salon) {
+        if (appointment == null || appointment.getId() <= 0) {
+            throw new IllegalArgumentException("A saved appointment is required");
+        }
+        if (salon == null) {
+            throw new IllegalArgumentException("Salon details are required");
+        }
+
+        requireText(appointment.getSalonId(), "Appointment salon ID");
+        requireText(salon.getId(), "Salon ID");
+        if (!appointment.getSalonId().equals(salon.getId())) {
+            throw new IllegalArgumentException("The salon does not match the appointment");
+        }
+
+        Account customer = appointment.getCustomer();
+        if (customer == null) {
+            throw new IllegalArgumentException("Customer details are required");
+        }
+        requireText(customer.getName(), "Customer name");
+        requireText(customer.getEmail(), "Customer email");
+        requireText(salon.getName(), "Salon name");
+        requireText(appointment.getServiceName(), "Service name");
+        requireText(appointment.getAppointmentTime(), "Appointment time");
+        if (appointment.getAppointmentDate() == null) {
+            throw new IllegalArgumentException("Appointment date is required");
+        }
     }
 
     private void requireText(String value, String fieldName) {
