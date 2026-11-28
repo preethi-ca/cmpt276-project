@@ -9,6 +9,7 @@
         <link rel="stylesheet" th:href="@{/css/style.css}" />
 
         <script th:src="@{/js/cancel-confirmation.js}" defer></script>
+        <script th:src="@{/js/appointment-tabs.js}" defer></script>
     </head>
 
     <body>
@@ -23,50 +24,122 @@
 
         <div th:if="${calendarMessage}" class="alert alert-info" role="status" th:text="${calendarMessage}"></div>
 
-        <div th:if="${#lists.isEmpty(appointments)}" class="alert alert-secondary">
-            You currently have no appointments.
+        <!--Appointments tabs-->
+        <div class="d-flex gap-2 mb-4" role="tablist" aria-label="Appointment categories">
+            <button type="button"
+                id="upcoming-tab"
+                class="btn btn-primary"
+                role="tab"
+                aria-selected="true"
+                aria-controls="upcoming-panel">
+                Upcoming
+            </button>
+
+            <button type="button"
+                id="past-tab"
+                class="btn btn-outline-primary"
+                role="tab"
+                aria-selected="false"
+                aria-controls="past-panel">
+                Past
+            </button>
         </div>
 
-        <!--appointment overview card-->
-        <div th:each="appointment : ${appointments}" class="card shadow-sm mb-4">
-            <div class="card-body">
-            <p class="card-title h4 mb-2 fw-bold text-decoration-underline" 
-                th:text="${salonNames[appointment.id]}">
-            </p>
 
-            <p class="mb-2">
-                <strong>Service:</strong>
-                <span th:text="${appointment.serviceName}"></span>
-            </p>
+        <!-- Upcoming appointments section -->
+        <section id="upcoming-panel"
+            role="tabpanel"
+            aria-labelledby="upcoming-tab">
 
-            <p class="mb-2">
-                <strong>Date:</strong>
-                <span th:text="${appointment.appointmentDate}"></span>
-            </p>
-
-            <p class="mb-3">
-                <strong>Time:</strong>
-                <span th:text="${appointment.appointmentTime}"></span>
-            </p>
-
-            <!--navigation buttons-->
-            <div class="d-flex gap-2">
-                <a th:href="@{/customer/appointments/details(id=${appointment.id})}" class="btn btn-success">
-                    View Details
-                </a>
-
-                <form th:action="@{/customer/appointments/cancel}"
-                    method="post">
-
-                    <input type="hidden" name="id" th:value="${appointment.id}" />
-
-                    <button type="submit" class="btn btn-outline-danger">
-                        Cancel Appointment
-                    </button>
-                </form>
+            <div th:if="${#lists.isEmpty(upcomingAppointments)}" 
+                class="alert alert-secondary">
+                You currently have no upcoming appointments
             </div>
+
+            <!--appointment overview card-->
+            <div th:each="appointment : ${upcomingAppointments}" class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <p class="card-title h4 mb-2 fw-bold text-decoration-underline" 
+                        th:text="${salonNames[appointment.id]}">
+                    </p>
+
+                    <p class="mb-2">
+                        <strong>Service:</strong>
+                        <span th:text="${appointment.serviceName}"></span>
+                    </p>
+
+                    <p class="mb-2">
+                        <strong>Date:</strong>
+                        <span th:text="${appointment.appointmentDate}"></span>
+                    </p>
+
+                    <p class="mb-3">
+                        <strong>Time:</strong>
+                        <span th:text="${appointment.appointmentTime}"></span>
+                    </p>
+
+                    <!--navigation buttons-->
+                    <div class="d-flex gap-2">
+                        <a th:href="@{/customer/appointments/details(id=${appointment.id})}" class="btn btn-success">
+                            View Details
+                        </a>
+
+                        <form th:action="@{/customer/appointments/cancel}"
+                            method="post">
+
+                            <input type="hidden" name="id" th:value="${appointment.id}" />
+
+                            <button type="submit" class="btn btn-outline-danger">
+                                Cancel Appointment
+                            </button>
+                        </form>
+                    </div>
+                </div>
             </div>
-        </div>
+        </section>
+    
+        <!--Past appointments section -->
+            <section id="past-panel"
+                role="tabpanel"
+                aria-labelledby="past-tab"
+                hidden>
+
+                <div th:if="${#lists.isEmpty(pastAppointments)}"
+                    class="alert alert-secondary">
+                    You currently have no past appointments
+                </div>
+
+                <div th:each="appointment : ${pastAppointments}" class="card shadow-sm mb-4">
+                    <div class="card-body">
+                        <p class="card-title h4 mb-2 fw-bold text-decoration-underline"
+                            th:text="${salonNames[appointment.id]}">
+                        </p>
+
+                        <p class="mb-2">
+                            <strong>Service:</strong>
+                            <span th:text="${appointment.serviceName}"></span>
+                        </p>
+
+                        <p class="mb-2">
+                            <strong>Date:</strong>
+                            <span th:text="${appointment.appointmentDate}"></span>
+                        </p>
+
+                        <p class="mb-3">
+                            <strong>Time:</strong>
+                            <span th:text="${appointment.appointmentTime}"></span>
+                        </p>
+
+                        <div class="d-flex gap-2">
+                            <a th:href="@{/customer/appointments/details(id=${appointment.id})}" class="btn btn-success">
+                                View Details
+                            </a>
+                        </div>
+
+                    </div>
+                </div>
+            </section>
+
         </main>
     </body>
 </html>

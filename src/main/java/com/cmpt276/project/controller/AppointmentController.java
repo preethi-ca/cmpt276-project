@@ -4,6 +4,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.Comparator;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
@@ -52,13 +57,42 @@ public class AppointmentController {
         }
         Account customer = customerOpt.get();
         List<Appointment> appointments = appointmentRepository.findByCustomer(customer);
+        
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("America/Vancouver"));
+
+        //create separate lists for upcoming and past appointments
+        List<Appointment> upcomingAppointments = new ArrayList<>();
+        List<Appointment> pastAppointments = new ArrayList<>();
+
+        //Separate appointments based on their scheduled date and time
+        for (Appointment appointment : appointments) {
+            LocalDateTime appointmentDateTime = LocalDateTime.of(
+                    appointment.getAppointmentDate(),
+                    LocalTime.parse(appointment.getAppointmentTime())
+            );
+
+            if (!appointmentDateTime.isBefore(now)) {
+                upcomingAppointments.add(appointment);
+            } else {
+                pastAppointments.add(appointment);
+            }
+        }
+
+        //Sort appointments by date and time
+        Comparator<Appointment> appointmentDateTimeComparator = Comparator.comparing(Appointment::getAppointmentDate)
+            .thenComparing(appointment -> LocalTime.parse(appointment.getAppointmentTime()));
+
+        upcomingAppointments.sort(appointmentDateTimeComparator);
+        pastAppointments.sort(appointmentDateTimeComparator.reversed());
+        
         Map<Integer, String> salonNames = new HashMap<>();
         for (Appointment appointment : appointments){ 
             Salon salon = ownerService.findPublicSalon(appointment.getSalonId()); 
             salonNames.put(appointment.getId(), salon.getName());
         }
         model.addAttribute("salonNames", salonNames);
-        model.addAttribute("appointments", appointmentRepository.findByCustomer(customer));
+        model.addAttribute("upcomingAppointments", upcomingAppointments);
+        model.addAttribute("pastAppointments", pastAppointments);
         return "customer/my-appointments";
     }
 
