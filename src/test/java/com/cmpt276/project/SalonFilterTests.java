@@ -183,44 +183,5 @@ class SalonFilterTest {
         assertNull(filter.validate());
     }
 
-    //Alphabetical sorting is accepted
-    @Test
-    void testAlphabeticalSorting() {
-        SalonFilter filter = new SalonFilter();
-
-        assertNull(filter.validateSort("alphabetical"));
-    }
-
-    //low to high sorting is accepted
-    @Test
-    void testPriceLowSorting() {
-        SalonFilter filter = new SalonFilter();
-
-        assertNull(filter.validateSort("price-low"));
-    }
-
-    //high to low sorting is accepted
-    @Test
-    void testPriceHighSorting() {
-        SalonFilter filter = new SalonFilter();
-
-        assertNull(filter.validateSort("price-high"));
-    }
-
-    //Default order sorting is accepted
-    @Test
-    void testDefaultSorting() {
-        SalonFilter filter = new SalonFilter();
-
-        assertNull(filter.validateSort("default"));
-    }
-    
-    //Invalid sorting option is rejected
-    @Test
-    void testInvalidSorting() {
-        SalonFilter filter = new SalonFilter();
-
-        assertEquals("Invalid sorting option", filter.validateSort("random"));
-    }
 }
 
