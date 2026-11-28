@@ -8,7 +8,13 @@ import com.cmpt276.project.owner.model.SalonService;
 import com.cmpt276.project.owner.service.OwnerService;
 import com.cmpt276.project.repository.AccountRepository;
 import com.cmpt276.project.repository.AppointmentRepository;
+
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.Clock;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -35,43 +41,156 @@ class BookingServiceTests {
     @InjectMocks
     private BookingService bookingService;
 
-//tests for booking for a date that has already passed
+//test for booking past date and time
+    //tests for booking for a date that has already passed
     @Test
     void shouldRejectBookingForPastDate() {
         //Create a date from yesterday
         String pastDate = LocalDate.now().minusDays(1).toString();
 
         Account customer = new Account(
-                "Alex Lee",
-                "alex@example.com",
-                "password",
-                RoleType.CUSTOMER
+            "Alex Lee",
+            "alex@example.com",
+            "password",
+            RoleType.CUSTOMER
         );
         when(accountRepository.findByEmail("alex@example.com"))
-                .thenReturn(Optional.of(customer));
+            .thenReturn(Optional.of(customer));
         Salon salon = mock(Salon.class);
         SalonService service = mock(SalonService.class);
 
         when(ownerService.findPublicSalonBySlug("magiccuts-salon"))
-                .thenReturn(salon);
+            .thenReturn(salon);
         when(salon.getServices())
-                .thenReturn(List.of(service));
+            .thenReturn(List.of(service));
         when(service.getId())
-                .thenReturn("service1");
+            .thenReturn("service1");
 
         //Check that the service rejects the past appointment date
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> bookingService.bookAppointment(
-                        "service1",
-                        "magiccuts-salon",
-                        pastDate,
-                        "10:00",
-                        "alex@example.com"
-                )
+                "service1",
+                "magiccuts-salon",
+                pastDate,
+                "10:00",
+                "alex@example.com"
+            )
         );
         assertEquals("Sorry, this date has already passed.", exception.getMessage());
         verify(appointmentRepository, never()).save(any(Appointment.class));
     }
 
+    //test that a customer cannot book a time that has passed for the same day
+    @Test
+    void shouldRejectBookingForPastTimeOnSameDay() {
+        ZoneId zone = ZoneId.of("America/Vancouver");
+
+        //Use the current date in Vancouver
+        LocalDate today = LocalDate.now(zone);
+
+        //Set the current time to 11:00 AM Vancouver time
+        bookingService.clock = Clock.fixed(ZonedDateTime.of(today, LocalTime.of(11, 0), zone).toInstant(),zone);
+
+        Account customer = new Account(
+            "Alex Lee",
+            "alex@example.com",
+            "password",
+            RoleType.CUSTOMER
+        );
+
+        Salon salon = createTestSalon(today);
+        SalonService selectedService = mock(SalonService.class);
+
+        salon.setServices(List.of(selectedService));
+
+        when(accountRepository.findByEmail("alex@example.com"))
+            .thenReturn(Optional.of(customer));
+
+        when(ownerService.findPublicSalonBySlug("magiccuts-salon"))
+            .thenReturn(salon);
+
+        when(selectedService.getId())
+            .thenReturn("service1");
+
+        //Attempt to book at 10am which has already passed
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, 
+            () -> bookingService.bookAppointment(
+                "service1",
+                "magiccuts-salon",
+                today.toString(),
+                "10:00",
+                "alex@example.com"
+            )
+        );
+
+        assertEquals("Sorry, this appointment time has already passed.", exception.getMessage());
+        verify(appointmentRepository, never()).save(any(Appointment.class));
+    }
+
+    //test that past appointment times are excluded from available times
+    @Test
+    void shouldExcludePastTimesWhenGettingAvailableTimes() {
+        ZoneId zone = ZoneId.of("America/Vancouver");
+        LocalDate today = LocalDate.now(zone);
+
+        //Set the current time to 11:00 AM Vancouver time
+        bookingService.clock = Clock.fixed(ZonedDateTime.of(today, LocalTime.of(11, 0), zone).toInstant(), zone );
+
+        Salon salon = createTestSalon(today);
+
+        when(ownerService.findPublicSalonBySlug("magiccuts-salon"))
+            .thenReturn(salon);
+
+        when(appointmentRepository.findBySalonIdAndAppointmentDate("salon1", today))
+            .thenReturn(List.of());
+
+        List<String> availableTimes = bookingService.getAvailableTimes("magiccuts-salon", today);
+
+        //Only times at or after 11:00 AM should be available
+        assertEquals(List.of("11:00", "12:00", "13:00", "14:00", "15:00", "16:00"), availableTimes);
+    }
+
+    //Test that a customer can book a future time on the same day
+    @Test
+    void shouldAllowBookingForFutureTimeOnSameDay() {
+        ZoneId zone = ZoneId.of("America/Vancouver");
+        LocalDate today = LocalDate.now(zone);
+
+        //Set the current time to 11:00 AM Vancouver time
+        bookingService.clock = Clock.fixed(ZonedDateTime.of(today, LocalTime.of(11, 0), zone).toInstant(),zone);
+
+        Account customer = new Account(
+            "Alex Lee",
+            "alex@example.com",
+            "password",
+            RoleType.CUSTOMER
+        );
+
+        Salon salon = createTestSalon(today);
+        SalonService selectedService = mock(SalonService.class);
+
+        salon.setServices(List.of(selectedService));
+
+        when(accountRepository.findByEmail("alex@example.com"))
+            .thenReturn(Optional.of(customer));
+        when(ownerService.findPublicSalonBySlug("magiccuts-salon"))
+            .thenReturn(salon);
+        when(selectedService.getId())
+            .thenReturn("service1");
+        when(selectedService.getName())
+            .thenReturn("Haircut");
+
+        when(appointmentRepository.findBySalonIdAndAppointmentDate("salon1", today))
+            .thenReturn(List.of());
+
+        bookingService.bookAppointment(
+            "service1",
+            "magiccuts-salon",
+            today.toString(),
+            "12:00",
+            "alex@example.com"
+        );
+        verify(appointmentRepository).save(any(Appointment.class));
+    }
 
 
 //Tests for editing appointment
@@ -81,10 +200,10 @@ class BookingServiceTests {
         LocalDate date = LocalDate.now().plusDays(7);
 
         Account customer = new Account(
-                "Alex Lee",
-                "alex@example.com",
-                "password",
-                RoleType.CUSTOMER
+            "Alex Lee",
+            "alex@example.com",
+            "password",
+            RoleType.CUSTOMER
         );
         Appointment appointment = mock(Appointment.class);
         when(appointment.getId()).thenReturn(42);
@@ -93,14 +212,14 @@ class BookingServiceTests {
         Salon salon = createTestSalon(date);
 
         when(accountRepository.findByEmail("alex@example.com"))
-                .thenReturn(Optional.of(customer));
+            .thenReturn(Optional.of(customer));
         when(appointmentRepository.findByIdAndCustomer(42, customer))
-                .thenReturn(Optional.of(appointment));
+            .thenReturn(Optional.of(appointment));
         when(ownerService.findPublicSalon("salon1")).thenReturn(salon);
         when(ownerService.findPublicSalonBySlug("magiccuts-salon"))
-                .thenReturn(salon);
+            .thenReturn(salon);
         when(appointmentRepository.findBySalonIdAndAppointmentDate("salon1", date))
-                .thenReturn(List.of(appointment));
+            .thenReturn(List.of(appointment));
         when(appointmentRepository.save(appointment)).thenReturn(appointment);
 
         bookingService.updateAppointment(42, date.toString(), "11:00", "alex@example.com");
@@ -116,10 +235,10 @@ class BookingServiceTests {
         LocalDate date = LocalDate.now().plusDays(7);
 
         Account customer = new Account(
-                "Alex Lee",
-                "alex@example.com",
-                "password",
-                RoleType.CUSTOMER
+            "Alex Lee",
+            "alex@example.com",
+            "password",
+            RoleType.CUSTOMER
         );
 
         Appointment appointment = mock(Appointment.class);
@@ -133,17 +252,17 @@ class BookingServiceTests {
         Salon salon = createTestSalon(date);
 
         when(accountRepository.findByEmail("alex@example.com"))
-                .thenReturn(Optional.of(customer));
+            .thenReturn(Optional.of(customer));
         when(appointmentRepository.findByIdAndCustomer(42, customer))
-                .thenReturn(Optional.of(appointment));
+            .thenReturn(Optional.of(appointment));
         when(ownerService.findPublicSalon("salon1")).thenReturn(salon);
         when(ownerService.findPublicSalonBySlug("magiccuts-salon"))
-                .thenReturn(salon);
+            .thenReturn(salon);
         when(appointmentRepository.findBySalonIdAndAppointmentDate("salon1", date))
-                .thenReturn(List.of(bookedAppointment));
+            .thenReturn(List.of(bookedAppointment));
 
         assertThrows(IllegalArgumentException.class, () ->
-                bookingService.updateAppointment(42, date.toString(), "11:00", "alex@example.com")
+            bookingService.updateAppointment(42, date.toString(), "11:00", "alex@example.com")
         );
         //check that the original appointment was not changed
         verify(appointment, never()).setAppointmentDate(any());
@@ -157,20 +276,20 @@ class BookingServiceTests {
         LocalDate pastDate = LocalDate.now().minusDays(1);
 
         Account customer = new Account(
-                "Alex Lee",
-                "alex@example.com",
-                "password",
-                RoleType.CUSTOMER
+            "Alex Lee",
+            "alex@example.com",
+            "password",
+            RoleType.CUSTOMER
         );
 
         Appointment appointment = mock(Appointment.class);
         when(accountRepository.findByEmail("alex@example.com"))
-                .thenReturn(Optional.of(customer));
+            .thenReturn(Optional.of(customer));
         when(appointmentRepository.findByIdAndCustomer(42, customer))
-                .thenReturn(Optional.of(appointment));
+            .thenReturn(Optional.of(appointment));
 
         assertThrows(IllegalArgumentException.class, () ->
-                bookingService.updateAppointment(42, pastDate.toString(), "11:00", "alex@example.com")
+            bookingService.updateAppointment(42, pastDate.toString(), "11:00", "alex@example.com")
         );
         verify(appointment, never()).setAppointmentDate(any());
         verify(appointment, never()).setAppointmentTime(any());
@@ -200,17 +319,17 @@ class BookingServiceTests {
     @Test
     void shouldCancelOwnAppointment() {
         Account customer = new Account(
-                "Alex Lee",
-                "alex@example.com",
-                "password",
-                RoleType.CUSTOMER
+            "Alex Lee",
+            "alex@example.com",
+            "password",
+            RoleType.CUSTOMER
         );
         Appointment appointment = mock(Appointment.class);
 
         when(accountRepository.findByEmail("alex@example.com"))
-                .thenReturn(Optional.of(customer));
+            .thenReturn(Optional.of(customer));
         when(appointmentRepository.findByIdAndCustomer(42, customer))
-                .thenReturn(Optional.of(appointment));
+            .thenReturn(Optional.of(appointment));
 
         bookingService.cancelAppointment(42, "alex@example.com");
 
@@ -223,17 +342,17 @@ class BookingServiceTests {
     @Test
     void shouldRejectCancellingAnotherCustomersAppointment() {
         Account customer = new Account(
-                "Alex Lee",
-                "alex@example.com",
-                "password",
-                RoleType.CUSTOMER
+            "Alex Lee",
+            "alex@example.com",
+            "password",
+            RoleType.CUSTOMER
         );
         when(accountRepository.findByEmail("alex@example.com"))
-                .thenReturn(Optional.of(customer));
+            .thenReturn(Optional.of(customer));
         when(appointmentRepository.findByIdAndCustomer(42, customer))
-                .thenReturn(Optional.empty());
+            .thenReturn(Optional.empty());
         assertThrows(IllegalArgumentException.class, () ->
-                bookingService.cancelAppointment(42, "alex@example.com")
+            bookingService.cancelAppointment(42, "alex@example.com")
         );
         // Check that no appointment was deleted
         verify(appointmentRepository, never()).delete(any(Appointment.class));
