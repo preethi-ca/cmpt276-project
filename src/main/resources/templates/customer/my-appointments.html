@@ -24,6 +24,13 @@
 
         <div th:if="${calendarMessage}" class="alert alert-info" role="status" th:text="${calendarMessage}"></div>
 
+        <!--display rebooking errors-->
+        <div th:if="${errorMessage}"
+            class="alert alert-danger"
+            role="alert"
+            th:text="${errorMessage}">
+        </div>
+
         <!--Appointments tabs-->
         <div class="d-flex gap-2 mb-4" role="tablist" aria-label="Appointment categories">
             <button type="button"
@@ -133,6 +140,9 @@
                         <div class="d-flex gap-2">
                             <a th:href="@{/customer/appointments/details(id=${appointment.id})}" class="btn btn-success">
                                 View Details
+                            </a>
+                            <a th:href="@{/customer/appointments/rebook(id=${appointment.id})}" class="btn btn-primary">
+                                Rebook
                             </a>
                         </div>
 

@@ -46,7 +46,7 @@ class BookingServiceTests {
     @Test
     void shouldRejectBookingForPastDate() {
         //Create a date from yesterday
-        String pastDate = LocalDate.now().minusDays(1).toString();
+        String pastDate = LocalDate.now(ZoneId.of("America/Vancouver")).minusDays(1).toString();
 
         Account customer = new Account(
             "Alex Lee",
@@ -192,12 +192,96 @@ class BookingServiceTests {
         verify(appointmentRepository).save(any(Appointment.class));
     }
 
+    //Test for allowing booking an earlier time for a future date
+    @Test
+    void shouldAllowBookingForEarlierTimeOnFutureDate() {
+        ZoneId zone = ZoneId.of("America/Vancouver");
+        LocalDate today = LocalDate.now(zone);
+        LocalDate tomorrow = today.plusDays(1);
+
+        // Set the current time to 11:00 AM today
+        bookingService.clock = Clock.fixed(
+            ZonedDateTime.of(today, LocalTime.of(11, 0), zone).toInstant(),
+            zone
+        );
+
+        Account customer = new Account(
+            "Alex Lee",
+            "alex@example.com",
+            "password",
+            RoleType.CUSTOMER
+        );
+
+        Salon salon = createTestSalon(tomorrow);
+        SalonService selectedService = mock(SalonService.class);
+        salon.setServices(List.of(selectedService));
+
+        when(accountRepository.findByEmail("alex@example.com"))
+            .thenReturn(Optional.of(customer));
+        when(ownerService.findPublicSalonBySlug("magiccuts-salon"))
+            .thenReturn(salon);
+        when(selectedService.getId()).thenReturn("service1");
+        when(selectedService.getName()).thenReturn("Haircut");
+        when(appointmentRepository.findBySalonIdAndAppointmentDate("salon1", tomorrow))
+            .thenReturn(List.of());
+
+        // 10:00 AM tomorrow should be allowed, even though it is earlier than 11:00 AM today
+        bookingService.bookAppointment(
+            "service1",
+            "magiccuts-salon",
+            tomorrow.toString(),
+            "10:00",
+            "alex@example.com"
+        );
+
+        verify(appointmentRepository).save(any(Appointment.class));
+    }
+
+    //Test that booking an appointment for a service that doesn't exist doesn't work
+    @Test
+    void shouldRejectBookingForUnavailableService() {
+        LocalDate futureDate = LocalDate.now(
+            ZoneId.of("America/Vancouver")
+        ).plusDays(7);
+
+        Account customer = new Account(
+            "Alex Lee",
+            "alex@example.com",
+            "password",
+            RoleType.CUSTOMER
+        );
+
+        Salon salon = createTestSalon(futureDate);
+        SalonService availableService = mock(SalonService.class);
+        salon.setServices(List.of(availableService));
+
+        when(accountRepository.findByEmail("alex@example.com"))
+            .thenReturn(Optional.of(customer));
+        when(ownerService.findPublicSalonBySlug("magiccuts-salon"))
+            .thenReturn(salon);
+
+        // The salon offers service2, not the requested service1
+        when(availableService.getId()).thenReturn("service2");
+
+        assertThrows(IllegalArgumentException.class, () ->
+            bookingService.bookAppointment(
+                "service1",
+                "magiccuts-salon",
+                futureDate.toString(),
+                "11:00",
+                "alex@example.com"
+            )
+        );
+
+        verify(appointmentRepository, never()).save(any(Appointment.class));
+    }
+
 
 //Tests for editing appointment
     //Test that a customer can successfully update an appointment
     @Test
     void shouldUpdateAppointmentDateAndTime() {
-        LocalDate date = LocalDate.now().plusDays(7);
+        LocalDate date = LocalDate.now(ZoneId.of("America/Vancouver")).plusDays(7);
 
         Account customer = new Account(
             "Alex Lee",
@@ -232,7 +316,7 @@ class BookingServiceTests {
     //Test that an unavailable time slot doesn't work
     @Test
     void shouldRejectUnavailableAppointmentTime() {
-        LocalDate date = LocalDate.now().plusDays(7);
+        LocalDate date = LocalDate.now(ZoneId.of("America/Vancouver")).plusDays(7);
 
         Account customer = new Account(
             "Alex Lee",
@@ -273,7 +357,7 @@ class BookingServiceTests {
     //Test that editing to a past date doesn't work
     @Test
     void shouldRejectUpdatingAppointmentToPastDate() {
-        LocalDate pastDate = LocalDate.now().minusDays(1);
+        LocalDate pastDate = LocalDate.now(ZoneId.of("America/Vancouver")).minusDays(1);
 
         Account customer = new Account(
             "Alex Lee",
@@ -293,6 +377,105 @@ class BookingServiceTests {
         );
         verify(appointment, never()).setAppointmentDate(any());
         verify(appointment, never()).setAppointmentTime(any());
+        verify(appointmentRepository, never()).save(any(Appointment.class));
+    }
+
+    //Test that editing an appoitment to a time that has already passed on the same day doesn't work
+    @Test
+    void shouldRejectReschedulingToAnEarlierTimeOnTheSameDay() {
+        ZoneId zone = ZoneId.of("America/Vancouver");
+        LocalDate today = LocalDate.now(zone);
+
+        //Set the current time to 11:00 AM
+        bookingService.clock = Clock.fixed(
+            ZonedDateTime.of(today, LocalTime.of(11, 0), zone).toInstant(), zone
+        );
+
+        Account customer = new Account(
+            "Alex Lee",
+            "alex@example.com",
+            "password",
+            RoleType.CUSTOMER
+        );
+
+        Appointment appointment = mock(Appointment.class);
+
+        when(accountRepository.findByEmail("alex@example.com"))
+            .thenReturn(Optional.of(customer));
+        when(appointmentRepository.findByIdAndCustomer(42, customer))
+            .thenReturn(Optional.of(appointment));
+
+        //Attempt to reschedule to 10:00 AM, which has already passed
+        IllegalArgumentException exception = assertThrows(
+            IllegalArgumentException.class,
+            () -> bookingService.updateAppointment(
+                42, today.toString(), "10:00", "alex@example.com"
+            )
+        );
+
+        assertEquals("Sorry, this appointment time has already passed.", exception.getMessage());
+
+        //Make sure the original appointment was not changed
+        verify(appointment, never()).setAppointmentDate(any());
+        verify(appointment, never()).setAppointmentTime(any());
+        verify(appointmentRepository, never()).save(any(Appointment.class));
+    }
+
+    //Test that edting an appointment that belongs to another customer doesn't work
+    @Test
+    void shouldRejectUpdatingAnotherCustomersAppointment() {
+        Account customer = new Account(
+            "Alex Lee",
+            "alex@example.com",
+            "password",
+            RoleType.CUSTOMER
+        );
+
+        when(accountRepository.findByEmail("alex@example.com"))
+            .thenReturn(Optional.of(customer));
+
+        // The appointment does not belong to this customer
+        when(appointmentRepository.findByIdAndCustomer(42, customer))
+            .thenReturn(Optional.empty());
+
+        assertThrows(IllegalArgumentException.class, () ->
+            bookingService.updateAppointment(
+                42,
+                LocalDate.now(ZoneId.of("America/Vancouver")).plusDays(7).toString(),
+                "11:00",
+                "alex@example.com"
+            )
+        );
+
+        verify(appointmentRepository, never()).save(any(Appointment.class));
+    }
+
+    //Test that editing an appointment that doesn't exist doesn't work
+    @Test
+    void shouldRejectUpdatingNonexistentAppointment() {
+        Account customer = new Account(
+            "Alex Lee",
+            "alex@example.com",
+            "password",
+            RoleType.CUSTOMER
+        );
+
+        when(accountRepository.findByEmail("alex@example.com"))
+            .thenReturn(Optional.of(customer));
+
+        // Appointment ID 999 does not exist for this customer
+        when(appointmentRepository.findByIdAndCustomer(999, customer))
+            .thenReturn(Optional.empty());
+
+        assertThrows(IllegalArgumentException.class, () ->
+            bookingService.updateAppointment(
+                999,
+                LocalDate.now(ZoneId.of("America/Vancouver")).plusDays(7).toString(),
+                "11:00",
+                "alex@example.com"
+            )
+        );
+
         verify(appointmentRepository, never()).save(any(Appointment.class));
     }
 

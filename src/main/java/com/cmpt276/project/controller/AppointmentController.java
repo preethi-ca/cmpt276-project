@@ -128,6 +128,76 @@ public class AppointmentController {
         return "customer/appointment-details";
     }
 
+    //Rebooking past apppointments
+    @GetMapping("/customer/appointments/rebook")
+    public String rebookAppointment(@RequestParam int id, Authentication authentication, RedirectAttributes redirectAttributes) {
+        Optional<Account> customerOpt = accountRepository.findByEmail(authentication.getName());
+        if (!customerOpt.isPresent()) {
+            throw new IllegalArgumentException("Customer account not found");
+        }
+        Account customer = customerOpt.get();
+
+        Optional<Appointment> appointmentOpt = appointmentRepository.findByIdAndCustomer(id, customer);
+        if (!appointmentOpt.isPresent()) {
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage",
+                    "Appointment not found."
+            );
+            return "redirect:/customer/appointments";
+        }
+
+        Appointment appointment = appointmentOpt.get();
+
+        // Check whether the original appointment is in the past
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("America/Vancouver"));
+
+        LocalDateTime appointmentDateTime = LocalDateTime.of(
+                appointment.getAppointmentDate(),
+                LocalTime.parse(appointment.getAppointmentTime())
+        );
+
+        if (!appointmentDateTime.isBefore(now)) {
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage",
+                    "Only past appointments can be rebooked."
+            );
+            return "redirect:/customer/appointments";
+        }
+
+        //find the original salon
+        Salon salon = ownerService.findPublicSalon(appointment.getSalonId());
+        if (salon == null) {
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage",
+                    "This salon is no longer available for booking."
+            );
+            return "redirect:/customer/appointments";
+        }
+
+        //check if the original service still exists at this salon
+        SalonService originalService = null;
+        for (SalonService service : salon.getServices()) {
+            if (service.getId().equals(appointment.getServiceId())) {
+                originalService = service;
+                break;
+            }
+        }
+
+        if (originalService == null) {
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage",
+                    "This service is no longer offered by the salon."
+            );
+            return "redirect:/customer/appointments";
+        }
+
+        //redirect to the existing booking page with the original salon and service selected
+        redirectAttributes.addAttribute("service", appointment.getServiceId());
+        redirectAttributes.addAttribute("salon", salon.getSlug());
+
+        return "redirect:/customer/booking";
+    }
+
     //Show the page for editing an appointment
     @GetMapping("/customer/appointments/edit")
     public String editAppointmentPage(@RequestParam int id, Authentication authentication, Model model) {
