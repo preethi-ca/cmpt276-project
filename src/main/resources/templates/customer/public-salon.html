@@ -1,119 +1,310 @@
 <!doctype html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title th:text="${salon.name} + ' | BookEasy'">BookEasy Salon</title>
+        <title th:text="${salon.name} + ' | BookEasy'">BookEasy Salon</title>
 
-    <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}" />
+        <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}" />
+        <link rel="stylesheet" th:href="@{/css/style.css}" />
+    </head>
 
-    <link rel="stylesheet" th:href="@{/css/style.css}" />
-  </head>
+    <body>
+        <nav class="navbar bg-white border-bottom">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/">BookEasy</a>
 
-  <body>
-    <nav class="navbar bg-white border-bottom">
-      <div class="container">
-        <a class="navbar-brand fw-bold" href="/">BookEasy</a>
+            <div>
+            <a class="btn btn-outline-secondary me-2" th:href="@{/customer/appointments}">
+                My Appointments
+            </a>
 
-        <div>
-          <a
-            class="btn btn-outline-secondary me-2"
-            th:href="@{/customer/appointments}"
-          >
-            My Appointments
-          </a>
-
-          <a class="btn btn-outline-secondary" th:href="@{/login}"> Sign In </a>
-        </div>
-      </div>
-    </nav>
-
-    <main class="container py-4">
-      <!-- Booking progress bar-->
-      <div th:replace="~{customer/fragments/booking-progress :: bookingProgress(1)}"></div>
-      <div class="card mb-4">
-        <div class="card-body">
-          <div class="row">
-            <div class="col-md-8">
-              <p class="text-success fw-semibold">BOOK AN APPOINTMENT</p>
-
-              <h1 th:text="${salon.name}">Magiccuts Salon</h1>
-
-              <p th:text="${salon.address}">123 Main Street</p>
-              <p th:if="${!#strings.isEmpty(salon.city) or !#strings.isEmpty(salon.province)}"><span th:text="${salon.city}"></span><span th:if="${!#strings.isEmpty(salon.city) and !#strings.isEmpty(salon.province)}">, </span><span th:text="${salon.province}"></span></p>
-              <p th:if="${!#strings.isEmpty(salon.phone)}">Phone: <span th:text="${salon.phone}"></span></p>
-              <p th:if="${!#strings.isEmpty(salon.email)}">Email: <span th:text="${salon.email}"></span></p>
+            <a class="btn btn-outline-secondary" th:href="@{/login}"> Sign In </a>
             </div>
+        </div>
+        </nav>
 
-            <div class="col-md-4">
-              <h5>Opening Hours</h5>
+        <main class="container py-4">
+        <!-- Booking progress bar-->
+        <div th:replace="~{customer/fragments/booking-progress :: bookingProgress(1)}"></div>
+        <div class="card mb-4">
+            <div class="card-body">
+            <div class="row">
+                <div class="col-md-9">
+                <p class="text-success fw-semibold">BOOK AN APPOINTMENT</p>
 
-              <div th:each="day : ${salon.openingHours}">
-                <div class="d-flex justify-content-between">
-                  <span th:text="${days[day.dayOfWeek - 1]}"></span>
+                <h1 th:text="${salon.name}">Magiccuts Salon</h1>
 
-                  <span
-                    th:text="${day.open
-                                ? day.startTime + ' - ' + day.endTime
-                                : 'Closed'}"
-                  >
-                  </span>
+                <p th:text="${salon.address}">123 Main Street</p>
+                <p th:if="${!#strings.isEmpty(salon.city) or !#strings.isEmpty(salon.province)}"><span th:text="${salon.city}"></span><span th:if="${!#strings.isEmpty(salon.city) and !#strings.isEmpty(salon.province)}">, </span><span th:text="${salon.province}"></span></p>
+                <p th:if="${!#strings.isEmpty(salon.phone)}">Phone: <span th:text="${salon.phone}"></span></p>
+                <p th:if="${!#strings.isEmpty(salon.email)}">Email: <span th:text="${salon.email}"></span></p>
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
 
-      <section th:if="${photoIds != null and !photoIds.isEmpty()}" class="card mb-4" aria-labelledby="salon-photos-title">
-        <div class="card-body">
-          <h2 id="salon-photos-title" class="h4 mb-3">Salon Gallery</h2>
-          <ul class="list-unstyled row row-cols-2 row-cols-sm-3 row-cols-lg-5 g-2 mb-0">
-            <li class="col" th:each="photoId, row : ${photoIds}">
-              <a class="d-block ratio ratio-4x3" th:href="@{/salons/{slug}/photos/{id}(slug=${salon.slug},id=${photoId})}">
-                <img class="object-fit-cover rounded" loading="lazy"
-                     th:src="@{/salons/{slug}/photos/{id}(slug=${salon.slug},id=${photoId})}"
-                     th:alt="|${salon.name}, photo ${row.count}|">
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+                <div class="col-md-3">
+                <h5 class="fw-bold text-decoration-underline">Opening Hours</h5>
 
-      <div class="card">
-        <div class="card-body">
-          <h2 class="h4 mb-3">Choose a Service</h2>
+                <div th:each="day : ${salon.openingHours}">
+                    <div class="d-flex justify-content-between">
+                    <span th:text="${days[day.dayOfWeek - 1]}"></span>
 
-          <p class="text-muted">
-            Prices shown in CAD.
-          </p>
-
-          <div class="row g-3">
-            <div class="col-md-4" th:each="item : ${salon.services}">
-              <div class="card h-100">
-                <div class="card-body">
-                  <h3 class="h5" th:text="${item.name}">Haircut</h3><p th:if="${!#strings.isEmpty(item.description)}" th:text="${item.description}"></p>
-
-                  <p class="fw-bold" th:text="'$' + ${item.price}">$30</p>
-
-                  <p class="text-muted" th:text="|${item.durationMinutes} minutes|"></p>
-
-                  <a
-                    class="btn btn-success"
-                    th:href="@{/customer/booking(
-                                    service=${item.id},
-                                    salon=${salon.slug}
-                               )}"
-                  >
-                    Book Service
-                  </a>
+                    <span th:text="${day.open? day.startTime + ' - ' + day.endTime: 'Closed'}"></span>
+                    </div>
                 </div>
-              </div>
+                </div>
             </div>
-          </div>
+            </div>
         </div>
-      </div>
-    </main>
-  </body>
+
+        <section th:if="${photoIds != null and !photoIds.isEmpty()}" class="card mb-4" aria-labelledby="salon-photos-title">
+          <div class="card-body">
+            <h2 id="salon-photos-title" class="h4 mb-3">Salon Gallery</h2>
+            <ul class="list-unstyled row row-cols-2 row-cols-sm-3 row-cols-lg-5 g-2 mb-0">
+              <li class="col" th:each="photoId, row : ${photoIds}">
+                <a class="d-block ratio ratio-4x3" th:href="@{/salons/{slug}/photos/{id}(slug=${salon.slug},id=${photoId})}">
+                  <img class="object-fit-cover rounded" loading="lazy"
+                       th:src="@{/salons/{slug}/photos/{id}(slug=${salon.slug},id=${photoId})}"
+                       th:alt="|${salon.name}, photo ${row.count}|">
+                </a>
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <div class="card">
+            <div class="card-body">
+            <h2 class="h4 mb-3 fw-bold">Choose a Service</h2>
+            <p class="text-muted">
+                Prices shown in CAD.
+            </p>
+            <div class="service-browser">
+
+            <!-- Filter services section -->
+                <aside class="service-filters" aria-labelledby="filter-heading">
+
+                    <h3 id="filter-heading" class="h5">
+                        Filter Services
+                    </h3>
+
+                    <!-- Ways to sort services -->
+                    <div class="filter-group">
+                        <p class="form-label fw-semibold">Sort By </p>
+                        
+                        <!--radio buttons for sorting options-->
+                        <div class="form-check">
+                            <input
+                                type="radio"
+                                id="sortDefault"
+                                name="serviceSort"
+                                value="default"
+                                class="form-check-input"
+                                checked
+                            />
+                            <label for="sortDefault" class="form-check-label">Default order</label>
+                        </div>
+
+                        <div class="form-check">
+                            <input
+                                type="radio"
+                                id="sortPriceLow"
+                                name="serviceSort"
+                                value="price-low"
+                                class="form-check-input"
+                            />
+                            <label for="sortPriceLow" class="form-check-label">Price: Lowest to Highest</label>
+                        </div>
+
+                        <div class="form-check">
+                            <input
+                                type="radio"
+                                id="sortPriceHigh"
+                                name="serviceSort"
+                                value="price-high"
+                                class="form-check-input"
+                            />
+                            <label for="sortPriceHigh" class="form-check-label">Price: Highest to Lowest</label>
+                        </div>
+
+                        <!--Sort services alphabetically -->
+                        <div class="form-check">
+                            <input
+                                type="radio"
+                                id="sortAlphabetical"
+                                name="serviceSort"
+                                value="alphabetical"
+                                class="form-check-input"
+                            />
+                            <label for="sortAlphabetical" class="form-check-label">
+                                Alphabetical (A–Z)
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Price range filters -->
+                    <div class="filter-group">
+                        <p class="form-label fw-semibold">Price Range</p>
+
+                        <!--radio buttons for price sorting options-->
+                        <div class="form-check">
+                            <input
+                                type="radio"
+                                id="priceAll"
+                                name="priceRange"
+                                value="all"
+                                class="form-check-input"
+                                checked
+                            />
+                            <label for="priceAll" class="form-check-label">All Prices</label>
+                        </div>
+
+                        <div class="form-check">
+                            <input
+                                type="radio"
+                                id="priceUnder25"
+                                name="priceRange"
+                                value="under-25"
+                                class="form-check-input"
+                            />
+                            <label for="priceUnder25" class="form-check-label">Under $25</label>
+                        </div>
+
+                        <div class="form-check">
+                            <input
+                                type="radio"
+                                id="priceUnder50"
+                                name="priceRange"
+                                value="under-50"
+                                class="form-check-input"
+                            />
+                            <label for="priceUnder50" class="form-check-label">Under $50</label>
+                        </div>
+
+                        <div class="form-check">
+                            <input
+                                type="radio"
+                                id="priceUnder100"
+                                name="priceRange"
+                                value="under-100"
+                                class="form-check-input"
+                            />
+                            <label for="priceUnder100" class="form-check-label">Under $100</label>
+                        </div>
+
+                        <div class="form-check">
+                            <input
+                                type="radio"
+                                id="priceAbove100"
+                                name="priceRange"
+                                value="above-100"
+                                class="form-check-input"
+                            />
+                            <label for="priceAbove100" class="form-check-label">Above $100</label>
+                        </div>
+                    </div>
+
+                    <!--Custom minimum and maximum price filters -->
+                    <div class="filter-group">
+                        <p class="fw-semibold mb-2">
+                            Custom Price Range
+                        </p>
+
+                        <label for="minimumPrice" class="form-label">
+                            Minimum Price (CAD)
+                        </label>
+                        <input
+                            type="text"
+                            id="minimumPrice"
+                            class="form-control mb-3"
+                            inputmode="decimal"
+                            min="0"
+                            max = "99999.99"
+                            placeholder="Minimum $0"
+                        />
+
+                        <label for="maximumPrice" class="form-label">
+                            Maximum Price (CAD)
+                        </label>
+                        <input
+                            type="text"
+                            id="maximumPrice"
+                            class="form-control"
+                            inputmode= "decimal"
+                            min="0"
+                            max = "99999.99"
+                            placeholder="Maximum $99,999.99"
+                        />
+                    </div>
+
+                    <!--displays errors when the price range is invalid -->
+                    <div
+                        id="filterError"
+                        class="filter-error"
+                        role="alert"
+                        aria-live="polite"
+                        hidden
+                    ></div>
+
+                    <button
+                        type="button"
+                        id="applyFilters"
+                        class="btn btn-success w-100 mb-2">
+                        Apply Filters
+                    </button>
+
+                    <button
+                        type="button"
+                        id="clearFilters"
+                        class="btn btn-outline-secondary w-100">
+                        Clear All Filters
+                    </button>
+
+                </aside>
+
+                <!--display all the servies that the salon offers and make a card for each of them-->
+                <div class="service-results">
+
+                    <!-- Shows how many services match the filters -->
+                    <p
+                        id="serviceResultCount"
+                        class="text-muted"
+                        aria-live="polite">
+                    </p>
+
+                    <div class="row g-3" id="serviceList">
+                        <div 
+                            class="col-md-6 col-lg-6"
+                            th:each="item : ${salon.services}"
+                            data-service-card
+                            th:attr="data-price=${item.price}"
+                        >
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h3 class="h5" th:text="${item.name}"></h3> <!--service name -->
+                                    <p th:if="${!#strings.isEmpty(item.description)}" th:text="${item.description}"></p> <!--service description if it exists -->
+                                    <p class="fw-bold" th:text="'$' + ${item.price}"></p><!--service price-->
+                                    <p class="text-muted" th:text="|${item.durationMinutes} minutes|"></p>
+                                    <a class="btn btn-success" th:href="@{/customer/booking(service=${item.id}, salon=${salon.slug})}">
+                                        Book Service
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Message displayed when no services match the filters -->
+                    <p
+                        id="noServicesMessage"
+                        class="text-muted mt-3"
+                        hidden>
+                        No services match your selected filters
+                    </p>
+                </div>
+            </div>   
+            </div>
+        </div>
+        <!-- Connect the salon-service-filter.js file -->
+        <script th:src="@{/js/salon-service-filter.js}"></script>
+        </main>
+    </body>
 </html>

@@ -24,6 +24,8 @@ import com.cmpt276.project.service.GoogleCalendarSync;
 import com.cmpt276.project.service.BookingSmsBuilder;
 import com.cmpt276.project.service.TwilioSmsSender;
 import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 
 
@@ -36,6 +38,7 @@ public class BookingController {
     private final BookingConfirmationBuilder confirmationBuilder = new BookingConfirmationBuilder();
     private final TwilioSmsSender smsSender;
     private final BookingSmsBuilder smsBuilder = new BookingSmsBuilder();
+    private static final ZoneId SALON_TIME_ZONE = ZoneId.of("America/Vancouver");
 
     public BookingController(BookingService bookingService, OwnerService ownerService, BrevoEmailSender emailSender, TwilioSmsSender smsSender, GoogleCalendarSync calendarSync) {
         this.bookingService = bookingService;
@@ -53,7 +56,7 @@ public class BookingController {
         model.addAttribute("service", service);
         model.addAttribute("serviceName", selectedService.getName());
         model.addAttribute("salon", salon);
-        model.addAttribute("minDate", LocalDate.now().toString());
+        model.addAttribute("minDate", ZonedDateTime.now(SALON_TIME_ZONE).toLocalDate().toString());
         model.addAttribute("openingHours", selectedSalon.getOpeningHours());
         String[] days = {"Monday", "Tuesday", "Wednesday", "Thursday","Friday", "Saturday", "Sunday"};
         model.addAttribute("days", days);
@@ -67,13 +70,13 @@ public class BookingController {
         SalonService selectedService = findService(selectedSalon, service);
         LocalDate date = LocalDate.parse(appointmentDate);
         //prevents customers from selecting an appointment date that has already passed
-        if (date.isBefore(LocalDate.now())){
+        if (date.isBefore(ZonedDateTime.now(SALON_TIME_ZONE).toLocalDate())){
             model.addAttribute("error", "Sorry, this date has already passed");
             model.addAttribute("service", service);
             model.addAttribute("salon", salon);
             model.addAttribute("serviceName", selectedService.getName());
             model.addAttribute("openingHours", selectedSalon.getOpeningHours());
-            model.addAttribute("minDate", LocalDate.now().toString());
+            model.addAttribute("minDate", ZonedDateTime.now(SALON_TIME_ZONE).toLocalDate().toString());
             String[] days = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
             model.addAttribute("days", days);
             return "customer/select-date";
@@ -92,7 +95,7 @@ public class BookingController {
             model.addAttribute("salon", salon);
             model.addAttribute("serviceName", selectedService.getName());
             model.addAttribute("openingHours", selectedSalon.getOpeningHours());
-            model.addAttribute("minDate", LocalDate.now().toString());
+            model.addAttribute("minDate", ZonedDateTime.now(SALON_TIME_ZONE).toLocalDate().toString());
             String[] days = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
             model.addAttribute("days", days);
             return "customer/select-date";
@@ -113,6 +116,34 @@ public class BookingController {
     public String showBookingSummary(@RequestParam String service,@RequestParam String salon, @RequestParam String appointmentDate, @RequestParam String appointmentTime,Model model){
         Salon selectedSalon = ownerService.findPublicSalonBySlug(salon);
         SalonService selectedService = findService(selectedSalon, service);
+
+        LocalDate date = LocalDate.parse(appointmentDate);
+        if (date.isBefore(ZonedDateTime.now(SALON_TIME_ZONE).toLocalDate())) {
+            model.addAttribute("error", "Sorry, this date has already passed.");
+            model.addAttribute("service", service);
+            model.addAttribute("salon", salon);
+            model.addAttribute("serviceName", selectedService.getName());
+            model.addAttribute("openingHours", selectedSalon.getOpeningHours());
+            model.addAttribute("minDate", ZonedDateTime.now(SALON_TIME_ZONE).toLocalDate().toString());
+
+            String[] days = {"Monday", "Tuesday", "Wednesday", "Thursday",
+                    "Friday", "Saturday", "Sunday"};
+            model.addAttribute("days", days);
+
+            return "customer/select-date";
+        }
+        List<String> availableTimes = bookingService.getAvailableTimes(selectedSalon, date, selectedService.getDurationMinutes(), null);
+        if (!availableTimes.contains(appointmentTime)) {
+            model.addAttribute("error", "Sorry, this appointment time is no longer available.");
+            model.addAttribute("service", service);
+            model.addAttribute("salon", salon);
+            model.addAttribute("serviceName", selectedService.getName());
+            model.addAttribute("appointmentDate", appointmentDate);
+            model.addAttribute("availableTimes", availableTimes);
+            model.addAttribute("bookedService", selectedService);
+            return "customer/select-time";
+        }
+
         model.addAttribute("service", service);
         model.addAttribute("salon", salon);
         model.addAttribute("salonName", selectedSalon.getName());
@@ -135,13 +166,13 @@ public class BookingController {
             SalonService selectedService = findService(selectedSalon, service);
             LocalDate date = LocalDate.parse(appointmentDate);
             //return customers back to the select date page if they try to book a date that has already passed
-            if (date.isBefore(LocalDate.now())) { 
+            if (date.isBefore(ZonedDateTime.now(SALON_TIME_ZONE).toLocalDate())) { 
                 model.addAttribute("error", error.getMessage());
                 model.addAttribute("service", service);
                 model.addAttribute("salon", salon);
                 model.addAttribute("serviceName", selectedService.getName());
                 model.addAttribute("openingHours", selectedSalon.getOpeningHours());
-                model.addAttribute("minDate", LocalDate.now().toString());
+                model.addAttribute("minDate", ZonedDateTime.now(SALON_TIME_ZONE).toLocalDate().toString());
                 String[] days = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
                 model.addAttribute("days", days);
                 return "customer/select-date"; // CHANGED

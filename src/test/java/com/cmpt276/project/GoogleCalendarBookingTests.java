@@ -16,6 +16,7 @@ import com.cmpt276.project.service.GoogleCalendarClient;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,7 +55,8 @@ class GoogleCalendarBookingTests {
     private static final String ALEX = "alex@example.invalid";
     private static final String SAM = "sam@example.invalid";
     private static final String REFRESH_TOKEN = "fake-refresh-token";
-    private static final String DATE = LocalDate.now().plusDays(2).toString();
+    private static final ZoneId SALON_ZONE = ZoneId.of("America/Vancouver");
+    private static final String DATE = LocalDate.now(SALON_ZONE).plusDays(2).toString();
     private static final String ADDED = "Added to your Google Calendar.";
     private static final String FAILED = "Couldn't add it to Google Calendar. Your appointment is still booked.";
 
@@ -154,7 +156,7 @@ class GoogleCalendarBookingTests {
         book(SAM, DATE, "09:00");
         assertEquals("customer/select-time", book(ALEX, DATE, "09:00").getModelAndView().getViewName());
 
-        String pastDate = LocalDate.now().minusDays(1).toString();
+        String pastDate = LocalDate.now(SALON_ZONE).minusDays(1).toString();
         assertEquals("customer/select-date", book(ALEX, pastDate, "09:00").getModelAndView().getViewName());
 
         assertEquals(1, appointmentRepository.count());

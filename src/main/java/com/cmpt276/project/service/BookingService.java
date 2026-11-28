@@ -11,7 +11,13 @@ import com.cmpt276.project.repository.AppointmentRepository;
 import com.cmpt276.project.owner.model.Salon;
 import com.cmpt276.project.owner.model.SalonService;
 import com.cmpt276.project.owner.service.OwnerService;
+
+import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.Clock;
+
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,6 +28,9 @@ public class BookingService {
     private final AppointmentRepository appointmentRepository;
     private final AccountRepository accountRepository;
     private final OwnerService ownerService;
+
+    private static final ZoneId SALON_TIME_ZONE = ZoneId.of("America/Vancouver");
+    Clock clock = Clock.system(SALON_TIME_ZONE);
 
     public BookingService(AppointmentRepository appointmentRepository, AccountRepository accountRepository,
             OwnerService ownerService) {
@@ -51,10 +60,17 @@ public class BookingService {
         if (selectedService == null) {
             throw new IllegalArgumentException("Service not found in this salon");
         }
+
+        ZonedDateTime now = ZonedDateTime.now(clock);
         LocalDate date = LocalDate.parse(appointmentDate);
-        if (date.isBefore(LocalDate.now())) {
+        if (date.isBefore(now.toLocalDate())) {
             throw new IllegalArgumentException("Sorry, this date has already passed.");
         }
+        LocalDateTime selectedDateTime = LocalDateTime.of(date, LocalTime.parse(appointmentTime));
+        if (selectedDateTime.isBefore(now.toLocalDateTime())) {
+            throw new IllegalArgumentException("Sorry, this appointment time has already passed.");
+        }
+
         int durationMinutes = selectedService.getDurationMinutes();
         List<String> availableTimes = getAvailableTimes(salon, date, durationMinutes, null);
         if (!availableTimes.contains(appointmentTime)) {
@@ -73,8 +89,7 @@ public class BookingService {
         return appointmentRepository.save(appointment);
     }
 
-    // Update an appointment's date and time without changing its service (edit
-    // page)
+    // Update an appointment's date and time without changing its service (edit page)
     @Transactional
     public Appointment updateAppointment(int appointmentId, String appointmentDate, String appointmentTime,
             String customerEmail) {
@@ -89,11 +104,18 @@ public class BookingService {
             throw new IllegalArgumentException("Appointment not found");
         }
         Appointment appointment = appointmentOpt.get();
+
         // Check that the new date is valid and the selected time is available
+        ZonedDateTime now = ZonedDateTime.now(clock);
         LocalDate date = LocalDate.parse(appointmentDate);
-        if (date.isBefore(LocalDate.now())) {
+        if (date.isBefore(now.toLocalDate())) {
             throw new IllegalArgumentException("Sorry, this date has already passed.");
         }
+        LocalDateTime selectedDateTime = LocalDateTime.of(date, LocalTime.parse(appointmentTime));
+        if (selectedDateTime.isBefore(now.toLocalDateTime())) {
+            throw new IllegalArgumentException("Sorry, this appointment time has already passed.");
+        }
+
         Salon salon = ownerService.findPublicSalon(appointment.getSalonId());
         List<String> availableTimes = getAvailableTimes(salon, date, appointment.getDurationMinutes(), appointment.getId());
         if (!availableTimes.contains(appointmentTime)) {
@@ -122,10 +144,15 @@ public class BookingService {
                 date);
         List<String> availableTimes = new ArrayList<>();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm");
+        ZonedDateTime now = ZonedDateTime.now(clock);
         int closingMinute = closingTime.getHour() * 60 + closingTime.getMinute();
         for (int minute = openingTime.getHour() * 60 + openingTime.getMinute(); minute
                 + durationMinutes <= closingMinute; minute += 30) {
             LocalTime currentTime = LocalTime.of(minute / 60, minute % 60);
+            LocalDateTime selectedDateTime = LocalDateTime.of(date, currentTime);
+            if (selectedDateTime.isBefore(now.toLocalDateTime())) {
+                continue;
+            }
             boolean alreadyBooked = false;
             for (Appointment appointment : existingAppointments) {
                 // do not count the current appointment being edited as booked, so its current

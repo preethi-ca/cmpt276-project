@@ -106,6 +106,7 @@ class Cmpt276ProjectApplicationTests {
         String publicPath = "/salons/" + salon.getSlug() + "/photos/" + ids.get(0);
         mvc.perform(get("/salons/" + salon.getSlug())).andExpect(status().isOk())
                 .andExpect(content().string(containsString("Salon Gallery")))
+                .andExpect(content().string(containsString("Filter Services")))
                 .andExpect(content().string(containsString(publicPath)));
         mvc.perform(get(publicPath)).andExpect(status().isOk())
                 .andExpect(content().contentType("image/png")).andExpect(content().bytes(png));
@@ -359,6 +360,10 @@ class Cmpt276ProjectApplicationTests {
         assertEquals(90, saved.getDurationMinutes());
         mvc.perform(get("/owner/services/" + saved.getId() + "/edit").with(signedInOwner))
                 .andExpect(content().string(containsString("90 minutes")));
+        mvc.perform(get("/salons/" + store.findByOwnerId(ownerId).getSlug()))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("data-service-card")))
+                .andExpect(content().string(containsString("90 minutes")));
     }
 
     @Test
@@ -374,7 +379,8 @@ class Cmpt276ProjectApplicationTests {
         String serviceId = salon.getServices().get(0).getId();
         Account customer = accounts.save(new Account("Customer", UUID.randomUUID() + "@example.com",
                 "unused-test-hash", RoleType.CUSTOMER));
-        LocalDate monday = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.MONDAY));
+        LocalDate monday = LocalDate.now(ZoneId.of("America/Vancouver"))
+                .with(TemporalAdjusters.next(DayOfWeek.MONDAY));
         Appointment booked = bookings.bookAppointment(serviceId, salon.getSlug(), monday.toString(),
                 "10:00", customer.getEmail());
         service.setDurationMinutes(30);
@@ -400,8 +406,10 @@ class Cmpt276ProjectApplicationTests {
         createOwnerAndSalon();
         saveHours("22:00", "23:59");
         Salon salon = store.findByOwnerId(ownerId);
+        LocalDate futureMonday = LocalDate.now(ZoneId.of("America/Vancouver"))
+                .with(TemporalAdjusters.next(DayOfWeek.MONDAY));
         assertTimeoutPreemptively(Duration.ofSeconds(2), () ->
-                assertEquals(List.of("22:00", "22:30"), bookings.getAvailableTimes(salon, LocalDate.of(2026, 11, 9), 60, null)));
+                assertEquals(List.of("22:00", "22:30"), bookings.getAvailableTimes(salon, futureMonday, 60, null)));
     }
 
     private Salon memorySalon(String slug, String name) {
@@ -435,7 +443,8 @@ class Cmpt276ProjectApplicationTests {
         Salon salon = store.findByOwnerId(ownerId);
         String serviceId = salon.getServices().get(0).getId();
         Account customer = accounts.save(new Account("Customer <Alice>", UUID.randomUUID() + "@example.com", "private-hash", RoleType.CUSTOMER));
-        LocalDate monday = LocalDate.now().plusDays(1).with(TemporalAdjusters.nextOrSame(DayOfWeek.MONDAY));
+        LocalDate monday = LocalDate.now(ZoneId.of("America/Vancouver"))
+                .plusDays(1).with(TemporalAdjusters.nextOrSame(DayOfWeek.MONDAY));
         mvc.perform(post("/customer/booking/confirm").with(csrf()).with(user(customer.getEmail()).roles("CUSTOMER"))
                         .param("salon", salon.getSlug()).param("service", serviceId)
                         .param("appointmentDate", monday.toString()).param("appointmentTime", "10:00"))
